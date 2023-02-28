@@ -1,4 +1,4 @@
-import main from './wgl.js'
+import main from './wgl.ts'
 
 main();
 

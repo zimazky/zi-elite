@@ -1,8 +1,8 @@
-let startTime;
-let currentTime;
+let startTime: number;
+let currentTime: number;
 
 export default async function main() {
-  const canvas = document.querySelector('#glcanvas');
+  const canvas = <HTMLCanvasElement> document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl2');
 
   if (!gl) {
@@ -40,7 +40,6 @@ export default async function main() {
     const timeDelta = lCurrentTime - currentTime;
     currentTime = lCurrentTime;
   
-    //console.log(performance.now()/1000.);
     // задание uniform переменных
     gl.uniform2f(resolutionUniform, canvas.width, canvas.height);
     gl.uniform2f(timeUniform, time, timeDelta);
@@ -52,7 +51,7 @@ export default async function main() {
   draw();
 }
 
-async function loadShader(gl, type, url) {
+async function loadShader(gl: WebGL2RenderingContext, type: number, url: string): Promise<WebGLShader> {
   let response = await fetch(url);
   let source = await response.text();
   console.log(source);
@@ -67,7 +66,7 @@ async function loadShader(gl, type, url) {
   return shader;  
 }
 
-async function initShaderProgram(gl, vsSourceUrl, fsSourceUrl) {
+async function initShaderProgram(gl: WebGL2RenderingContext, vsSourceUrl: string, fsSourceUrl: string): Promise<WebGLProgram> {
   const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSourceUrl);
   const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSourceUrl);
   const shaderProgram = gl.createProgram();
