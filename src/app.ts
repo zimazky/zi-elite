@@ -15,19 +15,14 @@ export default async function main() {
   let cameraAngularSpeedLocation: WebGLUniformLocation;
   let screenModeLocation: WebGLUniformLocation;
   let mapScaleLocation: WebGLUniformLocation;
-  let textureLocation: WebGLUniformLocation;
 
   initKeyBuffer();
 
   const camera = new Camera(VEC3_ZERO);
 
-  const texture = e.gl.createTexture();
   const img = await loadImage('textures/gray_noise.png');
-  e.gl.bindTexture(e.gl.TEXTURE_2D, texture);
-  e.gl.texImage2D(e.gl.TEXTURE_2D, 0, e.gl.R8, e.gl.RED, e.gl.UNSIGNED_BYTE, img);
-  // gl.generateMipmap(gl.TEXTURE_2D);
 
-  e.onAddingUniforms = (program) => {
+  e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.getUniformLocation(program, 'uCameraVelocity');
@@ -35,12 +30,11 @@ export default async function main() {
     cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
-    textureLocation = e.gl.getUniformLocation(program, "uTexture");
-    // Tell the shader to use texture unit 0 for u_texture
-    e.gl.uniform1i(textureLocation, 0);
+
+    e.setTexture(program, 'uTexture', img);
   }
   
-  e.onSettingUniforms = (time, timeDelta) => {
+  e.onProgramLoop = (time, timeDelta) => {
     camera.loopCalculation(time, timeDelta);
     e.gl.uniform4f(cameraPositionLocation, camera.position.x, camera.position.y, camera.position.z, camera.altitude);
     e.gl.uniform3f(cameraVelocityLocation, camera.velocity.x, camera.velocity.y, camera.velocity.z);
