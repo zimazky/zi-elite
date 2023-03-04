@@ -1,6 +1,7 @@
 import { keyBuffer } from "./keyboard";
 import { Quaternion } from "./quaternion";
-import { Vec3, VEC3_ZERO } from "./vectors";
+import { TerrainSampler } from "./terrain";
+import { Vec2, Vec3 } from "./vectors";
 
 
 const GRAVITATION = 9.8; // ускорение свободного падения м/с2
@@ -37,13 +38,15 @@ export class Camera {
   altitude: number;
   viewAngle: number;
   orientation: Quaternion;
+  tSampler: TerrainSampler;
 
-  constructor(position: Vec3) {
+  constructor(position: Vec3, t: TerrainSampler) {
     this.position = position.copy();
-    this.velocity = VEC3_ZERO.copy();
-    this.angularSpeed = VEC3_ZERO.copy();
+    this.velocity = Vec3.ZERO();
+    this.angularSpeed = Vec3.ZERO();
     this.orientation = new Quaternion(0.,0.,0.,1.);
     this.viewAngle = 80.*Math.PI/180.;
+    this.tSampler = t;
   }
 
   loopCalculation(time: number, timeDelta: number): void {
@@ -63,14 +66,23 @@ export class Camera {
     // гравитация
     this.velocity.y -= GRAVITATION*timeDelta;
     // экстренная остановка
-    if(keyBuffer[KEY_SPACE] > 0.) this.velocity = VEC3_ZERO;
+    if(keyBuffer[KEY_SPACE] > 0) this.velocity = Vec3.ZERO();
 
     // перемещение
     this.position.addMutable(this.velocity.mul(timeDelta));
 
-    // TODO: проверка на положительность высоты
-    //
-    //
+    // не даем провалиться ниже поверхности
+    const height = this.tSampler.terrainM(new Vec2(this.position.x, this.position.z)) + 2.;
+    if(this.position.y < height) {
+      this.velocity.y = 0.;
+      this.position.y = height;
+    }
+
+    this.position.y = 2200.;
+
+    // высота над поверхностью
+    this.altitude = this.position.y - height;
+
 
     // вращение
     const angularAcceleration = new Vec3(
@@ -83,9 +95,32 @@ export class Camera {
     // замедление вращения без клавиш
     this.angularSpeed.subMutable(this.angularSpeed.mul(6.*timeDelta));
     // изменение ориентации (поворот кватерниона)
-    const rotDelta = this.angularSpeed;//.mul(timeDelta);
-    this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.x),Math.cos(rotDelta.x)));
-    this.orientation.qmul(new Quaternion(Math.sin(rotDelta.y),0,0,Math.cos(rotDelta.y)));
-    this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.z),0,Math.cos(rotDelta.z)));
+    const rotDelta = this.angularSpeed.mul(timeDelta);
+    this.orientation = this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.x),Math.cos(rotDelta.x)));
+    this.orientation = this.orientation.qmul(new Quaternion(Math.sin(rotDelta.y),0,0,Math.cos(rotDelta.y)));
+    this.orientation = this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.z),0,Math.cos(rotDelta.z)));
+
+    //this.orientation.normalizeMutable();
+
+    //console.log(this.orientation);
+    //console.log(keyBuffer);
+    //console.log(rotDelta);
+    //console.log(this.angularSpeed);
+
   }
 }
+/*
+ // вращение
+ if(kpress(KEY_SPACE)>0.) v = vec3(0.);
+ vec3 rot = memload(iChannel0, CAMERA_ROTATION, iFrame<=1, vec3(0));
+ rot += 6.*dTime*ANGLE_DELTA*vec3(
+   kstate(KEY_CTRL)==0. ? kstatepress(KEY_LEFT)-kstatepress(KEY_RIGHT) : 0., 
+   kstate(KEY_CTRL)==0. ? 0.5*(kstatepress(KEY_DOWN)-kstatepress(KEY_UP)) : 0., 
+   0.5*(kstatepress(KEY_COMMA)-kstatepress(KEY_PERIOD))
+ );
+ rot -= 6.*dTime*rot;
+ q = qMul(q,vec4(0,0,sin(rot.x),cos(rot.x)));
+ q = qMul(q,vec4(sin(rot.y),0,0,cos(rot.y)));
+ q = qMul(q,vec4(0,sin(rot.z),0,cos(rot.z)));
+
+ */

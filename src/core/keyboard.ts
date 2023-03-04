@@ -1,6 +1,6 @@
 
 const KEYBUFFER_SIZE = 256;
-export const keyBuffer = Array<number>(KEYBUFFER_SIZE);
+export const keyBuffer = Array<number>(KEYBUFFER_SIZE).fill(0);
 
 function onKeyDown(e: KeyboardEvent) {
   if(e.keyCode >= KEYBUFFER_SIZE) return;

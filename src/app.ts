@@ -1,8 +1,9 @@
 import { Camera } from './core/camera';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
-import { VEC3_ZERO } from './core/vectors';
-import loadImage from './utils/loadimg';
+import { TerrainSampler } from './core/terrain';
+import { Vec3 } from './core/vectors';
+import { loadImage } from './utils/loadimg';
 
 export default async function main() {
 
@@ -18,9 +19,9 @@ export default async function main() {
 
   initKeyBuffer();
 
-  const camera = new Camera(VEC3_ZERO);
-
   const img = await loadImage('textures/gray_noise.png');
+  const tSampler = new TerrainSampler(img);
+  const camera = new Camera(Vec3.ZERO(), tSampler);
 
   e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
@@ -41,6 +42,8 @@ export default async function main() {
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
     e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
     e.gl.uniform1f(cameraViewAngleLocation, camera.viewAngle);
+
+    //console.log(camera);
   }
   
   e.start();
