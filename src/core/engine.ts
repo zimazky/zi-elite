@@ -1,10 +1,21 @@
 import { GLContext } from "./glcontext";
 
+
+interface OnAddingUniforms {
+  (program: WebGLProgram): void;
+}
+
+interface OnSettingUniforms {
+  (time: number, timeDelta: number): void;
+}
+
 export class Engine extends GLContext {
   startTime: number;
   currentTime: number;
   resolutionUniform: WebGLUniformLocation;
   timeUniform: WebGLUniformLocation;
+  onAddingUniforms: OnAddingUniforms = (program) => {};
+  onSettingUniforms: OnSettingUniforms = (t, dt) => {};
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -22,18 +33,23 @@ export class Engine extends GLContext {
     const fsSource = this.loadShader('shaders/fs.glsl');
     const program = this.createProgram(await vsSource, await fsSource);
     this.gl.useProgram(program);
-    this.createBuffer(program);
+    this.createBuffer();
+    const vertexPosition = this.gl.getAttribLocation(program, "aVertexPosition");
+    this.gl.enableVertexAttribArray(vertexPosition);
+    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
 
     // определение uniform переменных
     this.resolutionUniform = this.gl.getUniformLocation(program, 'uResolution');
     this.timeUniform = this.gl.getUniformLocation(program, 'uTime');
+    // определение кастомных uniform переменных
+    this.onAddingUniforms(program);
 
     this.startTime = this.currentTime = performance.now()/1000.;
 
     this.loop();
   }
 
-  createBuffer(program: WebGLProgram) {
+  createBuffer() {
     const vertices = [
       1.0,  1.0,
      -1.0,  1.0,
@@ -43,9 +59,6 @@ export class Engine extends GLContext {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
     //this.gl.bindBuffer(this.gl.ARRAY_BUFFER, undefined);
-    const vertexPosition = this.gl.getAttribLocation(program, "aVertexPosition");
-    this.gl.enableVertexAttribArray(vertexPosition);
-    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
   }
 
   resize(): void {
@@ -54,7 +67,11 @@ export class Engine extends GLContext {
     this.canvas.height = window.innerHeight;
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
   }
-  
+
+  getUniformLocation(program: WebGLProgram, name: string): WebGLUniformLocation {
+    return this.gl.getUniformLocation(program, name);
+  }
+
   private loop(): void {
     //this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     //this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -68,7 +85,8 @@ export class Engine extends GLContext {
     // задание uniform переменных
     this.gl.uniform2f(this.resolutionUniform, this.canvas.width, this.canvas.height);
     this.gl.uniform2f(this.timeUniform, time, timeDelta);
-
+    // задание кастомных uniform переменных
+    this.onSettingUniforms(time, timeDelta);
 
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     requestAnimationFrame(this.loop.bind(this));

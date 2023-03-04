@@ -1,3 +1,3 @@
-export interface WglProgramInfo {
+export class GLUniforms {
   uniformLocations: {[name:string]: WebGLUniformLocation}
 }
