@@ -129,9 +129,9 @@ export class Mat4 implements IMatrixes<Vec4> {
     this.i = i.copy(); this.j = j.copy(); this.k = k.copy(); this.l = l.copy();
   }
 
-  mul(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.j.dot(v)); }
+  mulLeft(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.j.dot(v)); }
 
-  mulLeft(v: Vec4): Vec4 {
+  mul(v: Vec4): Vec4 {
     return new Vec4(
       v.x*this.i.x + v.y*this.j.x + v.z*this.k.x + v.w*this.j.x,
       v.x*this.i.y + v.y*this.j.y + v.z*this.k.y + v.w*this.j.y,
@@ -231,9 +231,9 @@ export class Mat3 implements IMatrixes<Vec3> {
     this.i = i.copy(); this.j = j.copy(); this.k = k.copy();
   }
 
-  mul(v: Vec3): Vec3 { return new Vec3(this.i.dot(v), this.j.dot(v), this.k.dot(v)); }
+  mulLeft(v: Vec3): Vec3 { return new Vec3(this.i.dot(v), this.j.dot(v), this.k.dot(v)); }
 
-  mulLeft(v: Vec3): Vec3 {
+  mul(v: Vec3): Vec3 {
     return new Vec3(
       v.x*this.i.x + v.y*this.j.x + v.z*this.k.x,
       v.x*this.i.y + v.y*this.j.y + v.z*this.k.y,
@@ -325,9 +325,9 @@ export class Mat2 implements IMatrixes<Vec2> {
     this.i = i.copy(); this.j = j.copy();
   }
 
-  mul(v: Vec2): Vec2 { return new Vec2(this.i.dot(v), this.j.dot(v)); }
+  mulLeft(v: Vec2): Vec2 { return new Vec2(this.i.dot(v), this.j.dot(v)); }
 
-  mulLeft(v: Vec2): Vec2 {
+  mul(v: Vec2): Vec2 {
     return new Vec2(
       v.x*this.i.x + v.y*this.j.x,
       v.x*this.i.y + v.y*this.j.y,

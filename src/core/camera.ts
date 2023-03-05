@@ -4,7 +4,7 @@ import { TerrainSampler } from "./terrain";
 import { Vec2, Vec3 } from "./vectors";
 
 
-const GRAVITATION = 9.8; // ускорение свободного падения м/с2
+const GRAVITATION = 0.; //9.8; // ускорение свободного падения м/с2
 const THRUST = 11.; // ускорение двигателя м/с2
 const AIR_DRAG_FACTOR = 58.; // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR); // вектор сопротивления по осям
@@ -77,30 +77,31 @@ export class Camera {
       this.velocity.y = 0.;
       this.position.y = height;
     }
+    
+    //console.log(height, this.position.y);
 
-    this.position.y = 2200.;
+    //this.position.y = 2200.;
 
     // высота над поверхностью
     this.altitude = this.position.y - height;
 
-
     // вращение
     const angularAcceleration = new Vec3(
-      keyBuffer[KEY_LEFT] - keyBuffer[KEY_RIGHT], 
-      0.5*(keyBuffer[KEY_DOWN] - keyBuffer[KEY_UP]), 
-      0.5*(keyBuffer[KEY_COMMA] - keyBuffer[KEY_PERIOD])
+      keyBuffer[KEY_DOWN] - keyBuffer[KEY_UP], 
+      keyBuffer[KEY_COMMA] - keyBuffer[KEY_PERIOD],
+      2.*(keyBuffer[KEY_LEFT] - keyBuffer[KEY_RIGHT])
     );
     // ускорение вращения клавишами
     this.angularSpeed.addMutable(angularAcceleration.mulMutable(6.*timeDelta));
     // замедление вращения без клавиш
     this.angularSpeed.subMutable(this.angularSpeed.mul(6.*timeDelta));
     // изменение ориентации (поворот кватерниона)
-    const rotDelta = this.angularSpeed.mul(timeDelta);
-    this.orientation = this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.x),Math.cos(rotDelta.x)));
-    this.orientation = this.orientation.qmul(new Quaternion(Math.sin(rotDelta.y),0,0,Math.cos(rotDelta.y)));
-    this.orientation = this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.z),0,Math.cos(rotDelta.z)));
+    const rotDelta = this.angularSpeed.mul(0.5*timeDelta);
+    this.orientation = this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.z),Math.cos(rotDelta.z)));
+    this.orientation = this.orientation.qmul(new Quaternion(Math.sin(rotDelta.x),0,0,Math.cos(rotDelta.x)));
+    this.orientation = this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.y),0,Math.cos(rotDelta.y)));
 
-    //this.orientation.normalizeMutable();
+    this.orientation.normalizeMutable();
 
     //console.log(this.orientation);
     //console.log(keyBuffer);
@@ -109,18 +110,3 @@ export class Camera {
 
   }
 }
-/*
- // вращение
- if(kpress(KEY_SPACE)>0.) v = vec3(0.);
- vec3 rot = memload(iChannel0, CAMERA_ROTATION, iFrame<=1, vec3(0));
- rot += 6.*dTime*ANGLE_DELTA*vec3(
-   kstate(KEY_CTRL)==0. ? kstatepress(KEY_LEFT)-kstatepress(KEY_RIGHT) : 0., 
-   kstate(KEY_CTRL)==0. ? 0.5*(kstatepress(KEY_DOWN)-kstatepress(KEY_UP)) : 0., 
-   0.5*(kstatepress(KEY_COMMA)-kstatepress(KEY_PERIOD))
- );
- rot -= 6.*dTime*rot;
- q = qMul(q,vec4(0,0,sin(rot.x),cos(rot.x)));
- q = qMul(q,vec4(sin(rot.y),0,0,cos(rot.y)));
- q = qMul(q,vec4(0,sin(rot.z),0,cos(rot.z)));
-
- */

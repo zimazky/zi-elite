@@ -22,6 +22,7 @@ export class TerrainSampler {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(sample, 0, 0, sample.width, sample.height);
     this._data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    //console.log(this._data)
   }
 
   /** 
@@ -31,9 +32,11 @@ export class TerrainSampler {
    * */
   getSample(v: Vec2): number {
     const p = v.fract();
-    const x = p.x * this._data.width;
-    const y = p.y * this._data.height;
-    return this._data.data[(y*this._data.width + x)<<2];
+    const x = Math.floor(p.x * this._data.width);
+    const y = Math.floor(p.y * this._data.height);
+    //console.log(p, x, y);
+
+    return this._data.data[(y*this._data.width + x)*4]/255.;
   }
 
   /**
@@ -53,10 +56,10 @@ export class TerrainSampler {
     const u = new Vec2(3.,3.).subMutable(f.mul(2.)).mulElMutable(f).mulElMutable(f); //f*f*(3.0-2.0*f);
     const du = new Vec2(1.,1.).subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
 
-    const a = this.getSample(new Vec2(0.5,0.5).divMutable(256.).addMutable(p));
-    const b = this.getSample(new Vec2(1.5,0.5).divMutable(256.).addMutable(p));
-    const c = this.getSample(new Vec2(0.5,1.5).divMutable(256.).addMutable(p));
-    const d = this.getSample(new Vec2(1.5,1.5).divMutable(256.).addMutable(p));
+    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));
+    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));
+    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.));
+    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.));
   
     return {
       value: a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y,
@@ -100,7 +103,7 @@ export class TerrainSampler {
     let a = 0.;
     let b = 1.;
     const d = Vec2.ZERO();
-    for(let i=0; i<9; i++) {
+    for(let i=0; i<5; i++) {
       const n = this.noiseD(p);
       d.addMutable(n.derivative);
       a += b*n.value/(1.+d.dot(d));
