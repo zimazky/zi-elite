@@ -5,7 +5,7 @@ export const keyBuffer = Array<number>(KEYBUFFER_SIZE).fill(0);
 function onKeyDown(e: KeyboardEvent) {
   if(e.keyCode >= KEYBUFFER_SIZE) return;
   keyBuffer[e.keyCode] = 1;
-  console.log(e.keyCode, e.code);
+  //console.log(e.keyCode, e.code);
   e.preventDefault();
 }
 

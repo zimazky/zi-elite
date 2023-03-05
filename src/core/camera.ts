@@ -8,6 +8,7 @@ const GRAVITATION = 0.; //9.8; // ускорение свободного пад
 const THRUST = 11.; // ускорение двигателя м/с2
 const AIR_DRAG_FACTOR = 58.; // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR); // вектор сопротивления по осям
+const ANGLE_DELTA = Math.PI/180.;
 
 const KEY_SHIFT = 16;
 const KEY_CTRL = 17;
@@ -92,11 +93,11 @@ export class Camera {
       2.*(keyBuffer[KEY_LEFT] - keyBuffer[KEY_RIGHT])
     );
     // ускорение вращения клавишами
-    this.angularSpeed.addMutable(angularAcceleration.mulMutable(6.*timeDelta));
+    this.angularSpeed.addMutable(angularAcceleration.mulMutable(ANGLE_DELTA*3.*timeDelta));
     // замедление вращения без клавиш
-    this.angularSpeed.subMutable(this.angularSpeed.mul(6.*timeDelta));
+    this.angularSpeed.subMutable(this.angularSpeed.mul(3.*timeDelta));
     // изменение ориентации (поворот кватерниона)
-    const rotDelta = this.angularSpeed.mul(0.5*timeDelta);
+    const rotDelta = this.angularSpeed.mul(0.5);
     this.orientation = this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.z),Math.cos(rotDelta.z)));
     this.orientation = this.orientation.qmul(new Quaternion(Math.sin(rotDelta.x),0,0,Math.cos(rotDelta.x)));
     this.orientation = this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.y),0,Math.cos(rotDelta.y)));

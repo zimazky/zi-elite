@@ -1,7 +1,7 @@
 #version 300 es
 
-precision mediump float;
-//precision lowp float;
+//precision mediump float;
+precision lowp float;
 
 uniform vec2 uResolution;
 uniform vec2 uTime;
