@@ -50,6 +50,10 @@ export class Camera {
     this.tSampler = t;
   }
 
+  inShadow(sunDir: Vec3): number {
+    return this.tSampler.softShadow(this.position, sunDir);
+  }
+
   loopCalculation(time: number, timeDelta: number): void {
 
     const acceleration = new Vec3(

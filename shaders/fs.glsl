@@ -13,6 +13,9 @@ uniform vec3 uCameraRotationSpeed;
 uniform vec4 uCameraQuaternion;
 uniform float uCameraViewAngle;
 
+uniform float uCameraInShadow;
+uniform vec3 uSunDirection;
+
 uniform vec4 uScreenMode;
 uniform float uMapScale;
 
@@ -263,8 +266,7 @@ const vec3 HORIZON_COLOR = vec3(0.272,0.442,0.68);
 vec4 render(vec3 ro, vec3 rd, float initDist)
 {
 
-  float sundir = 0.001*uTime.x;
-  vec3 light1 = normalize(vec3(sin(sundir),0.4,cos(sundir)));
+  vec3 light1 = uSunDirection;
   // bounding plane
   float tmin = initDist;
   float tmax = kMaxT;
@@ -354,8 +356,8 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 
 	}
   // sun scatter
-  col += 0.3*vec3(1.0,0.7,0.3)*pow( sundot, 8.0 );
-  return vec4( col, t );
+  if(uCameraInShadow>=0.99) col += 0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
+  return vec4(col, t);
 }
 
 float grid(float x, float st) {

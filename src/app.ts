@@ -14,10 +14,12 @@ export default async function main() {
   let cameraPositionLocation: WebGLUniformLocation; // Положение камеры xyz, w - высота над поверхностью
   let cameraViewAngleLocation: WebGLUniformLocation; // Угол объектива камеры по x координате
   let cameraVelocityLocation: WebGLUniformLocation; // Скорость камеры xyz
-  let cameraOrientationLocation: WebGLUniformLocation; // Кватернион, определяющий 
-  let cameraAngularSpeedLocation: WebGLUniformLocation;
+  let cameraOrientationLocation: WebGLUniformLocation; // Кватернион, определяющий ориентацию камеры
+  let cameraAngularSpeedLocation: WebGLUniformLocation; // Скорость вращения по осям 
   let screenModeLocation: WebGLUniformLocation;
   let mapScaleLocation: WebGLUniformLocation;
+  let sunDirectionLocation: WebGLUniformLocation; // Направление на солнце
+  let cameraInShadowLocation: WebGLUniformLocation; // Признак нахождения камеры в тени
 
   initKeyBuffer();
 
@@ -31,6 +33,10 @@ export default async function main() {
     cameraVelocityLocation = e.getUniformLocation(program, 'uCameraVelocity');
     cameraOrientationLocation = e.getUniformLocation(program, 'uCameraQuaternion');
     cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
+    cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
+
+    sunDirectionLocation = e.getUniformLocation(program, 'uSunDirection');
+
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
 
@@ -44,6 +50,14 @@ export default async function main() {
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
     e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
     e.gl.uniform1f(cameraViewAngleLocation, camera.viewAngle);
+
+    const sunAngle = 0.001*time;
+    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
+    const cameraInShadow = camera.inShadow(sunDirection);
+
+    e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);
+    e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);
+
 
     if(time>nextTime) {
       const dt = timeDelta*1000;
