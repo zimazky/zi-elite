@@ -27,6 +27,8 @@ interface IVectors<T> {
   divEl(v: T): T;
   /** Иммутабельная операция нормализации вектора */
   normalize(): T;
+  /** Длина вектора */
+  length(): number;
   /** Скалярное произведение векторов */
   dot(v: T): number;
   /** Копия вектора */
@@ -104,6 +106,8 @@ export class Vec4 implements IVectors<Vec4> {
   divEl(v: Vec4): Vec4 { return this.copy().divElMutable(v); }
 
   normalize(): Vec4 { return this.copy().normalizeMutable(); }
+  
+  length(): number { return Math.sqrt(this.dot(this)); }
 
   dot(v: Vec4): number { return this.x*v.x + this.y*v.y + this.z*v.z + this.w*v.w; }
 
@@ -200,6 +204,8 @@ export class Vec3 implements IVectors<Vec3> {
   divEl(v: Vec3): Vec3 { return this.copy().divElMutable(v); }
 
   normalize(): Vec3 { return this.copy().normalizeMutable(); }
+
+  length(): number { return Math.sqrt(this.dot(this)); }
 
   dot(v: Vec3): number { return this.x*v.x + this.y*v.y + this.z*v.z; }
 
@@ -300,6 +306,8 @@ export class Vec2 implements IVectors<Vec2> {
   divEl(v: Vec2): Vec2 { return this.copy().divElMutable(v); }
 
   normalize(): Vec2 { return this.copy().normalizeMutable(); }
+
+  length(): number { return Math.sqrt(this.dot(this)); }
 
   dot(v: Vec2): number { return this.x*v.x + this.y*v.y; }
 

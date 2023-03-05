@@ -7,7 +7,9 @@ import { loadImage } from './utils/loadimg';
 
 export default async function main() {
 
+  const divInfo = document.getElementById('info');
   const e = new Engine('glcanvas');
+  let nextTime = 0;
 
   let cameraPositionLocation: WebGLUniformLocation; // Положение камеры xyz, w - высота над поверхностью
   let cameraViewAngleLocation: WebGLUniformLocation; // Угол объектива камеры по x координате
@@ -42,6 +44,19 @@ export default async function main() {
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
     e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
     e.gl.uniform1f(cameraViewAngleLocation, camera.viewAngle);
+
+    if(time>nextTime) {
+      const dt = timeDelta*1000;
+      const v = camera.velocity.length();
+      const vkmph = v*3.6;
+      const width = e.canvas.width.toFixed(0);
+      const height = e.canvas.height.toFixed(0);
+      divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
+      v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
+      alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
+      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
+      nextTime = time + 0.5;
+    }
 
     //console.log(camera);
   }
