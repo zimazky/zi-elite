@@ -51,7 +51,8 @@ export class Camera {
   }
 
   inShadow(sunDir: Vec3): number {
-    return this.tSampler.softShadow(this.position, sunDir);
+    const s = this.tSampler.softShadow(this.position, sunDir);
+    return Math.pow(s, 4.);
   }
 
   loopCalculation(time: number, timeDelta: number): void {
