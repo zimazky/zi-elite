@@ -1,6 +1,7 @@
 import { Camera } from './core/camera';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
+import { NoiseSampler } from './core/noise';
 import { TerrainSampler } from './core/terrain';
 import { Vec3 } from './core/vectors';
 import { loadImage } from './utils/loadimg';
@@ -24,7 +25,7 @@ export default async function main() {
   initKeyBuffer();
 
   const img = await loadImage('textures/gray_noise.png');
-  const tSampler = new TerrainSampler(img);
+  const tSampler = new TerrainSampler(new NoiseSampler(img));
   const camera = new Camera(Vec3.ZERO(), tSampler);
 
   e.onProgramInit = (program) => {
