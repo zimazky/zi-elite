@@ -16,7 +16,7 @@ uniform float uCameraViewAngle;
 uniform float uCameraInShadow;
 uniform vec3 uSunDirection;
 
-uniform vec4 uScreenMode;
+uniform vec2 uScreenMode;
 uniform float uMapScale;
 
 out vec4 fragColor;
@@ -87,6 +87,8 @@ const mat2 im2 = mat2(0.8,-0.6,0.6,0.8);
 const float W_SCALE = 3000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
 const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
+const float GRASS_HEIGHT_MAX = 600.;
+const float SEA_LEVEL = 0.;
 
 // Генерация высоты с эррозией без производных упрощенная
 float terrainH(vec2 x) {
@@ -96,10 +98,12 @@ float terrainH(vec2 x) {
   vec2  d = vec2(0.0);
   for( int i=0; i<16; i++ ) {
     vec3 n = noised(p);
-    d += n.yz; a += b*n.x/(1.+dot(d,d));
+    float flatland = 1.;//clamp((n.x*H_SCALE-300.)/(GRASS_HEIGHT_MAX-300.),0.,1.);
+    flatland *= flatland;
+    d += n.yz; a += flatland*b*n.x/(1.+dot(d,d));
     b *= 0.5; p = im2*p*2.0;
   }
-  return H_SCALE*a;
+  return max(H_SCALE*a,SEA_LEVEL);
 }
 float terrainM(vec2 x) {
   vec2  p = x/W_SCALE;
@@ -108,10 +112,12 @@ float terrainM(vec2 x) {
   vec2  d = vec2(0.0);
   for( int i=0; i<9; i++ ) {
     vec3 n = noised(p);
-    d += n.yz; a += b*n.x/(1.+dot(d,d));
+    float flatland = 1.;//clamp((n.x*H_SCALE-300.)/(GRASS_HEIGHT_MAX-300.),0.,1.);
+    flatland *= flatland;
+    d += n.yz; a += flatland*b*n.x/(1.+dot(d,d));
     b *= 0.5; p = im2*p*2.0;
   }
-  return H_SCALE*a;
+  return max(H_SCALE*a,SEA_LEVEL);
 }
 float terrainS(vec2 x) {
   vec2  p = x/W_SCALE;
@@ -120,10 +126,12 @@ float terrainS(vec2 x) {
   vec2  d = vec2(0.0);
   for( int i=0; i<5; i++ ) {
     vec3 n = noised(p);
-    d += n.yz; a += b*n.x/(1.+dot(d,d));
+    float flatland = 1.;//clamp((n.x*H_SCALE-300.)/(GRASS_HEIGHT_MAX-300.),0.,1.);
+    flatland *= flatland;
+    d += n.yz; a += flatland*b*n.x/(1.+dot(d,d));
     b *= 0.5; p = im2*p*2.0;
   }
-  return H_SCALE*a;
+  return max(H_SCALE*a,SEA_LEVEL);
 }
 
 vec3 calcNormalH(vec3 pos, float t) {
@@ -183,15 +191,15 @@ vec3 rayCamera(Camera c, vec2 uv) {
 // функция определения затененности
 const float SUN_DISC_ANGLE_TAN = 0.03;
 float softShadow(vec3 ro, vec3 rd, float dis) {
-  float minStep = clamp(0.01*dis,5.,500.0);
+  float minStep = clamp(0.01*dis,5.,500.);
 
-  float res = 1.0;
+  float res = 1.;
   float t = 0.01;
   for(int i=0; i<80; i++) { // меньшее кол-во циклов приводит к проблескам в тени
-	vec3 p = ro + t*rd;
+	  vec3 p = ro + t*rd;
     if(p.y>MAX_TRN_ELEVATION) break;
     float h = p.y - terrainS(p.xz);
-	res = min(res, 25.*h/t);
+	  res = min(res, 25.*h/t);
     if(res<0.01) break;
     t += max(minStep, 0.6*h); // коэффициент устраняет полосатость при плавном переходе тени
   }
@@ -289,6 +297,9 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     */
     // horizon
     col = mix( col, HORIZON_COLOR, pow(1.0-max(rd.y,0.0), 16.0));
+    // sun
+    //float sundisk = 1.-step(0.03, sqrt(1.-sundot*sundot));
+    //col += vec3(sundisk*10.);
     t = -1.0;
   }
   else {
@@ -356,7 +367,9 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 
 	}
   // sun scatter
-  if(uCameraInShadow>=0.99) col += 0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
+  //if(uCameraInShadow>=0.99) col += 0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
+  col += uCameraInShadow*0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
+
   return vec4(col, t);
 }
 
@@ -376,7 +389,7 @@ vec2 grid(vec2 x, float st) {
 
 const float INIT_MAP_SCALE = 5000.; //начальный масштаб карты в м на ширину карты
 vec4 showMap(Camera c, vec2 uv, int mode) {
-  float mapScale = 1.; // uMapScale;//memload(iChannel0, MAP_SCALE).x;
+  float mapScale = uMapScale;
   mapScale *= INIT_MAP_SCALE;
   vec2 p = c.pos.xz + vec2(1,-1)*mapScale*uv;
   float h = terrainM(p);
@@ -414,10 +427,11 @@ void main(void) {
   Camera c = Camera(pos.xyz, angle, uCameraQuaternion);// memload(iChannel0,CAMERA_QUATERNION));
   vec3 rd = rayCamera(c, uv);
   float t = -1.;
-  //vec4 screen = uScreenMode;// memload(iChannel0,SCREEN_MODE);
+
+  vec2 screen = uScreenMode;
   vec4 col = vec4(0.);
-  //if(screen.x==MAP_VIEW) col = showMap(c, uv, int(screen.y));
-  //else 
+  if(screen.x==MAP_VIEW) col = showMap(c, uv, int(screen.y));
+  else 
     col = render(c.pos, rd, 1.);
   //if(screen.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 

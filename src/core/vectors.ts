@@ -91,7 +91,7 @@ export class Vec4 implements IVectors<Vec4> {
     return this;
   }
 
-  normalizeMutable(): Vec4 { return this.divMutable(this.dot(this)); }
+  normalizeMutable(): Vec4 { return this.divMutable(Math.sqrt(this.dot(this))); }
 
   add(v: Vec4): Vec4 { return this.copy().addMutable(v); }
 
@@ -189,7 +189,7 @@ export class Vec3 implements IVectors<Vec3> {
     return this;
   }
 
-  normalizeMutable(): Vec3 { return this.divMutable(this.dot(this)); }
+  normalizeMutable(): Vec3 { return this.divMutable(Math.sqrt(this.dot(this))); }
 
   add(v: Vec3): Vec3 { return this.copy().addMutable(v); }
 
@@ -291,7 +291,7 @@ export class Vec2 implements IVectors<Vec2> {
     return this;
   }
 
-  normalizeMutable(): Vec2 { return this.divMutable(this.dot(this)); }
+  normalizeMutable(): Vec2 { return this.divMutable(Math.sqrt(this.dot(this))); }
 
   add(v: Vec2): Vec2 { return this.copy().addMutable(v); }
 

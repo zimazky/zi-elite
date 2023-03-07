@@ -1,8 +1,13 @@
-import { keyBuffer } from "./keyboard";
+import { isKeyPress, isKeyDown } from "./keyboard";
 import { Quaternion } from "./quaternion";
 import { TerrainSampler } from "./terrain";
 import { Vec2, Vec3 } from "./vectors";
 
+const FRONT_VIEW = 0;
+const MAP_VIEW = 1;
+
+const MAP_GRID = 1;
+const MAP_HEIGHTS = 2;
 
 const GRAVITATION = 0.; //9.8; // ускорение свободного падения м/с2
 const THRUST = 11.; // ускорение двигателя м/с2
@@ -41,6 +46,10 @@ export class Camera {
   orientation: Quaternion;
   tSampler: TerrainSampler;
 
+  screenMode: number;
+  mapMode: number;
+  mapScale: number;
+
   constructor(position: Vec3, t: TerrainSampler) {
     this.position = position.copy();
     this.velocity = Vec3.ZERO();
@@ -48,6 +57,9 @@ export class Camera {
     this.orientation = new Quaternion(0.,0.,0.,1.);
     this.viewAngle = 80.*Math.PI/180.;
     this.tSampler = t;
+    this.screenMode = 0;
+    this.mapMode = 0;
+    this.mapScale = 1.;
   }
 
   inShadow(sunDir: Vec3): number {
@@ -60,7 +72,7 @@ export class Camera {
     const acceleration = new Vec3(
       0.,
       0.,
-      keyBuffer[KEY_S] - keyBuffer[KEY_W] 
+      isKeyDown(KEY_S) - isKeyDown(KEY_W)
     );
 
     const mdir = this.orientation.mat3();
@@ -72,7 +84,7 @@ export class Camera {
     // гравитация
     this.velocity.y -= GRAVITATION*timeDelta;
     // экстренная остановка
-    if(keyBuffer[KEY_SPACE] > 0) this.velocity = Vec3.ZERO();
+    if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO();
 
     // перемещение
     this.position.addMutable(this.velocity.mul(timeDelta));
@@ -83,19 +95,14 @@ export class Camera {
       this.velocity.y = 0.;
       this.position.y = height;
     }
-    
-    //console.log(height, this.position.y);
-
-    //this.position.y = 2200.;
-
     // высота над поверхностью
     this.altitude = this.position.y - height;
 
     // вращение
     const angularAcceleration = new Vec3(
-      keyBuffer[KEY_DOWN] - keyBuffer[KEY_UP], 
-      keyBuffer[KEY_COMMA] - keyBuffer[KEY_PERIOD],
-      2.*(keyBuffer[KEY_LEFT] - keyBuffer[KEY_RIGHT])
+      isKeyDown(KEY_DOWN) - isKeyDown(KEY_UP), 
+      isKeyDown(KEY_COMMA) - isKeyDown(KEY_PERIOD),
+      2.*(isKeyDown(KEY_LEFT) - isKeyDown(KEY_RIGHT))
     );
     // ускорение вращения клавишами
     this.angularSpeed.addMutable(angularAcceleration.mulMutable(ANGLE_DELTA*3.*timeDelta));
@@ -109,10 +116,15 @@ export class Camera {
 
     this.orientation.normalizeMutable();
 
-    //console.log(this.orientation);
-    //console.log(keyBuffer);
-    //console.log(rotDelta);
-    //console.log(this.angularSpeed);
+
+    // режим экрана
+    if(isKeyPress(KEY_M)>0) this.screenMode = this.screenMode==FRONT_VIEW ? MAP_VIEW : FRONT_VIEW;
+    if(this.screenMode==MAP_VIEW) {
+      this.mapScale *= 1.0 + 0.01*(isKeyDown(KEY_MINUS)+isKeyDown(KEY_MINUS2)-isKeyDown(KEY_PLUS)-isKeyDown(KEY_EQUAL));
+      if(isKeyPress(KEY_G)>0) this.mapMode ^= MAP_GRID;
+      if(isKeyPress(KEY_H)>0) this.mapMode ^= MAP_HEIGHTS;
+    }
+    else this.viewAngle += 0.01*(isKeyDown(KEY_MINUS)-isKeyDown(KEY_PLUS));
 
   }
 }

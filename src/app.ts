@@ -51,6 +51,10 @@ export default async function main() {
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
     e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
     e.gl.uniform1f(cameraViewAngleLocation, camera.viewAngle);
+    e.gl.uniform2f(screenModeLocation, camera.screenMode, camera.mapMode);
+    e.gl.uniform1f(mapScaleLocation, camera.mapScale);
+
+
 
     const sunAngle = 0.001*time;
     const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
