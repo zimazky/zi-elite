@@ -16,6 +16,7 @@ export default async function main() {
   let cameraViewAngleLocation: WebGLUniformLocation; // Угол объектива камеры по x координате
   let cameraVelocityLocation: WebGLUniformLocation; // Скорость камеры xyz
   let cameraOrientationLocation: WebGLUniformLocation; // Кватернион, определяющий ориентацию камеры
+  let cameraTransformMatLocation: WebGLUniformLocation; // Матрица вращения для вершинного шейдера
   let cameraAngularSpeedLocation: WebGLUniformLocation; // Скорость вращения по осям 
   let screenModeLocation: WebGLUniformLocation;
   let mapScaleLocation: WebGLUniformLocation;
@@ -33,6 +34,7 @@ export default async function main() {
     cameraViewAngleLocation = e.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.getUniformLocation(program, 'uCameraVelocity');
     cameraOrientationLocation = e.getUniformLocation(program, 'uCameraQuaternion');
+    cameraTransformMatLocation = e.getUniformLocation(program, 'uTransformMat');
     cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
     cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
 
@@ -50,6 +52,13 @@ export default async function main() {
     e.gl.uniform3f(cameraVelocityLocation, camera.velocity.x, camera.velocity.y, camera.velocity.z);
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
     e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
+    const m = [
+      camera.transformMat.i.x, camera.transformMat.i.y, camera.transformMat.i.z,
+      camera.transformMat.j.x, camera.transformMat.j.y, camera.transformMat.j.z,
+      camera.transformMat.k.x, camera.transformMat.k.y, camera.transformMat.k.z
+    ];
+    e.gl.uniformMatrix3fv(cameraTransformMatLocation, false, m);
+
     e.gl.uniform1f(cameraViewAngleLocation, camera.viewAngle);
     e.gl.uniform2f(screenModeLocation, camera.screenMode, camera.mapMode);
     e.gl.uniform1f(mapScaleLocation, camera.mapScale);

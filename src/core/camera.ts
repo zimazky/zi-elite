@@ -1,7 +1,7 @@
 import { isKeyPress, isKeyDown } from "./keyboard";
 import { Quaternion } from "./quaternion";
 import { TerrainSampler } from "./terrain";
-import { Vec2, Vec3 } from "./vectors";
+import { Mat3, Vec2, Vec3 } from "./vectors";
 
 const FRONT_VIEW = 0;
 const MAP_VIEW = 1;
@@ -44,6 +44,8 @@ export class Camera {
   altitude: number;
   viewAngle: number;
   orientation: Quaternion;
+  /** Матрица вращения камеры для передачи вершинному шейдеру. Используется для определения направления лучей */
+  transformMat: Mat3;
   tSampler: TerrainSampler;
 
   screenMode: number;
@@ -76,6 +78,7 @@ export class Camera {
     );
 
     const mdir = this.orientation.mat3();
+    this.transformMat = mdir;
 
     // ускорение тяги
     this.velocity.addMutable(mdir.mul(acceleration).mulMutable(THRUST*timeDelta));

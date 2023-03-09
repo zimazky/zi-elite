@@ -19,6 +19,8 @@ uniform vec3 uSunDirection;
 uniform vec2 uScreenMode;
 uniform float uMapScale;
 
+in vec3 vRay;
+
 out vec4 fragColor;
 
 
@@ -230,6 +232,7 @@ float fbm(vec2 p)
   return f/0.9375;
 }
 
+
 // определение цвета пикселя
 Material terrain_color(vec3 pos, vec3 nor) {
   // мелкий шум в текстуре
@@ -263,6 +266,34 @@ Material terrain_color(vec3 pos, vec3 nor) {
   spec = mix(spec,0.3,s);
   kd = mix(kd, 0.29*vec3(0.62,0.65,0.7), smoothstep(0.1, 0.9, s));
   return Material(vec4(kd,1.),vec4(vec3(ks),spec));
+}
+
+
+vec3 lambert(vec3 omega, float mu, float mu_0) {
+	return omega;
+}
+
+vec3  lommel_seeliger(vec3 omega, float mu, float mu_0) {
+ 	return omega / max( 0.01, mu + mu_0 );
+}
+
+// omega - альбедо
+// omega_0 - альбедо одиночного рассеивания
+// mu - косинус угла между нормалью и направлением на камеру
+// mu0 - косинус угла между нормалью и направлением на источник света
+vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
+	// non-lambertian diffuse shading used for terrain land masses
+	// mix Lambert and Lommel-Seeliger based on single scattering albedo omega_0,
+
+	//return omega / max( 0.0001, mu + mu_0 );
+	// return omega;
+
+	/*
+	vec3 omega_0 = 4. * omega / ( 3. * omega + 1. );
+	return omega_0 * ( omega + .25 * ( 1. - omega ) / max( 0.0001, mu + mu_0 ) );
+	*/
+	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
+	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.01, mu+mu_0) );
 }
 
 const float kMaxT = 30000.0;
@@ -315,19 +346,26 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     // lighting		
     
     // ambient
-    float amb = clamp(0.5+0.5*nor.y,0.0,1.0);
-	float dif = dot(light1, nor);
-    float shd = dif<0. ? 0. : softShadow(pos-2.5*rd, light1, t);
-	dif = clamp(dif, 0.0, 1.0);
+    float amb = clamp(0.5+0.5*nor.y, 0., 1.);
+	  float LdotN = dot(light1, nor);
+    float RdotN = clamp(-dot(rd, nor), 0., 1.);
+    float xmin = 3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
+    float shd = LdotN<-xmin ? 0. : softShadow(pos-2.5*rd, light1, t);
+    float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
+    float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+    LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
-	col = (AMBIENT_LIGHT*amb + SUN_LIGHT*dif*shd)*kd;
+	  //vec3 lamb = 2.*AMBIENT_LIGHT*amb*lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lambert(kd, RdotN, LdotN);
+	  //vec3 lomm = 2.*AMBIENT_LIGHT*amb*lommel_seeliger(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lommel_seeliger(kd, RdotN, LdotN);
+	  vec3 lunar = 2.*AMBIENT_LIGHT*amb*lunar_lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lunar_lambert(kd, RdotN, LdotN);
+    col = lunar;//mix(lomm, lunar, LvsR);
     
     // specular
     float n = exp2(12.*mat.ks.a);
     vec3 ks = mat.ks.rgb;
     ks *= 0.5*(n+1.)/PI;
     float RdotV = clamp(dot(reflect(light1, nor), rd), 0., 1.);
-    col += ks*(SUN_LIGHT*shd*dif*pow(RdotV,n)+AMBIENT_LIGHT*pow(amb,n));
+    //col += /*(1.-LvsR)*/ks*(SUN_LIGHT*shd*LdotN*pow(RdotV,n) + AMBIENT_LIGHT*pow(amb,n));
 
 ////////////////////
 /*
@@ -422,11 +460,10 @@ void main(void) {
   //float zbuf = data.w;
 
   
-  vec4 pos = uCameraPosition;// memload(iChannel0,CAMERA_POSITION);
-  float angle = uCameraViewAngle;// memload(iChannel0,CAMERA_VIEW_ANGLE).x;
+  vec4 pos = uCameraPosition;
+  float angle = uCameraViewAngle;
   Camera c = Camera(pos.xyz, angle, uCameraQuaternion);// memload(iChannel0,CAMERA_QUATERNION));
-  vec3 rd = rayCamera(c, uv);
-  float t = -1.;
+  vec3 rd = normalize(vRay);
 
   vec2 screen = uScreenMode;
   vec4 col = vec4(0.);
