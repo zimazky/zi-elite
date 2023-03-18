@@ -2,6 +2,7 @@ import { Camera } from './core/camera';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
+import { Quaternion } from './core/quaternion';
 import { TerrainSampler } from './core/terrain';
 import { Vec3 } from './core/vectors';
 import { loadImage } from './utils/loadimg';
@@ -10,7 +11,8 @@ export default async function main() {
 
   const divInfo = document.getElementById('info');
   const e = new Engine('glcanvas');
-  let nextTime = 0;
+  let infoRefreshTime = 0;
+  let positionStoreTime = 0;
 
   let cameraPositionLocation: WebGLUniformLocation; // Положение камеры xyz, w - высота над поверхностью
   let cameraViewAngleLocation: WebGLUniformLocation; // Угол объектива камеры по x координате
@@ -27,7 +29,14 @@ export default async function main() {
 
   const img = await loadImage('textures/gray_noise.png');
   const tSampler = new TerrainSampler(new NoiseSampler(img));
-  const camera = new Camera(Vec3.ZERO(), tSampler);
+  const json = localStorage.getItem('data') ?? '{}';
+  console.log('localStorage',json);
+  const obj = JSON.parse(json);
+  let pos = Vec3.ZERO();
+  let quat = Quaternion.Identity();
+  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
+  const camera = new Camera(pos, quat, tSampler);
 
   e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
@@ -73,7 +82,8 @@ export default async function main() {
     e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);
 
 
-    if(time>nextTime) {
+    // Вывод информации на экран с периодичностью 0.5 сек
+    if(time>infoRefreshTime) {
       const dt = timeDelta*1000;
       const v = camera.velocity.length();
       const vkmph = v*3.6;
@@ -83,7 +93,14 @@ export default async function main() {
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
       alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
       x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
-      nextTime = time + 0.5;
+      infoRefreshTime = time + 0.5;
+    }
+    // Сохранение координат в локальнре хранилище каждые 5 секунд
+    if(time>positionStoreTime) {
+      const dataString = JSON.stringify({ position: camera.position, orientation: camera.orientation });
+      localStorage.setItem('data', dataString);
+      //console.log(dataString);
+      positionStoreTime = time + 5.;
     }
 
     //console.log(camera);

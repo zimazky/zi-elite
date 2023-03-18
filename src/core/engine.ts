@@ -24,7 +24,7 @@ export class Engine extends GLContext {
   public async loadShader(sourceUrl: string): Promise<string> {
     let response = await fetch(sourceUrl);
     let source = await response.text();
-    console.log(source);
+    //console.log(source);
     return source;
   }
 

@@ -52,11 +52,11 @@ export class Camera {
   mapMode: number;
   mapScale: number;
 
-  constructor(position: Vec3, t: TerrainSampler) {
+  constructor(position: Vec3, quaternion: Quaternion, t: TerrainSampler) {
     this.position = position.copy();
     this.velocity = Vec3.ZERO();
     this.angularSpeed = Vec3.ZERO();
-    this.orientation = new Quaternion(0.,0.,0.,1.);
+    this.orientation = quaternion;
     this.viewAngle = 80.*Math.PI/180.;
     this.tSampler = t;
     this.screenMode = 0;

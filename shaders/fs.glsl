@@ -24,10 +24,35 @@ in vec3 vRay;
 out vec4 fragColor;
 
 
+
+// ----------------------------------------------------------------------------
+// Atmosphere scattering constants
+// ----------------------------------------------------------------------------
+
+const vec3 LIGHT_INTENSITY = vec3(20.);
+const vec3 PLANET_POS = vec3(0.);   // the position of the planet
+const float PLANET_RADIUS = 6371e3; // radius of the planet
+const float ATMOS_RADIUS = 6471e3;  // radius of the atmosphere
+const vec3 RAY_BETA = vec3(5.5e-6, 13.0e-6, 22.4e-6); // rayleigh, affects the color of the sky
+const vec3 MIE_BETA = vec3(2e-7);     // mie, affects the color of the blob around the sun
+const vec3 AMBIENT_BETA = vec3(0.0);  // ambient, affects the scattering color when there is no lighting from the sun
+const vec3 ABSORPTION_BETA = vec3(2.04e-5, 4.97e-5, 1.95e-6); // what color gets absorbed by the atmosphere (Due to things like ozone)
+const float G = 0.76; // mie scattering direction, or how big the blob around the sun is
+// and the heights (how far to go up before the scattering has no effect)
+const float HEIGHT_RAY = 8e3;        // rayleigh height
+const float HEIGHT_MIE = 1.2e3;      // and mie
+const float HEIGHT_ABSORPTION = 30e3; // at what height the absorption is at it's maximum
+const float ABSORPTION_FALLOFF = 4e3; // how much the absorption decreases the further away it gets from the maximum height
+// and the steps (more looks better, but is slower)
+// the primary step has the most effect on looks
+const int PRIMARY_STEPS = 32; // primary steps, affects quality the most
+
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
 const float PI = 3.14159265358979;
+const float _16_PI = 50.2654824574;   // 16.0*PI
+const float _8_PI = 25.1327412287;    // 8.0*PI
 const float SQRT2 = sqrt(2.);
 const mat3  IDENTITY = mat3(vec3(1,0,0),vec3(0,1,0),vec3(0,0,1));
 
@@ -39,6 +64,240 @@ const float DEPTH_VIEW = 2.;
 const int MAP_ONLY = 0;
 const int MAP_GRID = 1;
 const int MAP_HEIGHTS = 2;
+
+
+
+// ----------------------------------------------------------------------------
+// Операции с расчета атмосферного рассеяния
+// ----------------------------------------------------------------------------
+
+// Приближение функции Чапмана, домноженная на exp(-x)
+// функция возвращает оптическую глубину (интеграл плотности вдоль луча от указанной высоты до бесконечности)
+// в двух каналах (x - Релея, y - Ми)
+// X - референсная нормализованная высота (R/H), R - радиус планеты, H - характеристическая высота плотности атмосферы (высота 50% массы)
+// x - нормализованная высота ((R+h)/H), h - высота над уровнем планеты
+// cosTheta - косинус угла наклона луча к зениту
+vec2 ChH(vec2 X, vec2 x, float cosTheta) {
+  vec2 c = /*1.2533*/ sqrt(X + x);
+  // theta выше горизонта
+  if(cosTheta >= 0.0) return c/(c*cosTheta + vec2(1.0)) * exp(-x);
+  // theta ниже горизонта
+  else {
+      vec2 x0 = sqrt(vec2(1.0) - cosTheta*cosTheta) * (X+x);
+      vec2 c0 = /*1.2533*/ sqrt(x0);
+      return 2.0*c0*exp(X-x0) - c/(vec2(1.0) - c*cosTheta) * exp(-x);
+  }
+}
+
+
+//Функция рассеивания
+vec3 calculate_scattering(
+  vec3 start,               // the start of the ray (the camera position)
+  vec3 dir,                 // the direction of the ray (the camera vector)
+  vec3 light_dir            // the direction of the light
+  ) {
+  
+  // Положение относительно центра планеты
+  start = vec3(0,start.y+PLANET_RADIUS,0);
+  
+  float atmRad = ATMOS_RADIUS;
+  float plnRad = PLANET_RADIUS;
+  
+  float r2 = dot(start,start);
+  float atmRad2 = atmRad*atmRad;
+  float OT = -dot(start,dir); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT2 = r2 - OT*OT; // квадрат минимального расстояния от луча до центра планеты
+  if(CT2 >= atmRad2) return vec3(0); // луч проходит выше атмосферы
+  float AT = sqrt(atmRad2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
+  float rayLen = 2.0*AT; // длина луча до выхода из атмосферы или до касания с планетой
+  if(r2 > atmRad2) {
+    if(OT < 0.0) return vec3(0); // направление от планеты
+    // Камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
+    start += dir * (OT - AT);
+    r2 = atmRad2;
+    OT = AT;
+  }
+  else rayLen = AT - dot(start,dir);
+
+  vec3 normal = normalize(start);
+  float NdotD = dot(normal,dir);
+  float plnRad2 = plnRad*plnRad;
+  bool allow_mie = true;
+  if(NdotD < 0.) {
+    // Поиск длины луча в случае попадания в поверхность планеты
+    if(CT2 < plnRad2) {
+      rayLen = OT - sqrt(plnRad2 - CT2);
+      //????????????????????????????
+      // prevent the mie glow from appearing if there's an object in front of the camera
+      allow_mie = false;
+    }
+  }
+  
+  // определяем длину шага интегрирования по лучу
+  float step_size_i = rayLen / float(PRIMARY_STEPS);
+  // определяем начальное смещение на половину шага для более точного интегрирования по серединам отрезков
+  float ray_pos_i = step_size_i * 0.5;
+    
+  vec3 total_ray = vec3(0.0); // for rayleigh
+  vec3 total_mie = vec3(0.0); // for mie
+    
+  // initialize the optical depth. This is used to calculate how much air was in the ray
+  vec3 opt_i = vec3(0.0);
+    
+  // also init the scale height, avoids some vec2's later on
+  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
+    
+  // Calculate the Rayleigh and Mie phases.
+  // This is the color that will be scattered for this ray
+  // mu, mu2 and gg are used quite a lot in the calculation, so to speed it up, precalculate them
+  float mu = dot(dir, light_dir);
+  float mu2 = mu * mu;
+  float g2 = G*G;
+  float phase_ray = 3./_16_PI * (1. + mu2);
+  float phase_mie = allow_mie ? 3./_8_PI * ((1.-g2)*(mu2+1.))/(pow(1.+g2-2.*mu*G, 1.5)*(2.+g2)) : 0.;
+    
+  // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
+  for (int i = 0; i < PRIMARY_STEPS; ++i) {
+      
+      // calculate where we are along this ray
+      vec3 pos_i = start + dir * ray_pos_i;
+      
+      // and how high we are above the surface
+      float height_i = length(pos_i) - plnRad;
+      
+      // now calculate the density of the particles (both for rayleigh and mie)
+      vec3 density = vec3(exp(-height_i/scale_height), 0.);
+        
+      // multiply it by the step size here
+      // we are going to use the density later on as well
+      density *= step_size_i;
+        
+      // Add these densities to the optical depth, so that we know how many particles are on this ray.
+      opt_i += density;
+      
+      ///////////////////////
+      
+      vec3 normal_i = normalize(pos_i);
+      // Косинус угла луча света к зениту
+      float NdotL = dot(light_dir, normal_i);
+      float OT = dot(pos_i,light_dir);
+      float CT2 = dot(pos_i,pos_i) - OT*OT;
+      // оптическая глубина луча
+      vec3 opt_l = vec3(0.0);
+      
+      
+      if(OT>0.0 || CT2 > plnRad2)  {
+          opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
+        // Now we need to calculate the attenuation
+        // this is essentially how much light reaches the current sample point due to scattering
+        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y));
+
+        // accumulate the scattered light (how much will be scattered towards the camera)
+        total_ray += density.x * attn;
+        total_mie += density.y * attn;
+      }
+
+        // and increment the position on this ray
+        ray_pos_i += step_size_i;
+    }
+    
+    // calculate how much light can pass through the atmosphere
+    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x));
+    
+    // calculate and return the final color
+    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie)*LIGHT_INTENSITY;
+}
+
+//Функция рассеивания при пересечении с поверхностью
+vec3 calculate_scattering2(
+  vec3 start,               // the start of the ray (the camera position)
+  vec3 dir,                 // the direction of the ray (the camera vector)
+  vec3 light_dir,           // the direction of the light
+  float rayLen              // расстояние до точки пересечения 
+  ) {
+  
+  // Положение относительно центра планеты
+  start = vec3(0,start.y+PLANET_RADIUS,0);
+  
+  float atmRad = ATMOS_RADIUS;
+  float plnRad = PLANET_RADIUS;
+  float plnRad2 = plnRad*plnRad;
+  bool allow_mie = false;
+  // определяем длину шага интегрирования по лучу
+  float step_size_i = rayLen / float(PRIMARY_STEPS);
+  // определяем начальное смещение на половину шага для более точного интегрирования по серединам отрезков
+  float ray_pos_i = step_size_i * 0.5;
+    
+  vec3 total_ray = vec3(0.0); // for rayleigh
+  vec3 total_mie = vec3(0.0); // for mie
+    
+  // initialize the optical depth. This is used to calculate how much air was in the ray
+  vec3 opt_i = vec3(0.0);
+    
+  // also init the scale height, avoids some vec2's later on
+  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
+    
+  // Calculate the Rayleigh and Mie phases.
+  // This is the color that will be scattered for this ray
+  // mu, mumu and gg are used quite a lot in the calculation, so to speed it up, precalculate them
+  float mu = dot(dir, light_dir);
+  float mumu = mu * mu;
+  float gg = G*G;
+  float phase_ray = 3./_16_PI * (1. + mumu);
+  float phase_mie = allow_mie ? 3./_8_PI * ((1.-gg)*(mumu+1.))/(pow(1.+gg-2.*mu*G, 1.5)*(2.+gg)) : 0.;
+    
+  // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
+  for (int i = 0; i < PRIMARY_STEPS; ++i) {
+      
+      // calculate where we are along this ray
+      vec3 pos_i = start + dir * ray_pos_i;
+      
+      // and how high we are above the surface
+      float height_i = length(pos_i) - plnRad;
+      
+      // now calculate the density of the particles (both for rayleigh and mie)
+      vec3 density = vec3(exp(-height_i/scale_height), 0.);
+        
+      // multiply it by the step size here
+      // we are going to use the density later on as well
+      density *= step_size_i;
+        
+      // Add these densities to the optical depth, so that we know how many particles are on this ray.
+      opt_i += density;
+      
+      ///////////////////////
+      
+      vec3 normal_i = normalize(pos_i);
+      // Косинус угла луча света к зениту
+      float NdotL = dot(light_dir, normal_i);
+      float OT = dot(pos_i,light_dir);
+      float CT2 = dot(pos_i,pos_i) - OT*OT;
+      // оптическая глубина луча
+      vec3 opt_l = vec3(0.0);
+      
+      
+      if(OT>0.0 || CT2 > plnRad2)  {
+          opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
+        // Now we need to calculate the attenuation
+        // this is essentially how much light reaches the current sample point due to scattering
+        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y));
+
+        // accumulate the scattered light (how much will be scattered towards the camera)
+        total_ray += density.x * attn;
+        total_mie += density.y * attn;
+      }
+
+        // and increment the position on this ray
+        ray_pos_i += step_size_i;
+    }
+    
+    // calculate how much light can pass through the atmosphere
+    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x));
+    
+    // calculate and return the final color
+    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie)*LIGHT_INTENSITY;
+}
+
 
 // ----------------------------------------------------------------------------
 // Операции с кватернионами
@@ -62,6 +321,7 @@ vec4 qAngle(vec3 axis, float angle) { return vec4(normalize(axis)*sin(angle/2.),
 
 vec4 qYyawPitchRoll(float yaw, float pitch, float roll)
 { return qMul(qAngle(vec3(1,0,0), pitch), qMul(qAngle(vec3(0,1,0),yaw), qAngle(vec3(0,0,1),roll))); }
+
 
 // ----------------------------------------------------------------------------
 // Генерация ландшафта
@@ -293,12 +553,13 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( omega + .25 * ( 1. - omega ) / max( 0.0001, mu + mu_0 ) );
 	*/
 	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
-	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.01, mu+mu_0) );
+	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
 const float kMaxT = 30000.0;
 const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
 const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
+const vec3 SKY_COLOR = vec3(0.3,0.5,0.85);
 const vec3 FOG_COLOR = vec3(0.26,0.4225,0.65);
 const vec3 HORIZON_COLOR = vec3(0.272,0.442,0.68);
 
@@ -315,7 +576,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   float t = raycast(ro, rd, tmin, tmax);
   if(t>tmax) {
     // sky		
-    col = AMBIENT_LIGHT - rd.y*rd.y*0.5; // градиент по высоте атмосферы
+    col = SKY_COLOR - rd.y*rd.y*0.5; // градиент по высоте атмосферы
     col = mix(col, 0.85*vec3(0.7,0.75,0.85), pow(1.0-max(rd.y,0.0), 4.0));
     // sun
     col += 0.25*vec3(1.0,0.7,0.4)*pow(sundot,5.0);
@@ -361,11 +622,13 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     col = lunar;//mix(lomm, lunar, LvsR);
     
     // specular
+    /*
     float n = exp2(12.*mat.ks.a);
     vec3 ks = mat.ks.rgb;
     ks *= 0.5*(n+1.)/PI;
     float RdotV = clamp(dot(reflect(light1, nor), rd), 0., 1.);
-    //col += /*(1.-LvsR)*/ks*(SUN_LIGHT*shd*LdotN*pow(RdotV,n) + AMBIENT_LIGHT*pow(amb,n));
+    col += (1.-LvsR)*ks*(SUN_LIGHT*shd*LdotN*pow(RdotV,n) + AMBIENT_LIGHT*pow(amb,n));
+    */
 
 ////////////////////
 /*

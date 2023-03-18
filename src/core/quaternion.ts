@@ -2,6 +2,8 @@ import { Mat3, Vec3, Vec4 } from "./vectors";
 
 export class Quaternion extends Vec4 {
 
+  static Identity = () => new Quaternion(0.,0.,0.,1.);
+
   /** Иммутабельный обратный кватернион */
   invert(): Quaternion {
     return new Quaternion(-this.x, -this.y, -this.z, this.w).divMutable(this.dot(this)) as Quaternion;
