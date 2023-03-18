@@ -14,6 +14,13 @@ const W_SCALE = 3000.; // масштаб по горизонтали
 const H_SCALE = 1100.; // масштаб по высоте
 const MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота ландшафта для вычисления теней
 
+function smoothstep(min:number, max:number, x:number): number {
+  if(x < min) return 0.;
+  if(x >= max) return 1.;
+  const d = (x-min)/(max-min);
+  return d*d*(3.-2.*d);
+}
+
 export class TerrainSampler {
   private _noiseSampler: NoiseSampler;
 
@@ -67,21 +74,23 @@ export class TerrainSampler {
     return H_SCALE*a;
   }
 
-
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
-    const minStep = 0.1;
+    const SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
+    const minStep = 1.;
     let res = 1.;
-    let t = 0.01;
-    for(let i=0; i<80; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+    let t = 0.1;
+    const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
+    for(let i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
       if(p.y > MAX_TRN_ELEVATION) break;
       const h = p.y - this.terrainM(new Vec2(p.x,p.z));
-      res = Math.min(res, 25.*h/t);
-      if(res<0.01) break;
-      t += Math.max(minStep, 0.6*h); // коэффициент устраняет полосатость при плавном переходе тени
+      res = Math.min(res, cosA*h/t);
+      if(res<-SUN_DISC_ANGLE_SIN) break;
+      t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
-    return res<0. ? 0. : (res>1. ? 1. : res);//clamp(res,0.,1.);
+    //return res<0. ? 0. : (res>1. ? 1. : res);//clamp(res,0.,1.);
+    return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
     //return smoothstep(0.,SUN_DISC_ANGLE_TAN,res);
   }
   

@@ -29,15 +29,17 @@ out vec4 fragColor;
 // Atmosphere scattering constants
 // ----------------------------------------------------------------------------
 
-const vec3 LIGHT_INTENSITY = vec3(20.);
+const vec3 LIGHT_INTENSITY = vec3(12.);
 const vec3 PLANET_POS = vec3(0.);   // the position of the planet
 const float PLANET_RADIUS = 6371e3; // radius of the planet
 const float ATMOS_RADIUS = 6471e3;  // radius of the atmosphere
+//const vec3 RAY_BETA = vec3(0.0572e-4, 0.1003e-4, 0.1977e-4); // rayleigh, affects the color of the sky
+
 const vec3 RAY_BETA = vec3(5.5e-6, 13.0e-6, 22.4e-6); // rayleigh, affects the color of the sky
 const vec3 MIE_BETA = vec3(2e-7);     // mie, affects the color of the blob around the sun
 const vec3 AMBIENT_BETA = vec3(0.0);  // ambient, affects the scattering color when there is no lighting from the sun
 const vec3 ABSORPTION_BETA = vec3(2.04e-5, 4.97e-5, 1.95e-6); // what color gets absorbed by the atmosphere (Due to things like ozone)
-const float G = 0.76; // mie scattering direction, or how big the blob around the sun is
+const float G = 0.99; // mie scattering direction, or how big the blob around the sun is
 // and the heights (how far to go up before the scattering has no effect)
 const float HEIGHT_RAY = 8e3;        // rayleigh height
 const float HEIGHT_MIE = 1.2e3;      // and mie
@@ -127,7 +129,6 @@ vec3 calculate_scattering(
     // Поиск длины луча в случае попадания в поверхность планеты
     if(CT2 < plnRad2) {
       rayLen = OT - sqrt(plnRad2 - CT2);
-      //????????????????????????????
       // prevent the mie glow from appearing if there's an object in front of the camera
       allow_mie = false;
     }
@@ -147,14 +148,15 @@ vec3 calculate_scattering(
   // also init the scale height, avoids some vec2's later on
   vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
     
-  // Calculate the Rayleigh and Mie phases.
-  // This is the color that will be scattered for this ray
-  // mu, mu2 and gg are used quite a lot in the calculation, so to speed it up, precalculate them
+  // Расчет фазовой функции
+  // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
+  // Для рассеяния Ми g принимают -0,76 ... -0,999.
+  // Отрицательные значения g рассеивают больше в прямом направлении, а положительные - рассеивают свет назад к источнику света
   float mu = dot(dir, light_dir);
   float mu2 = mu * mu;
-  float g2 = G*G;
-  float phase_ray = 3./_16_PI * (1. + mu2);
-  float phase_mie = allow_mie ? 3./_8_PI * ((1.-g2)*(mu2+1.))/(pow(1.+g2-2.*mu*G, 1.5)*(2.+g2)) : 0.;
+  float g2 = G * G;
+  float phase_ray = 0.75 * (1.+mu2);
+  float phase_mie = allow_mie ? 1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5) : 0.;
     
   // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
   for (int i = 0; i < PRIMARY_STEPS; ++i) {
@@ -167,6 +169,12 @@ vec3 calculate_scattering(
       
       // now calculate the density of the particles (both for rayleigh and mie)
       vec3 density = vec3(exp(-height_i/scale_height), 0.);
+
+      // and the absorption density. this is for ozone, which scales together with the rayleigh, 
+      // but absorbs the most at a specific height, so use the sech function for a nice curve falloff for this height
+      // clamp it to avoid it going out of bounds. This prevents weird black spheres on the night side
+      float denom = (HEIGHT_ABSORPTION - height_i) / ABSORPTION_FALLOFF;
+      density.z = density.x/(denom*denom + 1.);
         
       // multiply it by the step size here
       // we are going to use the density later on as well
@@ -187,10 +195,10 @@ vec3 calculate_scattering(
       
       
       if(OT>0.0 || CT2 > plnRad2)  {
-          opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
+        opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
         // Now we need to calculate the attenuation
         // this is essentially how much light reaches the current sample point due to scattering
-        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y));
+        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y) - ABSORPTION_BETA * (opt_i.z+opt_l.z));
 
         // accumulate the scattered light (how much will be scattered towards the camera)
         total_ray += density.x * attn;
@@ -202,10 +210,10 @@ vec3 calculate_scattering(
     }
     
     // calculate how much light can pass through the atmosphere
-    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x));
+    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z));
     
     // calculate and return the final color
-    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie)*LIGHT_INTENSITY;
+    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI);
 }
 
 //Функция рассеивания при пересечении с поверхностью
@@ -213,7 +221,8 @@ vec3 calculate_scattering2(
   vec3 start,               // the start of the ray (the camera position)
   vec3 dir,                 // the direction of the ray (the camera vector)
   vec3 light_dir,           // the direction of the light
-  float rayLen              // расстояние до точки пересечения 
+  float rayLen,             // расстояние до точки пересечения с поверхностью
+  vec3 scene_color          // цвет сцены в точке пересечения
   ) {
   
   // Положение относительно центра планеты
@@ -222,7 +231,6 @@ vec3 calculate_scattering2(
   float atmRad = ATMOS_RADIUS;
   float plnRad = PLANET_RADIUS;
   float plnRad2 = plnRad*plnRad;
-  bool allow_mie = false;
   // определяем длину шага интегрирования по лучу
   float step_size_i = rayLen / float(PRIMARY_STEPS);
   // определяем начальное смещение на половину шага для более точного интегрирования по серединам отрезков
@@ -237,14 +245,15 @@ vec3 calculate_scattering2(
   // also init the scale height, avoids some vec2's later on
   vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
     
-  // Calculate the Rayleigh and Mie phases.
-  // This is the color that will be scattered for this ray
-  // mu, mumu and gg are used quite a lot in the calculation, so to speed it up, precalculate them
+  // Расчет фазовой функции
+  // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
+  // Для рассеяния Ми g принимают -0,76 ... -0,999.
+  // Отрицательные значения g рассеивают больше в прямом направлении, а положительные - рассеивают свет назад к источнику света
   float mu = dot(dir, light_dir);
-  float mumu = mu * mu;
-  float gg = G*G;
-  float phase_ray = 3./_16_PI * (1. + mumu);
-  float phase_mie = allow_mie ? 3./_8_PI * ((1.-gg)*(mumu+1.))/(pow(1.+gg-2.*mu*G, 1.5)*(2.+gg)) : 0.;
+  float mu2 = mu * mu;
+  float g2 = G*G;
+  float phase_ray = 0.75 * (1.+mu2);
+  float phase_mie = 0.; //1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5);
     
   // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
   for (int i = 0; i < PRIMARY_STEPS; ++i) {
@@ -257,6 +266,12 @@ vec3 calculate_scattering2(
       
       // now calculate the density of the particles (both for rayleigh and mie)
       vec3 density = vec3(exp(-height_i/scale_height), 0.);
+
+      // and the absorption density. this is for ozone, which scales together with the rayleigh, 
+      // but absorbs the most at a specific height, so use the sech function for a nice curve falloff for this height
+      // clamp it to avoid it going out of bounds. This prevents weird black spheres on the night side
+      float denom = (HEIGHT_ABSORPTION - height_i) / ABSORPTION_FALLOFF;
+      density.z = density.x/(denom*denom + 1.);
         
       // multiply it by the step size here
       // we are going to use the density later on as well
@@ -280,7 +295,7 @@ vec3 calculate_scattering2(
           opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
         // Now we need to calculate the attenuation
         // this is essentially how much light reaches the current sample point due to scattering
-        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y));
+        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y) - ABSORPTION_BETA * (opt_i.z+opt_l.z));
 
         // accumulate the scattered light (how much will be scattered towards the camera)
         total_ray += density.x * attn;
@@ -292,10 +307,11 @@ vec3 calculate_scattering2(
     }
     
     // calculate how much light can pass through the atmosphere
-    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x));
+    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z));
     
     // calculate and return the final color
-    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie)*LIGHT_INTENSITY;
+    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI) 
+      + scene_color*opacity;
 }
 
 
@@ -451,23 +467,45 @@ vec3 rayCamera(Camera c, vec2 uv) {
 // ----------------------------------------------------------------------------
 
 // функция определения затененности
-const float SUN_DISC_ANGLE_TAN = 0.03;
+const float SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
 float softShadow(vec3 ro, vec3 rd, float dis) {
-  float minStep = clamp(0.01*dis,5.,500.);
+  float minStep = clamp(0.01*dis,10.,500.);
+  float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
 
   float res = 1.;
-  float t = 0.01;
-  for(int i=0; i<80; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+  float t = 0.01*dis;
+  for(int i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
     if(p.y>MAX_TRN_ELEVATION) break;
-    float h = p.y - terrainS(p.xz);
-	  res = min(res, 25.*h/t);
-    if(res<0.01) break;
-    t += max(minStep, 0.6*h); // коэффициент устраняет полосатость при плавном переходе тени
+    float h = p.y - terrainM(p.xz);
+	  res = min(res, cosA*h/t);
+    if(res<-SUN_DISC_ANGLE_SIN) break;
+    t += max(minStep, abs(1.*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return clamp(res,0.,1.);
-  //return smoothstep(0.,SUN_DISC_ANGLE_TAN,res);
+  return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
 }
+/*
+  softShadow(ro: Vec3, rd: Vec3): number {
+    const SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
+    const minStep = 1.;
+    let res = 1.;
+    let t = 0.1;
+    const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
+    for(let i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+      const p = ro.add(rd.mul(t));
+      if(p.y > MAX_TRN_ELEVATION) break;
+      const h = p.y - this.terrainM(new Vec2(p.x,p.z));
+      res = Math.min(res, cosA*h/t);
+      if(res<-SUN_DISC_ANGLE_SIN) break;
+      t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
+    }
+    //return res<0. ? 0. : (res>1. ? 1. : res);//clamp(res,0.,1.);
+    return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
+    //return smoothstep(0.,SUN_DISC_ANGLE_TAN,res);
+  }
+*/
+
+
 
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   float t = tmin;
@@ -556,7 +594,7 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-const float kMaxT = 30000.0;
+const float kMaxT = 150000.0;
 const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
 const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
 const vec3 SKY_COLOR = vec3(0.3,0.5,0.85);
@@ -574,7 +612,10 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col;
   float t = raycast(ro, rd, tmin, tmax);
+  //t = tmax+1.;
   if(t>tmax) {
+    col = calculate_scattering(ro, rd, light1);
+    /*
     // sky		
     col = SKY_COLOR - rd.y*rd.y*0.5; // градиент по высоте атмосферы
     col = mix(col, 0.85*vec3(0.7,0.75,0.85), pow(1.0-max(rd.y,0.0), 4.0));
@@ -583,15 +624,14 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     col += 0.25*vec3(1.0,0.8,0.6)*pow(sundot,64.0);
     col += 0.2*vec3(1.0,0.8,0.6)*pow(sundot,512.0);
     // clouds
-    /*
-    vec2 sc = ro.xz + rd.xz*(10000.0-ro.y)/rd.y;
-    col = mix(col, vec3(1.0,0.95,1.0), 0.5*smoothstep(0.5,0.8,fbm(0.00005*sc)));
-    */
+    //vec2 sc = ro.xz + rd.xz*(10000.0-ro.y)/rd.y;
+    //col = mix(col, vec3(1.0,0.95,1.0), 0.5*smoothstep(0.5,0.8,fbm(0.00005*sc)));
     // horizon
     col = mix( col, HORIZON_COLOR, pow(1.0-max(rd.y,0.0), 16.0));
     // sun
     //float sundisk = 1.-step(0.03, sqrt(1.-sundot*sundot));
     //col += vec3(sundisk*10.);
+    */
     t = -1.0;
   }
   else {
@@ -611,7 +651,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
     float xmin = 3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
-    float shd = LdotN<-xmin ? 0. : softShadow(pos-2.5*rd, light1, t);
+    float shd = LdotN<-xmin ? 0. : softShadow(pos/*-2.5*rd*/, light1, t);
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
@@ -662,13 +702,14 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     col += s*0.65*pow(fre,4.0)*vec3(0.3,0.5,0.6)*smoothstep(0.0,0.6,ref.y);
 */
 //////////////////
-	// fog
-    float fo = 1.0-exp(-pow(0.00009*t,1.5) );
-    col = mix(col, FOG_COLOR, fo );
+	  // fog
+    //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
+    //col = mix(col, FOG_COLOR, fo );
+
+    col = calculate_scattering2(ro,rd,light1,t,col);
 
 	}
   // sun scatter
-  //if(uCameraInShadow>=0.99) col += 0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
   col += uCameraInShadow*0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
 
   return vec4(col, t);
