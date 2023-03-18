@@ -74,8 +74,9 @@ export default async function main() {
 
 
 
-    const sunAngle = 0.001*time;
-    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
+    const sunAngle = 0.05*time;
+//    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
+    const sunDirection = new Vec3(0.,Math.sin(sunAngle),Math.cos(sunAngle)).normalizeMutable();
     const cameraInShadow = camera.inShadow(sunDirection);
 
     e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);

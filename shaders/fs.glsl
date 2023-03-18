@@ -96,7 +96,8 @@ vec2 ChH(vec2 X, vec2 x, float cosTheta) {
 vec3 calculate_scattering(
   vec3 start,               // the start of the ray (the camera position)
   vec3 dir,                 // the direction of the ray (the camera vector)
-  vec3 light_dir            // the direction of the light
+  vec3 light_dir,           // the direction of the light
+  vec3 scene_color          // цвет сцены в точке пересечения
   ) {
   
   // Положение относительно центра планеты
@@ -109,11 +110,11 @@ vec3 calculate_scattering(
   float atmRad2 = atmRad*atmRad;
   float OT = -dot(start,dir); // расстояния вдоль луча до точки минимального расстояния до центра планеты
   float CT2 = r2 - OT*OT; // квадрат минимального расстояния от луча до центра планеты
-  if(CT2 >= atmRad2) return vec3(0); // луч проходит выше атмосферы
+  if(CT2 >= atmRad2) return scene_color; // луч проходит выше атмосферы
   float AT = sqrt(atmRad2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
   float rayLen = 2.0*AT; // длина луча до выхода из атмосферы или до касания с планетой
   if(r2 > atmRad2) {
-    if(OT < 0.0) return vec3(0); // направление от планеты
+    if(OT < 0.0) return scene_color; // направление от планеты
     // Камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
     start += dir * (OT - AT);
     r2 = atmRad2;
@@ -184,17 +185,15 @@ vec3 calculate_scattering(
       opt_i += density;
       
       ///////////////////////
-      
-      vec3 normal_i = normalize(pos_i);
-      // Косинус угла луча света к зениту
-      float NdotL = dot(light_dir, normal_i);
       float OT = dot(pos_i,light_dir);
       float CT2 = dot(pos_i,pos_i) - OT*OT;
       // оптическая глубина луча
       vec3 opt_l = vec3(0.0);
       
-      
       if(OT>0.0 || CT2 > plnRad2)  {
+        vec3 normal_i = normalize(pos_i);
+        // Косинус угла луча света к зениту
+        float NdotL = dot(light_dir, normal_i);
         opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
         // Now we need to calculate the attenuation
         // this is essentially how much light reaches the current sample point due to scattering
@@ -210,10 +209,11 @@ vec3 calculate_scattering(
     }
     
     // calculate how much light can pass through the atmosphere
-    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z));
+    vec3 opacity = allow_mie ? exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z)) : vec3(0);
     
     // calculate and return the final color
-    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI);
+    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI)
+      + scene_color*opacity;
 }
 
 //Функция рассеивания при пересечении с поверхностью
@@ -281,18 +281,16 @@ vec3 calculate_scattering2(
       opt_i += density;
       
       ///////////////////////
-      
-      vec3 normal_i = normalize(pos_i);
-      // Косинус угла луча света к зениту
-      float NdotL = dot(light_dir, normal_i);
       float OT = dot(pos_i,light_dir);
       float CT2 = dot(pos_i,pos_i) - OT*OT;
       // оптическая глубина луча
       vec3 opt_l = vec3(0.0);
       
-      
       if(OT>0.0 || CT2 > plnRad2)  {
-          opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
+        vec3 normal_i = normalize(pos_i);
+        // Косинус угла луча света к зениту
+        float NdotL = dot(light_dir, normal_i);
+        opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
         // Now we need to calculate the attenuation
         // this is essentially how much light reaches the current sample point due to scattering
         vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y) - ABSORPTION_BETA * (opt_i.z+opt_l.z));
@@ -614,7 +612,9 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   float t = raycast(ro, rd, tmin, tmax);
   //t = tmax+1.;
   if(t>tmax) {
-    col = calculate_scattering(ro, rd, light1);
+    float sunsin = sqrt(1.-sundot*sundot);
+    col = sunsin<SUN_DISC_ANGLE_SIN ? vec3(1) : vec3(0);
+    col = calculate_scattering(ro, rd, light1, col);
     /*
     // sky		
     col = SKY_COLOR - rd.y*rd.y*0.5; // градиент по высоте атмосферы
@@ -651,7 +651,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
     float xmin = 3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
-    float shd = LdotN<-xmin ? 0. : softShadow(pos/*-2.5*rd*/, light1, t);
+    float shd = LdotN<-xmin ? 0. : softShadow(pos, light1, t);
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
