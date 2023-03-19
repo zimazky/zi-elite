@@ -1,3 +1,4 @@
+import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
@@ -33,10 +34,12 @@ export default async function main() {
   console.log('localStorage',json);
   const obj = JSON.parse(json);
   let pos = Vec3.ZERO();
+  //let pos = new Vec3(0,120000,0);
   let quat = Quaternion.Identity();
   if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
+  const atm = new Atmosphere();
 
   e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
@@ -74,10 +77,10 @@ export default async function main() {
 
 
 
-    const sunAngle = 0.05*time;
+    const sunAngle = -0.1*Math.PI+0.005*time;
 //    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
     const sunDirection = new Vec3(0.,Math.sin(sunAngle),Math.cos(sunAngle)).normalizeMutable();
-    const cameraInShadow = camera.inShadow(sunDirection);
+    const cameraInShadow = camera.inShadow(atm, camera.position, sunDirection);
 
     e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);
     e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);

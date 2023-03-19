@@ -29,17 +29,18 @@ out vec4 fragColor;
 // Atmosphere scattering constants
 // ----------------------------------------------------------------------------
 
-const vec3 LIGHT_INTENSITY = vec3(12.);
-const vec3 PLANET_POS = vec3(0.);   // the position of the planet
-const float PLANET_RADIUS = 6371e3; // radius of the planet
-const float ATMOS_RADIUS = 6471e3;  // radius of the atmosphere
-//const vec3 RAY_BETA = vec3(0.0572e-4, 0.1003e-4, 0.1977e-4); // rayleigh, affects the color of the sky
+const vec3 LIGHT_INTENSITY = vec3(12.); // Интенсивность света
+const vec3 PLANET_POS = vec3(0.);   // Положение планеты
+const float PLANET_RADIUS = 6371e3; // Радиус планеты
+const float PLANET_RADIUS_SQR = PLANET_RADIUS*PLANET_RADIUS; // Квадрат радиуса планеты
+const float ATM_RADIUS = 6471e3;  // Радиус атмосферы
+const float ATM_RADIUS_SQR = ATM_RADIUS*ATM_RADIUS; // Квадрат радиуса атмосферы
 
 const vec3 RAY_BETA = vec3(5.5e-6, 13.0e-6, 22.4e-6); // rayleigh, affects the color of the sky
 const vec3 MIE_BETA = vec3(2e-7);     // mie, affects the color of the blob around the sun
 const vec3 AMBIENT_BETA = vec3(0.0);  // ambient, affects the scattering color when there is no lighting from the sun
 const vec3 ABSORPTION_BETA = vec3(2.04e-5, 4.97e-5, 1.95e-6); // what color gets absorbed by the atmosphere (Due to things like ozone)
-const float G = 0.99; // mie scattering direction, or how big the blob around the sun is
+const float G = 0.996; // mie scattering direction, or how big the blob around the sun is
 // and the heights (how far to go up before the scattering has no effect)
 const float HEIGHT_RAY = 8e3;        // rayleigh height
 const float HEIGHT_MIE = 1.2e3;      // and mie
@@ -80,238 +81,220 @@ const int MAP_HEIGHTS = 2;
 // x - нормализованная высота ((R+h)/H), h - высота над уровнем планеты
 // cosTheta - косинус угла наклона луча к зениту
 vec2 ChH(vec2 X, vec2 x, float cosTheta) {
-  vec2 c = /*1.2533*/ sqrt(X + x);
+  vec2 c = 1.2533*sqrt(X + x);
   // theta выше горизонта
   if(cosTheta >= 0.0) return c/(c*cosTheta + vec2(1.0)) * exp(-x);
   // theta ниже горизонта
   else {
       vec2 x0 = sqrt(vec2(1.0) - cosTheta*cosTheta) * (X+x);
-      vec2 c0 = /*1.2533*/ sqrt(x0);
+      vec2 c0 = 1.2533*sqrt(x0);
       return 2.0*c0*exp(X-x0) - c/(vec2(1.0) - c*cosTheta) * exp(-x);
   }
 }
 
+struct ResultScattering {
+  vec3 t; // Мультипликативная часть (transmittance), цвет поглощения
+  vec3 i; //Аддитивная часть (in-scatter), цвет подсвечивания за счет рассеивания атмосферы
+};
 
-//Функция рассеивания
-vec3 calculate_scattering(
-  vec3 start,               // the start of the ray (the camera position)
-  vec3 dir,                 // the direction of the ray (the camera vector)
-  vec3 light_dir,           // the direction of the light
-  vec3 scene_color          // цвет сцены в точке пересечения
-  ) {
-  
+/** 
+  * Функция вычисления атмосферного рассеивания
+  *   ro - положение камеры
+  *   rd - направление луча камеры
+  *   ld - направление на источник света
+  */
+ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld) {
   // Положение относительно центра планеты
-  start = vec3(0,start.y+PLANET_RADIUS,0);
+  //vec3 start = ro - PLANET_POS;
+  vec3 start = vec3(0, ro.y+PLANET_RADIUS, 0);
   
-  float atmRad = ATMOS_RADIUS;
-  float plnRad = PLANET_RADIUS;
-  
-  float r2 = dot(start,start);
-  float atmRad2 = atmRad*atmRad;
-  float OT = -dot(start,dir); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float r2 = dot(start,start); // квадрат расстояния до центра планеты
+  float OT = -dot(start,rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
   float CT2 = r2 - OT*OT; // квадрат минимального расстояния от луча до центра планеты
-  if(CT2 >= atmRad2) return scene_color; // луч проходит выше атмосферы
-  float AT = sqrt(atmRad2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
-  float rayLen = 2.0*AT; // длина луча до выхода из атмосферы или до касания с планетой
-  if(r2 > atmRad2) {
-    if(OT < 0.0) return scene_color; // направление от планеты
-    // Камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
-    start += dir * (OT - AT);
-    r2 = atmRad2;
+  if(CT2 >= ATM_RADIUS_SQR) return ResultScattering(vec3(0), vec3(1)); // луч проходит выше атмосферы
+  float AT = sqrt(ATM_RADIUS_SQR - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
+  float rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой
+  if(r2 > ATM_RADIUS_SQR) {
+    // выше атмосферы
+    if(OT < 0.) return ResultScattering(vec3(1), vec3(0)); // направление от планеты
+    // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
+    start += rd*(OT - AT);
+    r2 = ATM_RADIUS_SQR;
     OT = AT;
   }
-  else rayLen = AT - dot(start,dir);
+  else rayLen = AT - dot(start, rd); // пересчитываем длину луча с учетом нахождения внутри сферы атмосферы
 
   vec3 normal = normalize(start);
-  float NdotD = dot(normal,dir);
-  float plnRad2 = plnRad*plnRad;
-  bool allow_mie = true;
+  float NdotD = dot(normal, rd);
+  bool isPlanetIntersect = false;
   if(NdotD < 0.) {
     // Поиск длины луча в случае попадания в поверхность планеты
-    if(CT2 < plnRad2) {
-      rayLen = OT - sqrt(plnRad2 - CT2);
-      // prevent the mie glow from appearing if there's an object in front of the camera
-      allow_mie = false;
+    if(CT2 < PLANET_RADIUS_SQR) {
+      rayLen = OT - sqrt(PLANET_RADIUS_SQR - CT2);
+      isPlanetIntersect = true;
     }
   }
   
-  // определяем длину шага интегрирования по лучу
-  float step_size_i = rayLen / float(PRIMARY_STEPS);
-  // определяем начальное смещение на половину шага для более точного интегрирования по серединам отрезков
-  float ray_pos_i = step_size_i * 0.5;
-    
-  vec3 total_ray = vec3(0.0); // for rayleigh
-  vec3 total_mie = vec3(0.0); // for mie
-    
-  // initialize the optical depth. This is used to calculate how much air was in the ray
-  vec3 opt_i = vec3(0.0);
-    
-  // also init the scale height, avoids some vec2's later on
-  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
-    
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
-  // Для рассеяния Ми g принимают -0,76 ... -0,999.
+  // Для рассеяния Ми g принимают 0,76 ... 0,999.
   // Отрицательные значения g рассеивают больше в прямом направлении, а положительные - рассеивают свет назад к источнику света
-  float mu = dot(dir, light_dir);
+  float mu = dot(rd, ld);
   float mu2 = mu * mu;
   float g2 = G * G;
-  float phase_ray = 0.75 * (1.+mu2);
-  float phase_mie = allow_mie ? 1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5) : 0.;
+  float phaseRayleigh = 0.75 * (1. + mu2);
+  float phaseMie = isPlanetIntersect ? 0. : 1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5);
     
-  // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
-  for (int i = 0; i < PRIMARY_STEPS; ++i) {
-      
-      // calculate where we are along this ray
-      vec3 pos_i = start + dir * ray_pos_i;
-      
-      // and how high we are above the surface
-      float height_i = length(pos_i) - plnRad;
-      
-      // now calculate the density of the particles (both for rayleigh and mie)
-      vec3 density = vec3(exp(-height_i/scale_height), 0.);
+  float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
+  vec3 step = rd*stepSize; // шаг вдоль луча
+  vec3 pos = start + 0.5*step; // начальное смещение на половину шага для более точного интегрирования по серединам отрезков
 
-      // and the absorption density. this is for ozone, which scales together with the rayleigh, 
-      // but absorbs the most at a specific height, so use the sech function for a nice curve falloff for this height
-      // clamp it to avoid it going out of bounds. This prevents weird black spheres on the night side
-      float denom = (HEIGHT_ABSORPTION - height_i) / ABSORPTION_FALLOFF;
-      density.z = density.x/(denom*denom + 1.);
-        
-      // multiply it by the step size here
-      // we are going to use the density later on as well
-      density *= step_size_i;
-        
-      // Add these densities to the optical depth, so that we know how many particles are on this ray.
-      opt_i += density;
-      
-      ///////////////////////
-      float OT = dot(pos_i,light_dir);
-      float CT2 = dot(pos_i,pos_i) - OT*OT;
-      // оптическая глубина луча
-      vec3 opt_l = vec3(0.0);
-      
-      if(OT>0.0 || CT2 > plnRad2)  {
-        vec3 normal_i = normalize(pos_i);
-        // Косинус угла луча света к зениту
-        float NdotL = dot(light_dir, normal_i);
-        opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
-        // Now we need to calculate the attenuation
-        // this is essentially how much light reaches the current sample point due to scattering
-        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y) - ABSORPTION_BETA * (opt_i.z+opt_l.z));
+  // оптическая глубина x - Релея, y - Ми, z - озон
+  vec3 optDepth = vec3(0.);
+  vec3 totalRayleigh = vec3(0.);
+  vec3 totalMie = vec3(0.);
 
-        // accumulate the scattered light (how much will be scattered towards the camera)
-        total_ray += density.x * attn;
-        total_mie += density.y * attn;
-      }
+  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
+    
+  for (int i=0; i<PRIMARY_STEPS; i++) {
+    float height = length(pos) - PLANET_RADIUS;
+    /////////////////////////////////////////////////////////////
+    // TODO: плотность нужно линейно аппроксимировать на отрезке
+    vec3 density = stepSize*vec3(exp(-height/scale_height), 0.);
 
-        // and increment the position on this ray
-        ray_pos_i += step_size_i;
+    // плотность частиц поглощения (озона)
+    // масштабная высота поглощения соответствует высоте частиц Релея, но поглощение выражено на определенной высоте
+    // использование sech функции хорошо имитирует кривую плотности частиц поглощения
+    float d = (HEIGHT_ABSORPTION-height)/ABSORPTION_FALLOFF;
+    density.z = density.x/(d*d + 1.);
+    /////////////////////////////////////////////////////////////
+
+    // определение оптической глубины вдоль луча
+    optDepth += density;
+    
+    // определение виден ли источник света из данной точки
+    float OT = dot(pos, ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
+    float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
+    if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
+      // источник света виден из данной точки
+      vec3 normal = normalize(pos);
+      // косинус угла луча света к зениту
+      float NdotL = dot(normal, ld);
+      vec3 optDepth2 = vec3(0);
+      optDepth2.xy = scale_height * ChH(PLANET_RADIUS/scale_height, (length(pos)-PLANET_RADIUS)/scale_height, NdotL);
+      //////////////////////////////////////////////////////////////////////////////
+      // TODO: определить optDepth2.z (optAbsorption2)
+
+      // ослабление света за счет рассеивания
+      // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
+      vec3 attn = exp(
+        - RAY_BETA*(optDepth.x+optDepth2.x) 
+        - MIE_BETA*(optDepth.y+optDepth2.y)
+        - ABSORPTION_BETA*(optDepth.z+optDepth2.z)
+        );
+
+      // total += T(CP) * T(PA) * ρ(h) * ds
+      totalRayleigh += density.x * attn;
+      totalMie += density.y * attn;
     }
-    
-    // calculate how much light can pass through the atmosphere
-    vec3 opacity = allow_mie ? exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z)) : vec3(0);
-    
-    // calculate and return the final color
-    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI)
-      + scene_color*opacity;
+    pos += step;
+  }
+  vec3 inScatter = isPlanetIntersect 
+    ?
+    exp(-(RAY_BETA*optDepth.x + ABSORPTION_BETA*optDepth.z))
+    :
+    exp(-(MIE_BETA*optDepth.y + RAY_BETA*optDepth.x + ABSORPTION_BETA*optDepth.z));
+
+  // I = I_S * β(λ) * γ(θ) * total
+  vec3 transmittance = (
+    phaseRayleigh*RAY_BETA*totalRayleigh 
+    + phaseMie*MIE_BETA*totalMie
+    + optDepth.x*AMBIENT_BETA
+    )/(4.*PI);
+  return ResultScattering(transmittance, inScatter);
 }
 
 //Функция рассеивания при пересечении с поверхностью
-vec3 calculate_scattering2(
-  vec3 start,               // the start of the ray (the camera position)
-  vec3 dir,                 // the direction of the ray (the camera vector)
-  vec3 light_dir,           // the direction of the light
-  float rayLen,             // расстояние до точки пересечения с поверхностью
-  vec3 scene_color          // цвет сцены в точке пересечения
-  ) {
+ResultScattering calculate_scattering2(vec3 ro, vec3 rd, vec3 ld, float rayLen) {
   
   // Положение относительно центра планеты
-  start = vec3(0,start.y+PLANET_RADIUS,0);
+  //vec3 start = ro - PLANET_POS;
+  vec3 start = vec3(0, ro.y+PLANET_RADIUS, 0);
   
-  float atmRad = ATMOS_RADIUS;
-  float plnRad = PLANET_RADIUS;
-  float plnRad2 = plnRad*plnRad;
-  // определяем длину шага интегрирования по лучу
-  float step_size_i = rayLen / float(PRIMARY_STEPS);
-  // определяем начальное смещение на половину шага для более точного интегрирования по серединам отрезков
-  float ray_pos_i = step_size_i * 0.5;
-    
-  vec3 total_ray = vec3(0.0); // for rayleigh
-  vec3 total_mie = vec3(0.0); // for mie
-    
-  // initialize the optical depth. This is used to calculate how much air was in the ray
-  vec3 opt_i = vec3(0.0);
-    
-  // also init the scale height, avoids some vec2's later on
-  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
-    
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
-  // Для рассеяния Ми g принимают -0,76 ... -0,999.
+  // Для рассеяния Ми g принимают 0,76 ... 0,999.
   // Отрицательные значения g рассеивают больше в прямом направлении, а положительные - рассеивают свет назад к источнику света
-  float mu = dot(dir, light_dir);
+  float mu = dot(rd, ld);
   float mu2 = mu * mu;
-  float g2 = G*G;
-  float phase_ray = 0.75 * (1.+mu2);
-  float phase_mie = 0.; //1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5);
+  float g2 = G * G;
+  float phaseRayleigh = 0.75 * (1. + mu2);
+  float phaseMie = 0.; //1.5*(1.-g2)/(2.+g2) * (1.+mu2)/pow(1.+g2-2.*mu*G, 1.5);
     
-  // now we need to sample the 'primary' ray. this ray gathers the light that gets scattered onto it
-  for (int i = 0; i < PRIMARY_STEPS; ++i) {
-      
-      // calculate where we are along this ray
-      vec3 pos_i = start + dir * ray_pos_i;
-      
-      // and how high we are above the surface
-      float height_i = length(pos_i) - plnRad;
-      
-      // now calculate the density of the particles (both for rayleigh and mie)
-      vec3 density = vec3(exp(-height_i/scale_height), 0.);
+  float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
+  vec3 step = rd*stepSize; // шаг вдоль луча
+  vec3 pos = start + 0.5*step; // начальное смещение на половину шага для более точного интегрирования по серединам отрезков
 
-      // and the absorption density. this is for ozone, which scales together with the rayleigh, 
-      // but absorbs the most at a specific height, so use the sech function for a nice curve falloff for this height
-      // clamp it to avoid it going out of bounds. This prevents weird black spheres on the night side
-      float denom = (HEIGHT_ABSORPTION - height_i) / ABSORPTION_FALLOFF;
-      density.z = density.x/(denom*denom + 1.);
-        
-      // multiply it by the step size here
-      // we are going to use the density later on as well
-      density *= step_size_i;
-        
-      // Add these densities to the optical depth, so that we know how many particles are on this ray.
-      opt_i += density;
-      
-      ///////////////////////
-      float OT = dot(pos_i,light_dir);
-      float CT2 = dot(pos_i,pos_i) - OT*OT;
-      // оптическая глубина луча
-      vec3 opt_l = vec3(0.0);
-      
-      if(OT>0.0 || CT2 > plnRad2)  {
-        vec3 normal_i = normalize(pos_i);
-        // Косинус угла луча света к зениту
-        float NdotL = dot(light_dir, normal_i);
-        opt_l.xy = scale_height * ChH(plnRad/scale_height, (length(pos_i)-plnRad)/scale_height, NdotL);
-        // Now we need to calculate the attenuation
-        // this is essentially how much light reaches the current sample point due to scattering
-        vec3 attn = exp(-RAY_BETA*(opt_i.x+opt_l.x) - MIE_BETA*(opt_i.y+opt_l.y) - ABSORPTION_BETA * (opt_i.z+opt_l.z));
+  // оптическая глубина x - Релея, y - Ми, z - озон
+  vec3 optDepth = vec3(0.);
+  vec3 totalRayleigh = vec3(0.);
+  vec3 totalMie = vec3(0.);
 
-        // accumulate the scattered light (how much will be scattered towards the camera)
-        total_ray += density.x * attn;
-        total_mie += density.y * attn;
-      }
+  vec2 scale_height = vec2(HEIGHT_RAY, HEIGHT_MIE);
+    
+  for (int i=0; i<PRIMARY_STEPS; i++) {
+    float height = length(pos) - PLANET_RADIUS;
+    /////////////////////////////////////////////////////////////
+    // TODO: плотность нужно линейно аппроксимировать на отрезке
+    vec3 density = stepSize*vec3(exp(-height/scale_height), 0.);
 
-        // and increment the position on this ray
-        ray_pos_i += step_size_i;
+    // плотность частиц поглощения (озона)
+    // масштабная высота поглощения соответствует высоте частиц Релея, но поглощение выражено на определенной высоте
+    // использование sech функции хорошо имитирует кривую плотности частиц поглощения
+    float d = (HEIGHT_ABSORPTION-height)/ABSORPTION_FALLOFF;
+    density.z = density.x/(d*d + 1.);
+    /////////////////////////////////////////////////////////////
+
+    // определение оптической глубины вдоль луча
+    optDepth += density;
+    
+    // определение виден ли источник света из данной точки
+    float OT = dot(pos, ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
+    float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
+    if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
+      // источник света виден из данной точки
+      vec3 normal = normalize(pos);
+      // косинус угла луча света к зениту
+      float NdotL = dot(normal, ld);
+      vec3 optDepth2 = vec3(0);
+      optDepth2.xy = scale_height * ChH(PLANET_RADIUS/scale_height, (length(pos)-PLANET_RADIUS)/scale_height, NdotL);
+      //////////////////////////////////////////////////////////////////////////////
+      // TODO: определить optDepth2.z (optAbsorption2)
+
+      // ослабление света за счет рассеивания
+      // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
+      vec3 attn = exp(
+        - RAY_BETA*(optDepth.x+optDepth2.x) 
+        - MIE_BETA*(optDepth.y+optDepth2.y)
+        - ABSORPTION_BETA*(optDepth.z+optDepth2.z)
+        );
+
+      // total += T(CP) * T(PA) * ρ(h) * ds
+      totalRayleigh += density.x * attn;
+      totalMie += density.y * attn;
     }
-    
-    // calculate how much light can pass through the atmosphere
-    vec3 opacity = exp(-(MIE_BETA*opt_i.y + RAY_BETA*opt_i.x + ABSORPTION_BETA*opt_i.z));
-    
-    // calculate and return the final color
-    return (phase_ray*RAY_BETA*total_ray + phase_mie*MIE_BETA*total_mie + opt_i.x*AMBIENT_BETA)*LIGHT_INTENSITY/(4.*PI) 
-      + scene_color*opacity;
-}
+    pos += step;
+  }
+  vec3 inScatter = exp(-(RAY_BETA*optDepth.x + ABSORPTION_BETA*optDepth.z));
 
+  // I = I_S * β(λ) * γ(θ) * total
+  vec3 transmittance = (
+    phaseRayleigh*RAY_BETA*totalRayleigh 
+    + phaseMie*MIE_BETA*totalMie
+    + optDepth.x*AMBIENT_BETA
+    )/(4.*PI);
+  return ResultScattering(transmittance, inScatter);
+}
 
 // ----------------------------------------------------------------------------
 // Операции с кватернионами
@@ -592,7 +575,7 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-const float kMaxT = 150000.0;
+const float kMaxT = 30000.0;
 const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
 const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
 const vec3 SKY_COLOR = vec3(0.3,0.5,0.85);
@@ -612,26 +595,11 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   float t = raycast(ro, rd, tmin, tmax);
   //t = tmax+1.;
   if(t>tmax) {
+    // небо
     float sunsin = sqrt(1.-sundot*sundot);
-    col = sunsin<SUN_DISC_ANGLE_SIN ? vec3(1) : vec3(0);
-    col = calculate_scattering(ro, rd, light1, col);
-    /*
-    // sky		
-    col = SKY_COLOR - rd.y*rd.y*0.5; // градиент по высоте атмосферы
-    col = mix(col, 0.85*vec3(0.7,0.75,0.85), pow(1.0-max(rd.y,0.0), 4.0));
-    // sun
-    col += 0.25*vec3(1.0,0.7,0.4)*pow(sundot,5.0);
-    col += 0.25*vec3(1.0,0.8,0.6)*pow(sundot,64.0);
-    col += 0.2*vec3(1.0,0.8,0.6)*pow(sundot,512.0);
-    // clouds
-    //vec2 sc = ro.xz + rd.xz*(10000.0-ro.y)/rd.y;
-    //col = mix(col, vec3(1.0,0.95,1.0), 0.5*smoothstep(0.5,0.8,fbm(0.00005*sc)));
-    // horizon
-    col = mix( col, HORIZON_COLOR, pow(1.0-max(rd.y,0.0), 16.0));
-    // sun
-    //float sundisk = 1.-step(0.03, sqrt(1.-sundot*sundot));
-    //col += vec3(sundisk*10.);
-    */
+    col = sunsin<SUN_DISC_ANGLE_SIN ? vec3(1.,0.8,0.6) : vec3(0);
+    ResultScattering rs = scattering(ro, rd, light1);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = -1.0;
   }
   else {
@@ -706,7 +674,8 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
     //col = mix(col, FOG_COLOR, fo );
 
-    col = calculate_scattering2(ro,rd,light1,t,col);
+    ResultScattering rs = calculate_scattering2(ro,rd,light1,t);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
 
 	}
   // sun scatter

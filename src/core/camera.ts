@@ -1,3 +1,4 @@
+import { Atmosphere } from "./atmosphere";
 import { isKeyPress, isKeyDown } from "./keyboard";
 import { Quaternion } from "./quaternion";
 import { TerrainSampler } from "./terrain";
@@ -64,8 +65,10 @@ export class Camera {
     this.mapScale = 1.;
   }
 
-  inShadow(sunDir: Vec3): number {
-    const s = this.tSampler.softShadow(this.position, sunDir);
+  inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {
+    const planetShadow = atm.planetIntersection(pos,sunDir);
+    if(planetShadow<=0.001) return 0.;
+    const s = planetShadow*this.tSampler.softShadow(this.position, sunDir);
     return Math.pow(s, 4.);
   }
 

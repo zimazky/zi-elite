@@ -52,6 +52,7 @@ interface IMatrixes<T> {
 export class Vec4 implements IVectors<Vec4> {
   x: number; y: number; z: number; w: number;
   static ZERO = () => new Vec4(0.,0.,0.,0.);
+  static ONE = () => new Vec4(1.,1.,1.,1.);
   static I = () => new Vec4(1.,0.,0.,0.);
   static J = () => new Vec4(0.,1.,0.,0.);
   static K = () => new Vec4(0.,0.,1.,0.);
@@ -151,6 +152,7 @@ export class Mat4 implements IMatrixes<Vec4> {
 export class Vec3 implements IVectors<Vec3> {
   x: number; y: number; z: number;
   static ZERO = () => new Vec3(0.,0.,0.);
+  static ONE = () => new Vec3(1.,1.,1.);
   static I = () => new Vec3(1.,0.,0.);
   static J = () => new Vec3(0.,1.,0.);
   static K = () => new Vec3(0.,0.,1.);
@@ -215,6 +217,10 @@ export class Vec3 implements IVectors<Vec3> {
 
   fract(): Vec3 { return this.copy().subMutable(this.floor()); }
 
+  exp(): Vec3 {
+    return new Vec3(Math.exp(this.x), Math.exp(this.y), Math.exp(this.z));
+  }
+
 /** Векторное произведение */
   cross(v: Vec3): Vec3 {
     return new Vec3(
@@ -254,6 +260,7 @@ export class Mat3 implements IMatrixes<Vec3> {
 export class Vec2 implements IVectors<Vec2> {
   x: number; y: number;
   static ZERO = () => new Vec2(0.,0.);
+  static ONE = () => new Vec2(1.,1.);
   static I = () => new Vec2(1.,0.);
   static J = () => new Vec2(0.,1.);
 

@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------------------
 // Генерация ландшафта
 // ----------------------------------------------------------------------------
+import { smoothstep } from "./mathutils";
 import { NoiseSampler } from "./noise";
 import { Mat2, Vec2, Vec3 } from "./vectors";
 
@@ -13,13 +14,6 @@ const im2 = new Mat2(new Vec2(0.8,-0.6), new Vec2(0.6,0.8)); // матрица �
 const W_SCALE = 3000.; // масштаб по горизонтали
 const H_SCALE = 1100.; // масштаб по высоте
 const MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота ландшафта для вычисления теней
-
-function smoothstep(min:number, max:number, x:number): number {
-  if(x < min) return 0.;
-  if(x >= max) return 1.;
-  const d = (x-min)/(max-min);
-  return d*d*(3.-2.*d);
-}
 
 export class TerrainSampler {
   private _noiseSampler: NoiseSampler;
