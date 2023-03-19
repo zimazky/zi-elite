@@ -84,12 +84,12 @@ export class Atmosphere {
     //const start = ro.sub(PLANET_POS);
     const start = new Vec3(0,ro.y+PLANET_RADIUS,0);
 
-    let r2 = start.dot(start);  // квадрат расстояния до центра планеты
+    let r2 = start.dot(start); // квадрат расстояния до центра планеты
     let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
-    const CT2 = r2 - OT*OT;     // квадрат минимального расстояния от луча до центра планеты
+    const CT2 = r2 - OT*OT;    // квадрат минимального расстояния от луча до центра планеты
     if(CT2 >= ATM_RADIUS_SQR) return { t:Vec3.ONE(), i:Vec3.ZERO() }; // луч проходит выше атмосферы
     const AT = Math.sqrt(ATM_RADIUS_SQR-CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
-    let rayLen = 2.*AT;         // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
+    let rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
     if(r2 > ATM_RADIUS_SQR) {
       // выше атмосферы
       if(OT < 0.) return { t:Vec3.ONE(), i:Vec3.ZERO() }; // направление от планеты
@@ -197,7 +197,7 @@ export class Atmosphere {
       .addMutable(this.betaMie.mulEl(totalMie).mulMutable(phaseMie))
       .addMutable(this.betaAmbient.mul(optRayleigh))
       .divMutable(4.*Math.PI);
-    
+
     return { t: transmittance, i: inScatter };
   }
 

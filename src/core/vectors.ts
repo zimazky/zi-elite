@@ -193,6 +193,12 @@ export class Vec3 implements IVectors<Vec3> {
 
   normalizeMutable(): Vec3 { return this.divMutable(Math.sqrt(this.dot(this))); }
 
+  safeNormalize(): Vec3 { 
+    const d = Math.sqrt(this.dot(this));
+    if(d<Number.MIN_VALUE) return Vec3.ZERO();
+    return this.div(d); 
+  }
+
   add(v: Vec3): Vec3 { return this.copy().addMutable(v); }
 
   sub(v: Vec3): Vec3 { return this.copy().subMutable(v); }

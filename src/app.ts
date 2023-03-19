@@ -23,8 +23,12 @@ export default async function main() {
   let cameraAngularSpeedLocation: WebGLUniformLocation; // Скорость вращения по осям 
   let screenModeLocation: WebGLUniformLocation;
   let mapScaleLocation: WebGLUniformLocation;
-  let sunDirectionLocation: WebGLUniformLocation; // Направление на солнце
   let cameraInShadowLocation: WebGLUniformLocation; // Признак нахождения камеры в тени
+
+  let sunDirectionLocation: WebGLUniformLocation; // Направление на солнце
+  let sunDiscAngleSinLocation: WebGLUniformLocation; // Синус углового размера солнца
+  let sunDiscColorLocation: WebGLUniformLocation; // Цвет диска солнца
+  let skyColorLocation: WebGLUniformLocation; // Цвет неба
 
   initKeyBuffer();
 
@@ -36,7 +40,7 @@ export default async function main() {
   let pos = Vec3.ZERO();
   //let pos = new Vec3(0,120000,0);
   let quat = Quaternion.Identity();
-  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
@@ -51,6 +55,11 @@ export default async function main() {
     cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
 
     sunDirectionLocation = e.getUniformLocation(program, 'uSunDirection');
+    sunDiscColorLocation = e.getUniformLocation(program, 'uSunDiscColor');
+    sunDiscAngleSinLocation = e.getUniformLocation(program, 'uSunDiscAngleSin');
+    e.gl.uniform1f(sunDiscAngleSinLocation, 0.5*0.01745);
+
+    skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
 
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
@@ -79,7 +88,7 @@ export default async function main() {
 
     const sunAngle = -0.1*Math.PI+0.005*time;
 //    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
-    const sunDirection = new Vec3(0.,Math.sin(sunAngle),Math.cos(sunAngle)).normalizeMutable();
+    const sunDirection = new Vec3(Math.sin(sunAngle),0.5*Math.sin(sunAngle),Math.cos(sunAngle)).normalizeMutable();
     const cameraInShadow = camera.inShadow(atm, camera.position, sunDirection);
 
     e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);
@@ -93,14 +102,32 @@ export default async function main() {
       const vkmph = v*3.6;
       const width = e.canvas.width.toFixed(0);
       const height = e.canvas.height.toFixed(0);
+
+      // Определение цвета неба и цвета диска солнца
+      const pos = new Vec3(camera.position.x, 0., camera.position.z); // положение для которого рассчитываем цвета
+      const sunDir = sunDirection.copy();
+      if(sunDir.y<0.) sunDir.y = 0.;
+      sunDir.normalizeMutable();
+      const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
+      const sunIntensity = new Vec3(1., 0.8, 0.5).mulMutable(10.);
+//      const sunIntensity = new Vec3(1., 1., 1.).mulMutable(10.);
+      const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
+      e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
+      const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
+      const skyColor = Vec3.ONE().mulMutable(10.).mulEl(skyDirScatter.t).mulMutable(4.*Math.PI);
+      e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
+
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
       alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
-      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
+      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}
+      sun: ${sunColor.x.toFixed(2)}, ${sunColor.y.toFixed(2)}, ${sunColor.z.toFixed(2)}
+      sky: ${skyColor.x.toFixed(2)}, ${skyColor.y.toFixed(2)}, ${skyColor.z.toFixed(2)}`;
+
       infoRefreshTime = time + 0.5;
     }
-    // Сохранение координат в локальнре хранилище каждые 5 секунд
     if(time>positionStoreTime) {
+      // Сохранение координат в локальнре хранилище каждые 5 секунд
       const dataString = JSON.stringify({ position: camera.position, orientation: camera.orientation });
       localStorage.setItem('data', dataString);
       //console.log(dataString);

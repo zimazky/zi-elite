@@ -14,7 +14,10 @@ uniform vec4 uCameraQuaternion;
 uniform float uCameraViewAngle;
 
 uniform float uCameraInShadow;
+uniform float uSunDiscAngleSin;
 uniform vec3 uSunDirection;
+uniform vec3 uSunDiscColor;
+uniform vec3 uSkyColor;
 
 uniform vec2 uScreenMode;
 uniform float uMapScale;
@@ -448,7 +451,6 @@ vec3 rayCamera(Camera c, vec2 uv) {
 // ----------------------------------------------------------------------------
 
 // функция определения затененности
-const float SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
 float softShadow(vec3 ro, vec3 rd, float dis) {
   float minStep = clamp(0.01*dis,10.,500.);
   float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
@@ -460,33 +462,11 @@ float softShadow(vec3 ro, vec3 rd, float dis) {
     if(p.y>MAX_TRN_ELEVATION) break;
     float h = p.y - terrainM(p.xz);
 	  res = min(res, cosA*h/t);
-    if(res<-SUN_DISC_ANGLE_SIN) break;
+    if(res<-uSunDiscAngleSin) break;
     t += max(minStep, abs(1.*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
+  return smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
 }
-/*
-  softShadow(ro: Vec3, rd: Vec3): number {
-    const SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
-    const minStep = 1.;
-    let res = 1.;
-    let t = 0.1;
-    const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
-    for(let i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
-      const p = ro.add(rd.mul(t));
-      if(p.y > MAX_TRN_ELEVATION) break;
-      const h = p.y - this.terrainM(new Vec2(p.x,p.z));
-      res = Math.min(res, cosA*h/t);
-      if(res<-SUN_DISC_ANGLE_SIN) break;
-      t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
-    }
-    //return res<0. ? 0. : (res>1. ? 1. : res);//clamp(res,0.,1.);
-    return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
-    //return smoothstep(0.,SUN_DISC_ANGLE_TAN,res);
-  }
-*/
-
-
 
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   float t = tmin;
@@ -575,12 +555,26 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
+
+/** 
+  * Функция определения пересечения луча с планетой
+  *   ro - положение камеры
+  *   rd - направление луча
+  * Возвращает true если луч пересекается с планетой
+  */
+float planetIntersection(vec3 ro, vec3 rd) {
+  //const pos = ro.sub(PLANET_POS);
+  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
+  if(OT>0. || CT2>PLANET_RADIUS_SQR) return 1.;
+  return 0.;
+}
+
+
 const float kMaxT = 30000.0;
-const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
-const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
-const vec3 SKY_COLOR = vec3(0.3,0.5,0.85);
-const vec3 FOG_COLOR = vec3(0.26,0.4225,0.65);
-const vec3 HORIZON_COLOR = vec3(0.272,0.442,0.68);
+//const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
+//const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
 
 vec4 render(vec3 ro, vec3 rd, float initDist)
 {
@@ -597,7 +591,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   if(t>tmax) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
-    col = sunsin<SUN_DISC_ANGLE_SIN ? vec3(1.,0.8,0.6) : vec3(0);
+    col = sunsin<uSunDiscAngleSin ? vec3(1.,0.8,0.6)*planetIntersection(ro,rd) : vec3(0);
     ResultScattering rs = scattering(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = -1.0;
@@ -618,7 +612,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     float amb = clamp(0.5+0.5*nor.y, 0., 1.);
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
-    float xmin = 3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
+    float xmin = 6.*uSunDiscAngleSin; //3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
     float shd = LdotN<-xmin ? 0. : softShadow(pos, light1, t);
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
@@ -626,7 +620,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 
 	  //vec3 lamb = 2.*AMBIENT_LIGHT*amb*lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lambert(kd, RdotN, LdotN);
 	  //vec3 lomm = 2.*AMBIENT_LIGHT*amb*lommel_seeliger(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lommel_seeliger(kd, RdotN, LdotN);
-	  vec3 lunar = 2.*AMBIENT_LIGHT*amb*lunar_lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lunar_lambert(kd, RdotN, LdotN);
+	  vec3 lunar = uSkyColor*amb*lunar_lambert(kd, RdotN, amb) + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN);
     col = lunar;//mix(lomm, lunar, LvsR);
     
     // specular
@@ -679,7 +673,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 
 	}
   // sun scatter
-  col += uCameraInShadow*0.3*vec3(1.0,0.7,0.3)*pow(sundot, 8.0);
+  col += uCameraInShadow*0.3*uSunDiscColor*pow(sundot, 8.0)/LIGHT_INTENSITY;
 
   return vec4(col, t);
 }
