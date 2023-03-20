@@ -66,7 +66,7 @@ export class Camera {
   }
 
   inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {
-    const planetShadow = atm.planetIntersection(pos,sunDir);
+    const planetShadow = atm.softPlanetShadow(pos,sunDir);
     if(planetShadow<=0.001) return 0.;
     const s = planetShadow*this.tSampler.softShadow(this.position, sunDir);
     return Math.pow(s, 4.);

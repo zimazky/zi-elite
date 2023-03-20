@@ -76,7 +76,7 @@ export class Engine extends GLContext {
     return this.gl.getUniformLocation(program, name);
   }
 
-  setTexture(program: WebGLProgram, uname: string, img: TexImageSource) {
+  setTexture(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
     const texture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
@@ -88,7 +88,9 @@ export class Engine extends GLContext {
     this.gl.generateMipmap(this.gl.TEXTURE_2D);
     const textureLocation = this.gl.getUniformLocation(program, uname);
     // Tell the shader to use texture unit 0 for u_texture
-    this.gl.uniform1i(textureLocation, 0);
+    this.gl.uniform1i(textureLocation, num);
+    
+    return texture;
   }
 
   private loop(): void {

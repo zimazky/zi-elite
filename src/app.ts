@@ -1,6 +1,6 @@
 import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
-import { SUN_DISC_ANGLE_SIN } from './core/constants';
+import { SUN_COLOR, SUN_DISC_ANGLE_SIN } from './core/constants';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
@@ -34,7 +34,9 @@ export default async function main() {
   initKeyBuffer();
 
   const img = await loadImage('textures/gray_noise.png');
+  const img2 = await loadImage('textures/blue_noise.png');
   const tSampler = new TerrainSampler(new NoiseSampler(img));
+
   const json = localStorage.getItem('data') ?? '{}';
   console.log('localStorage',json);
   const obj = JSON.parse(json);
@@ -65,7 +67,14 @@ export default async function main() {
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
 
-    e.setTexture(program, 'uTexture', img);
+    const texture1 = e.setTexture(program, 'uTextureGrayNoise', img, 0);
+    const texture2 = e.setTexture(program, 'uTextureBlueNoise', img2, 1);
+
+    e.gl.activeTexture(e.gl.TEXTURE0);
+    e.gl.bindTexture(e.gl.TEXTURE_2D, texture1);
+    e.gl.activeTexture(e.gl.TEXTURE1);
+    e.gl.bindTexture(e.gl.TEXTURE_2D, texture2);
+
   }
   
   e.onProgramLoop = (time, timeDelta) => {
@@ -110,12 +119,11 @@ export default async function main() {
       if(sunDir.y<0.) sunDir.y = 0.;
       sunDir.normalizeMutable();
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
-//      const sunIntensity = new Vec3(1., 0.8, 0.5).mulMutable(10.);
-      const sunIntensity = new Vec3(0.9420, 1.0269, 1.0241).mulMutable(10.);
+      const sunIntensity = SUN_COLOR.mul(10.);
       const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
       const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
-      const skyColor = Vec3.ONE().mulMutable(10.).mulEl(skyDirScatter.t).mulMutable(4.*Math.PI);
+      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI);
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}

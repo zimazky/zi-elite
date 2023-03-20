@@ -45,13 +45,13 @@ export class Atmosphere {
    *   cosTheta - косинус угла наклона луча к зениту
    */
   ChH(X:number, x:number, cosTheta:number): number {
-    const c = /*1.2533*/ Math.sqrt(X + x);
+    const c = 1.2533*Math.sqrt(X + x);
     // theta выше горизонта
     if(cosTheta >= 0.) return c/(c*cosTheta + 1.)*Math.exp(-x);
     // theta ниже горизонта
     else {
       const x0 = Math.sqrt(1. - cosTheta*cosTheta)*(X + x);
-      const c0 = /*1.2533*/ Math.sqrt(x0);
+      const c0 = 1.2533*Math.sqrt(x0);
       return 2.*c0*Math.exp(X-x0) - c/(1.-c*cosTheta)*Math.exp(-x);
     }
   }
@@ -63,7 +63,7 @@ export class Atmosphere {
    *   rd - направление луча
    * Возвращает true если луч пересекается с планетой
    */
-  planetIntersection(ro: Vec3, rd: Vec3): number {
+  softPlanetShadow(ro: Vec3, rd: Vec3): number {
     //const pos = ro.sub(PLANET_POS);
     const pos = new Vec3(0, ro.y+PLANET_RADIUS, 0);
     const OT = pos.dot(rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты

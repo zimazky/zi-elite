@@ -5,7 +5,8 @@ precision lowp float;
 
 uniform vec2 uResolution;
 uniform vec2 uTime;
-uniform sampler2D uTexture;
+uniform sampler2D uTextureGrayNoise;
+uniform sampler2D uTextureBlueNoise;
 
 uniform vec4 uCameraPosition;
 uniform vec3 uCameraVelocity;
@@ -336,10 +337,10 @@ vec3 noised(vec2 x) {
     vec2 du = 6.0*f*(1.0-f);
 
   vec2 p = floor(x);
-  float a = textureLod(uTexture, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
-  float b = textureLod(uTexture, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
-  float c = textureLod(uTexture, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
-  float d = textureLod(uTexture, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
 
   return vec3((a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y),
                du*(u.yx*(a-b-c+d) + vec2(b,c) - a));
@@ -519,10 +520,10 @@ const mat2 m2 = mat2(0.8,-0.6,0.6,0.8);
 float fbm(vec2 p)
 {
   float f = 0.0;
-  f += 0.5000*texture(uTexture, p/256.0 ).x; p = m2*p*2.02;
-  f += 0.2500*texture(uTexture, p/256.0 ).x; p = m2*p*2.03;
-  f += 0.1250*texture(uTexture, p/256.0 ).x; p = m2*p*2.01;
-  f += 0.0625*texture(uTexture, p/256.0 ).x;
+  f += 0.5000*texture(uTextureGrayNoise, p/256.0 ).x; p = m2*p*2.02;
+  f += 0.2500*texture(uTextureGrayNoise, p/256.0 ).x; p = m2*p*2.03;
+  f += 0.1250*texture(uTextureGrayNoise, p/256.0 ).x; p = m2*p*2.01;
+  f += 0.0625*texture(uTextureGrayNoise, p/256.0 ).x;
   return f/0.9375;
 }
 
@@ -530,11 +531,11 @@ float fbm(vec2 p)
 // определение цвета пикселя
 Material terrain_color(vec3 pos, vec3 nor) {
   // мелкий шум в текстуре
-  float r = texture(uTexture, 400.0*pos.xz/W_SCALE ).x;
+  float r = texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
   // полосы на скалах
   vec3 kd = (r*0.25+0.75)*0.9*mix( vec3(0.08,0.05,0.03),
                  vec3(0.10,0.09,0.08), 
-                 texture(uTexture, vec2(0.0077*pos.x/W_SCALE,0.3*pos.y/H_SCALE)).x);
+                 texture(uTextureGrayNoise, vec2(0.0077*pos.x/W_SCALE,0.3*pos.y/H_SCALE)).x);
   //kd = vec3(0.05);
   // песок
   float sn = smoothstep(0.7,0.9,nor.y);
@@ -743,6 +744,43 @@ mat3 mat2sRGB = mat3(
   -0.0283, -0.1119,  1.0491
 );
 
+/**
+ * Преобразование в линейное цветовое пространство из sRGB
+ */
+vec3 eotf(vec3 arg) {
+	return 
+    // точное преобразование с помощью кусочной функции
+		//mix( arg / 12.92, pow( ( arg + .055 ) / 1.055, vec3( 2.4 ) ), lessThan( vec3( .04045 ), arg ) );
+		pow(arg, vec3(2.2));
+}
+
+/**
+ * Преобразование в sRGB из линейного цветового пространства
+ */
+vec3 oetf(vec3 arg) {
+	return 
+    // точное преобразование с помощью кусочной функции
+		//mix( 12.92 * arg, 1.055 * pow( arg, vec3( .416667 ) ) - .055, lessThan( vec3( .0031308 ), arg ) );
+		pow(arg, vec3(1./2.2));
+}
+
+/**
+ * Квантование цвета и дитеринг (добавление шума, чтобы не было резких переходов между квантами цвета)
+ * quant = 1./255.
+ */
+
+
+vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
+	vec3 noise = .5/65536. +
+    texelFetch( uTextureBlueNoise, ivec2( fcoord / 8. ) & ( 1024 - 1 ), 0 ).xyz * 255./65536. +
+    texelFetch( uTextureBlueNoise, ivec2( fcoord )		 & ( 1024 - 1 ), 0 ).xyz * 255./256.;
+	vec3 c0 = floor( oetf( col ) / quant ) * quant;
+	vec3 c1 = c0 + quant;
+	vec3 discr = mix( eotf( c0 ), eotf( c1 ), noise );
+	return mix( c0, c1, lessThan( discr, col ) );
+}
+
+
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
   //vec2 m = iMouse.xy-0.5*iResolution.xy;
@@ -761,16 +799,17 @@ void main(void) {
   vec2 screen = uScreenMode;
   vec4 col = vec4(0.);
   if(screen.x==MAP_VIEW) col = showMap(c, uv, int(screen.y));
-  else 
+  else { 
     col = render(c.pos, rd, 1.);
+    col.rgb =  col.rgb*mat2sRGB; // Преобразование в sRGB
+  }
   //if(screen.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
-  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
-
-  vec3 color =  mix(col.rgb*mat2sRGB,col.rgb,LvsR); // Преобразование в sRGB
-  color = pow(color, vec3(1./2.2)); // Gamma correction
-  //color = color*mat2sRGB; // Преобразование в sRGB
+  // Квантование и дитеринг с гамма-коррекцией
+  vec3 color = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+  //vec3 color = oetf(col.rgb);
 
   fragColor = vec4( color, 1. );
 }
+ 
