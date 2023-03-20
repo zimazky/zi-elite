@@ -736,6 +736,13 @@ vec4 showMap(Camera c, vec2 uv, int mode) {
   return vec4(col,-1.);
 }
 
+// Матрица преобразования цветового пространства из базиса (615,535,445) в sRGB
+mat3 mat2sRGB = mat3(
+   1.6218, -0.4493,  0.0325,
+  -0.0374,  1.0598, -0.0742,
+  -0.0283, -0.1119,  1.0491
+);
+
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
   //vec2 m = iMouse.xy-0.5*iResolution.xy;
@@ -759,7 +766,11 @@ void main(void) {
   //if(screen.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
-  
-  vec3 color = pow(col.rgb, vec3(1.0/2.2)); // Gamma correction
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
+  vec3 color =  mix(col.rgb*mat2sRGB,col.rgb,LvsR); // Преобразование в sRGB
+  color = pow(color, vec3(1./2.2)); // Gamma correction
+  //color = color*mat2sRGB; // Преобразование в sRGB
+
   fragColor = vec4( color, 1. );
 }

@@ -110,8 +110,8 @@ export default async function main() {
       if(sunDir.y<0.) sunDir.y = 0.;
       sunDir.normalizeMutable();
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
-      const sunIntensity = new Vec3(1., 0.8, 0.5).mulMutable(10.);
-//      const sunIntensity = new Vec3(1., 1., 1.).mulMutable(10.);
+//      const sunIntensity = new Vec3(1., 0.8, 0.5).mulMutable(10.);
+      const sunIntensity = new Vec3(0.9420, 1.0269, 1.0241).mulMutable(10.);
       const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
       const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
