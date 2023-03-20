@@ -450,8 +450,43 @@ vec3 rayCamera(Camera c, vec2 uv) {
 // Рендеринг
 // ----------------------------------------------------------------------------
 
+/** 
+  * Функция определения пересечения луча с планетой
+  *   ro - положение камеры
+  *   rd - направление луча
+  * Возвращает 0. если луч пересекается с планетой
+  */
+float planetIntersection(vec3 ro, vec3 rd) {
+  //const pos = ro.sub(PLANET_POS);
+  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
+  if(OT>0. || CT2>PLANET_RADIUS_SQR) return 1.;
+  return 0.;
+}
+
+/** 
+  * Функция определения мягкой тени от сферической поверхности планеты
+  *   ro - положение точки, для которой производится рассчет
+  *   rd - направление луча на солнце
+  * Возвращает значения от 0. до 1.
+  *   0. - если солнце полностью скрыто планетой
+  *   1. - если солнце полностью видно
+  */
+float softPlanetShadow(vec3 ro, vec3 rd) {
+  //const pos = ro.sub(PLANET_POS);
+  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
+  if(OT>0.) return 1.;
+  float d = (PLANET_RADIUS-CT)/OT;
+  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
+}
+
 // функция определения затененности
 float softShadow(vec3 ro, vec3 rd, float dis) {
+  float planetShadow = softPlanetShadow(ro, rd);
+  if(planetShadow<=0.001) return 0.;
   float minStep = clamp(0.01*dis,10.,500.);
   float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
 
@@ -465,7 +500,7 @@ float softShadow(vec3 ro, vec3 rd, float dis) {
     if(res<-uSunDiscAngleSin) break;
     t += max(minStep, abs(1.*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
+  return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
 }
 
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
@@ -553,22 +588,6 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	*/
 	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
-}
-
-
-/** 
-  * Функция определения пересечения луча с планетой
-  *   ro - положение камеры
-  *   rd - направление луча
-  * Возвращает true если луч пересекается с планетой
-  */
-float planetIntersection(vec3 ro, vec3 rd) {
-  //const pos = ro.sub(PLANET_POS);
-  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
-  if(OT>0. || CT2>PLANET_RADIUS_SQR) return 1.;
-  return 0.;
 }
 
 

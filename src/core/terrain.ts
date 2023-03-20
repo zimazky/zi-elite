@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------------------
 // Генерация ландшафта
 // ----------------------------------------------------------------------------
+import { SUN_DISC_ANGLE_SIN } from "./constants";
 import { smoothstep } from "./mathutils";
 import { NoiseSampler } from "./noise";
 import { Mat2, Vec2, Vec3 } from "./vectors";
@@ -70,7 +71,6 @@ export class TerrainSampler {
 
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
-    const SUN_DISC_ANGLE_SIN = 0.5*0.01745; // синус углового размера солнца
     const minStep = 1.;
     let res = 1.;
     let t = 0.1;
@@ -83,9 +83,7 @@ export class TerrainSampler {
       if(res<-SUN_DISC_ANGLE_SIN) break;
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
-    //return res<0. ? 0. : (res>1. ? 1. : res);//clamp(res,0.,1.);
     return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
-    //return smoothstep(0.,SUN_DISC_ANGLE_TAN,res);
   }
   
 }

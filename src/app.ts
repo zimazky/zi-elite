@@ -1,5 +1,6 @@
 import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
+import { SUN_DISC_ANGLE_SIN } from './core/constants';
 import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
@@ -57,7 +58,7 @@ export default async function main() {
     sunDirectionLocation = e.getUniformLocation(program, 'uSunDirection');
     sunDiscColorLocation = e.getUniformLocation(program, 'uSunDiscColor');
     sunDiscAngleSinLocation = e.getUniformLocation(program, 'uSunDiscAngleSin');
-    e.gl.uniform1f(sunDiscAngleSinLocation, 0.5*0.01745);
+    e.gl.uniform1f(sunDiscAngleSinLocation, SUN_DISC_ANGLE_SIN);
 
     skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
 
@@ -130,11 +131,9 @@ export default async function main() {
       // Сохранение координат в локальнре хранилище каждые 5 секунд
       const dataString = JSON.stringify({ position: camera.position, orientation: camera.orientation });
       localStorage.setItem('data', dataString);
-      //console.log(dataString);
       positionStoreTime = time + 5.;
     }
 
-    //console.log(camera);
   }
   
   e.start();
