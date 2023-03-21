@@ -25,7 +25,6 @@ export class Atmosphere {
 
   betaRayleigh: Vec3 = new Vec3(5.5e-6, 13.0e-6, 22.4e-6); // Коэффициенты рассеивания Релея для трех частот света (rgb) на уровне моря
   betaMie: Vec3 = Vec3.ONE().mulMutable(2e-7); // Коэффициенты рассеивания Ми, не зависят от частоты света  на уровне моря
-  betaAmbient: Vec3 = Vec3.ZERO(); // Компонент окружающего освещения
   betaAbsorption: Vec3 = new Vec3(2.04e-5, 4.97e-5, 1.95e-6); // Коэффициенты поглощения озоновым слоем
   g: number = 0.996;
   heightRayleigh: number = 8e3; // Масштабная высота для рассеивания Релея (высота 50% плотности молекул воздуха)
@@ -87,12 +86,12 @@ export class Atmosphere {
     let r2 = start.dot(start); // квадрат расстояния до центра планеты
     let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
     const CT2 = r2 - OT*OT;    // квадрат минимального расстояния от луча до центра планеты
-    if(CT2 >= ATM_RADIUS_SQR) return { t:Vec3.ONE(), i:Vec3.ZERO() }; // луч проходит выше атмосферы
+    if(CT2 >= ATM_RADIUS_SQR) return { t:Vec3.ZERO(), i:Vec3.ONE() }; // луч проходит выше атмосферы
     const AT = Math.sqrt(ATM_RADIUS_SQR-CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
     let rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
     if(r2 > ATM_RADIUS_SQR) {
       // выше атмосферы
-      if(OT < 0.) return { t:Vec3.ONE(), i:Vec3.ZERO() }; // направление от планеты
+      if(OT < 0.) return { t:Vec3.ZERO(), i:Vec3.ONE() }; // направление от планеты
       // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
       start.addMutable(rd.mul(OT - AT));
       r2 = ATM_RADIUS_SQR;
@@ -183,19 +182,18 @@ export class Atmosphere {
     const inScatter = isIntersect 
       ?
       this.betaRayleigh.mul(-optRayleigh)
-      .addMutable(this.betaAbsorption.mul(optAbsorption))
+      .addMutable(this.betaAbsorption.mul(-optAbsorption))
       .exp()
       :
       this.betaRayleigh.mul(-optRayleigh)
-      .addMutable(this.betaMie.mul(optMie))
-      .addMutable(this.betaAbsorption.mul(optAbsorption))
+      .addMutable(this.betaMie.mul(-optMie))
+      .addMutable(this.betaAbsorption.mul(-optAbsorption))
       .exp();
 
     // I = β(λ) * γ(θ) * total
     const transmittance = 
       this.betaRayleigh.mulEl(totalRayleigh).mulMutable(phaseRayleigh)
       .addMutable(this.betaMie.mulEl(totalMie).mulMutable(phaseMie))
-      .addMutable(this.betaAmbient.mul(optRayleigh))
       .divMutable(4.*Math.PI);
 
     return { t: transmittance, i: inScatter };

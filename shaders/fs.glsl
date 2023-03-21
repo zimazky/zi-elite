@@ -3,10 +3,15 @@
 //precision mediump float;
 precision lowp float;
 
+#ifdef ATM
+#include "atmosphere.glsl"
+#endif
+
 uniform vec2 uResolution;
 uniform vec2 uTime;
 uniform sampler2D uTextureGrayNoise;
 uniform sampler2D uTextureBlueNoise;
+uniform sampler2D uTextureMilkyway;
 
 uniform vec4 uCameraPosition;
 uniform vec3 uCameraVelocity;
@@ -28,7 +33,6 @@ in vec3 vRay;
 out vec4 fragColor;
 
 
-
 // ----------------------------------------------------------------------------
 // Atmosphere scattering constants
 // ----------------------------------------------------------------------------
@@ -42,7 +46,6 @@ const float ATM_RADIUS_SQR = ATM_RADIUS*ATM_RADIUS; // Квадрат радиу
 
 const vec3 RAY_BETA = vec3(5.5e-6, 13.0e-6, 22.4e-6); // rayleigh, affects the color of the sky
 const vec3 MIE_BETA = vec3(2e-7);     // mie, affects the color of the blob around the sun
-const vec3 AMBIENT_BETA = vec3(0.0);  // ambient, affects the scattering color when there is no lighting from the sun
 const vec3 ABSORPTION_BETA = vec3(2.04e-5, 4.97e-5, 1.95e-6); // what color gets absorbed by the atmosphere (Due to things like ozone)
 const float G = 0.996; // mie scattering direction, or how big the blob around the sun is
 // and the heights (how far to go up before the scattering has no effect)
@@ -57,7 +60,7 @@ const int PRIMARY_STEPS = 32; // primary steps, affects quality the most
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
-const float PI = 3.14159265358979;
+const float PI = 3.14159265358979323846; //3.14159265358979;
 const float _16_PI = 50.2654824574;   // 16.0*PI
 const float _8_PI = 25.1327412287;    // 8.0*PI
 const float SQRT2 = sqrt(2.);
@@ -120,7 +123,7 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld) {
   float rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой
   if(r2 > ATM_RADIUS_SQR) {
     // выше атмосферы
-    if(OT < 0.) return ResultScattering(vec3(1), vec3(0)); // направление от планеты
+    if(OT < 0.) return ResultScattering(vec3(0), vec3(1)); // направление от планеты
     // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
     start += rd*(OT - AT);
     r2 = ATM_RADIUS_SQR;
@@ -213,7 +216,6 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld) {
   vec3 transmittance = (
     phaseRayleigh*RAY_BETA*totalRayleigh 
     + phaseMie*MIE_BETA*totalMie
-    + optDepth.x*AMBIENT_BETA
     )/(4.*PI);
   return ResultScattering(transmittance, inScatter);
 }
@@ -295,7 +297,6 @@ ResultScattering calculate_scattering2(vec3 ro, vec3 rd, vec3 ld, float rayLen) 
   vec3 transmittance = (
     phaseRayleigh*RAY_BETA*totalRayleigh 
     + phaseMie*MIE_BETA*totalMie
-    + optDepth.x*AMBIENT_BETA
     )/(4.*PI);
   return ResultScattering(transmittance, inScatter);
 }
@@ -591,10 +592,17 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
+vec3 nightSky(vec3 rd) {
+  //if(abs(rd.z)<=0.001) return vec3(0,0,1);
+  //if(abs(rd.x)<=0.001) return vec3(1,0,0);
+  //if(atan(rd.x,rd.z)==NaN) return vec3(1,0,0);
+  vec2 ts = vec2(0.5*(PI+atan(rd.x,rd.z)), 0.5*PI+atan(rd.y,length(rd.xz)));
+  //return vec3(fract(ts)*0.5,0);
+  return texture(uTextureMilkyway, ts/PI).rgb;
+}
+
 
 const float kMaxT = 30000.0;
-//const vec3 AMBIENT_LIGHT = vec3(0.3,0.5,0.85);
-//const vec3 SUN_LIGHT = vec3(8.00,5.00,3.00);
 
 vec4 render(vec3 ro, vec3 rd, float initDist)
 {
@@ -611,7 +619,9 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   if(t>tmax) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
-    col = sunsin<uSunDiscAngleSin ? vec3(1.,0.8,0.6)*planetIntersection(ro,rd) : vec3(0);
+    col = 0.01*nightSky(rd);
+    col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
+    col *= planetIntersection(ro,rd);
     ResultScattering rs = scattering(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = -1.0;
