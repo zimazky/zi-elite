@@ -499,15 +499,15 @@ float softShadow(vec3 ro, vec3 rd, float dis) {
 
   float res = 1.;
   float t = 0.01*dis;
-  for(int i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+  for(int i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
-    if(p.y>MAX_TRN_ELEVATION) break;
-    float h = p.y - terrainM(p.xz);
+    if(p.y>MAX_TRN_ELEVATION) return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
+    float h = p.y - terrainS(p.xz);
 	  res = min(res, cosA*h/t);
-    if(res<-uSunDiscAngleSin) break;
-    t += max(minStep, abs(1.*h)); // коэффициент устраняет полосатость при плавном переходе тени
+    if(res<-uSunDiscAngleSin) return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
+    t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
+  return 0.; //planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
 }
 
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {

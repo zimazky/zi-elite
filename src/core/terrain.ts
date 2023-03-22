@@ -75,15 +75,15 @@ export class TerrainSampler {
     let res = 1.;
     let t = 0.1;
     const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
-    for(let i=0; i<100; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+    for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
-      if(p.y > MAX_TRN_ELEVATION) break;
+      if(p.y > MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
       const h = p.y - this.terrainM(new Vec2(p.x,p.z));
       res = Math.min(res, cosA*h/t);
-      if(res<-SUN_DISC_ANGLE_SIN) break;
+      if(res<-SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
-    return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
+    return 0.; //smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
   }
   
 }
