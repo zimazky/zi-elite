@@ -27,6 +27,7 @@ uniform float uSunDiscAngleSin;
 uniform vec3 uSunDirection;
 uniform vec3 uSunDiscColor;
 uniform vec3 uSkyColor;
+uniform float uConstellationsColor;
 
 uniform vec2 uScreenMode;
 uniform float uMapScale;
@@ -619,7 +620,7 @@ vec3 oetf(vec3 arg) {
 
 vec3 nightSky(vec3 rd) {
   vec2 ts = vec2(0.5*atan(rd.x,rd.z), 0.5*PI+atan(rd.y,length(rd.xz)));
-  vec3 col = eotf(texture(uTextureMilkyway, ts/PI).rgb + texture(uTextureConstellation, ts/PI).rgb);
+  vec3 col = eotf(texture(uTextureMilkyway, ts/PI).rgb + uConstellationsColor*texture(uTextureConstellation, ts/PI).rgb);
   return col;
 }
 

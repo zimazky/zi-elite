@@ -5,6 +5,7 @@ import { Engine } from './core/engine'
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
 import { Quaternion } from './core/quaternion';
+import { Sky } from './core/sky';
 import { TerrainSampler } from './core/terrain';
 import { Vec3 } from './core/vectors';
 import { loadImage } from './utils/loadimg';
@@ -34,6 +35,7 @@ export default async function main() {
   let headLightLocation: WebGLUniformLocation; // Свет фар
 
   let skyTransformMatLocation: WebGLUniformLocation; // Матрица вращения небесного свода
+  let constellationsColor: WebGLUniformLocation; // Подсветка созвездий
 
   initKeyBuffer();
 
@@ -45,21 +47,16 @@ export default async function main() {
   const tSampler = new TerrainSampler(new NoiseSampler(img));
 
   const json = localStorage.getItem('data') ?? '{}';
-  console.log('localStorage',json);
+  console.log('localStorage', json);
   const obj = JSON.parse(json);
-  //let pos = Vec3.ZERO();
-  let pos = new Vec3(0,12000000,0);
+  let pos = Vec3.ZERO();
+  //let pos = new Vec3(0,12000000,0);
   let quat = Quaternion.Identity();
   //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
-
-  let skyQuat = Quaternion.byAngle(Vec3.I(), 0.5*Math.PI); // поворот небесного свода (плоскости млечного пути) относительно системы координат планеты
-  let skyAngle = Math.PI*0.12; // угол наклона оси вращения небесной сферы относительно зенита
-  let skyAxis = new Vec3(0., Math.cos(skyAngle), -Math.sin(skyAngle)); // ось вращения небесной сферы
-  let skyPeriod = 1200.; // период полного поворота небесной сферы в секундах
-  let sunDir0 = new Vec3(0., -Math.sin(skyAngle), -Math.cos(skyAngle));
+  const sky = new Sky();
 
   e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
@@ -79,6 +76,7 @@ export default async function main() {
 
     skyTransformMatLocation = e.getUniformLocation(program, 'uSkyTransformMat');
     skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
+    constellationsColor = e.getUniformLocation(program, 'uConstellationsColor');
 
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
@@ -116,19 +114,18 @@ export default async function main() {
     e.gl.uniform2f(screenModeLocation, camera.screenMode, camera.mapMode);
     e.gl.uniform1f(mapScaleLocation, camera.mapScale);
 
-    const skyQ = Quaternion.byAngle(skyAxis, -2.*Math.PI*(0.15+time/skyPeriod));
-    const skyMat = skyQ.qmul(skyQuat).mat3();
+    sky.loopCalculation(time, timeDelta);
     const skyM = [
-      skyMat.i.x, skyMat.i.y, skyMat.i.z,
-      skyMat.j.x, skyMat.j.y, skyMat.j.z,
-      skyMat.k.x, skyMat.k.y, skyMat.k.z,
+      sky.transformMat.i.x, sky.transformMat.i.y, sky.transformMat.i.z,
+      sky.transformMat.j.x, sky.transformMat.j.y, sky.transformMat.j.z,
+      sky.transformMat.k.x, sky.transformMat.k.y, sky.transformMat.k.z,
     ];
     e.gl.uniformMatrix3fv(skyTransformMatLocation, false, skyM);
+    e.gl.uniform1f(constellationsColor, sky.isShowConstellations ? 1. : 0.);
 
-    const sunDirection = skyQ.rotate(sunDir0).normalize();
-    const cameraInShadow = camera.inShadow(atm, camera.position, sunDirection);
+    const cameraInShadow = camera.inShadow(atm, camera.position, sky.sunDirection);
 
-    e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);
+    e.gl.uniform3f(sunDirectionLocation, sky.sunDirection.x, sky.sunDirection.y, sky.sunDirection.z);
     e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);
 
     e.gl.uniform3f(headLightLocation, 100., 100., 100.);
@@ -144,7 +141,7 @@ export default async function main() {
 
       // Определение цвета неба и цвета диска солнца
       const pos = new Vec3(camera.position.x, 0., camera.position.z); // положение для которого рассчитываем цвета
-      const sunDir = sunDirection.copy();
+      const sunDir = sky.sunDirection.copy();
       if(sunDir.y<0.) sunDir.y = 0.;
       sunDir.normalizeMutable();
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
@@ -152,7 +149,7 @@ export default async function main() {
       const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
-      const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
+      const skyDirScatter = atm.scattering(pos, Vec3.J(), sky.sunDirection);
       const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.001,0.001,0.001));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
