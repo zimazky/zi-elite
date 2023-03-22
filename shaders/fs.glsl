@@ -12,6 +12,7 @@ uniform vec2 uTime;
 uniform sampler2D uTextureGrayNoise;
 uniform sampler2D uTextureBlueNoise;
 uniform sampler2D uTextureMilkyway;
+uniform sampler2D uTextureConstellation;
 
 uniform vec4 uCameraPosition;
 uniform vec3 uCameraVelocity;
@@ -595,9 +596,31 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
+/**
+ * Преобразование в линейное цветовое пространство из sRGB
+ */
+vec3 eotf(vec3 arg) {
+	return 
+    // точное преобразование с помощью кусочной функции
+		//mix( arg / 12.92, pow( ( arg + .055 ) / 1.055, vec3( 2.4 ) ), lessThan( vec3( .04045 ), arg ) );
+		pow(arg, vec3(2.2));
+}
+
+/**
+ * Преобразование в sRGB из линейного цветового пространства
+ */
+vec3 oetf(vec3 arg) {
+	return 
+    // точное преобразование с помощью кусочной функции
+		//mix( 12.92 * arg, 1.055 * pow( arg, vec3( .416667 ) ) - .055, lessThan( vec3( .0031308 ), arg ) );
+		pow(arg, vec3(1./2.2));
+}
+
+
 vec3 nightSky(vec3 rd) {
   vec2 ts = vec2(0.5*atan(rd.x,rd.z), 0.5*PI+atan(rd.y,length(rd.xz)));
-  return texture(uTextureMilkyway, ts/PI).rgb;
+  vec3 col = eotf(texture(uTextureMilkyway, ts/PI).rgb + texture(uTextureConstellation, ts/PI).rgb);
+  return col;
 }
 
 
@@ -618,7 +641,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   if(t>tmax) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
-    col = 0.01*nightSky(normalize(vRaySky));
+    col = 0.5*nightSky(normalize(vRaySky));
     col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
     col *= planetIntersection(ro,rd);
     ResultScattering rs = scattering(ro, rd, light1);
@@ -756,31 +779,9 @@ mat3 mat2sRGB = mat3(
 );
 
 /**
- * Преобразование в линейное цветовое пространство из sRGB
- */
-vec3 eotf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( arg / 12.92, pow( ( arg + .055 ) / 1.055, vec3( 2.4 ) ), lessThan( vec3( .04045 ), arg ) );
-		pow(arg, vec3(2.2));
-}
-
-/**
- * Преобразование в sRGB из линейного цветового пространства
- */
-vec3 oetf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( 12.92 * arg, 1.055 * pow( arg, vec3( .416667 ) ) - .055, lessThan( vec3( .0031308 ), arg ) );
-		pow(arg, vec3(1./2.2));
-}
-
-/**
  * Квантование цвета и дитеринг (добавление шума, чтобы не было резких переходов между квантами цвета)
  * quant = 1./255.
  */
-
-
 vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 	vec3 noise = .5/65536. +
     texelFetch( uTextureBlueNoise, ivec2( fcoord / 8. ) & ( 1024 - 1 ), 0 ).xyz * 255./65536. +

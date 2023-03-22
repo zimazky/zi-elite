@@ -39,14 +39,16 @@ export default async function main() {
 
   const img = await loadImage('textures/gray_noise.png');
   const img2 = await loadImage('textures/blue_noise.png');
-  const milkywayImg = await loadImage('textures/milkyway.jpg');
+  const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
+  const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
+  
   const tSampler = new TerrainSampler(new NoiseSampler(img));
 
   const json = localStorage.getItem('data') ?? '{}';
   console.log('localStorage',json);
   const obj = JSON.parse(json);
-  let pos = Vec3.ZERO();
-  //let pos = new Vec3(0,12000000,0);
+  //let pos = Vec3.ZERO();
+  let pos = new Vec3(0,12000000,0);
   let quat = Quaternion.Identity();
   //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
@@ -84,6 +86,7 @@ export default async function main() {
     const texture0 = e.setTexture(program, 'uTextureGrayNoise', img, 0);
     const texture1 = e.setTexture(program, 'uTextureBlueNoise', img2, 1);
     const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
+    const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
 
     e.gl.activeTexture(e.gl.TEXTURE0);
     e.gl.bindTexture(e.gl.TEXTURE_2D, texture0);
@@ -91,6 +94,8 @@ export default async function main() {
     e.gl.bindTexture(e.gl.TEXTURE_2D, texture1);
     e.gl.activeTexture(e.gl.TEXTURE2);
     e.gl.bindTexture(e.gl.TEXTURE_2D, texture2);
+    e.gl.activeTexture(e.gl.TEXTURE3);
+    e.gl.bindTexture(e.gl.TEXTURE_2D, texture3);
 
   }
   
@@ -148,7 +153,7 @@ export default async function main() {
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
       const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
-      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.002,0.002,0.002));
+      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.001,0.001,0.001));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
