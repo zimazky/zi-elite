@@ -19,6 +19,8 @@ uniform vec3 uCameraRotationSpeed;
 uniform vec4 uCameraQuaternion;
 uniform float uCameraViewAngle;
 
+uniform vec3 uHeadLight; // Свет фар: 0. - выключен
+
 uniform float uCameraInShadow;
 uniform float uSunDiscAngleSin;
 uniform vec3 uSunDirection;
@@ -28,7 +30,8 @@ uniform vec3 uSkyColor;
 uniform vec2 uScreenMode;
 uniform float uMapScale;
 
-in vec3 vRay;
+in vec3 vRay;    // Луч в системе координат планеты
+in vec3 vRaySky; // Луч в системе координат небесного свода
 
 out vec4 fragColor;
 
@@ -593,11 +596,7 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 }
 
 vec3 nightSky(vec3 rd) {
-  //if(abs(rd.z)<=0.001) return vec3(0,0,1);
-  //if(abs(rd.x)<=0.001) return vec3(1,0,0);
-  //if(atan(rd.x,rd.z)==NaN) return vec3(1,0,0);
-  vec2 ts = vec2(0.5*(PI+atan(rd.x,rd.z)), 0.5*PI+atan(rd.y,length(rd.xz)));
-  //return vec3(fract(ts)*0.5,0);
+  vec2 ts = vec2(0.5*atan(rd.x,rd.z), 0.5*PI+atan(rd.y,length(rd.xz)));
   return texture(uTextureMilkyway, ts/PI).rgb;
 }
 
@@ -619,7 +618,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   if(t>tmax) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
-    col = 0.01*nightSky(rd);
+    col = 0.01*nightSky(normalize(vRaySky));
     col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
     col *= planetIntersection(ro,rd);
     ResultScattering rs = scattering(ro, rd, light1);
@@ -642,7 +641,7 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     float amb = clamp(0.5+0.5*nor.y, 0., 1.);
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
-    float xmin = 6.*uSunDiscAngleSin; //3.*0.01745; // синус половины углового размера солнца (считаем 1 градус), задает границу плавного перехода
+    float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
     float shd = LdotN<-xmin ? 0. : softShadow(pos, light1, t);
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
@@ -650,7 +649,9 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
 
 	  //vec3 lamb = 2.*AMBIENT_LIGHT*amb*lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lambert(kd, RdotN, LdotN);
 	  //vec3 lomm = 2.*AMBIENT_LIGHT*amb*lommel_seeliger(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lommel_seeliger(kd, RdotN, LdotN);
-	  vec3 lunar = uSkyColor*amb*lunar_lambert(kd, RdotN, amb) + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN);
+	  vec3 lunar = uSkyColor*amb*lunar_lambert(kd, RdotN, amb)     // свет от неба
+      + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца
+      + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t);  // свет фар
     col = lunar;//mix(lomm, lunar, LvsR);
     
     // specular

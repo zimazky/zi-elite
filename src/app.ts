@@ -31,6 +31,10 @@ export default async function main() {
   let sunDiscColorLocation: WebGLUniformLocation; // Цвет диска солнца
   let skyColorLocation: WebGLUniformLocation; // Цвет неба
 
+  let headLightLocation: WebGLUniformLocation; // Свет фар
+
+  let skyTransformMatLocation: WebGLUniformLocation; // Матрица вращения небесного свода
+
   initKeyBuffer();
 
   const img = await loadImage('textures/gray_noise.png');
@@ -49,6 +53,12 @@ export default async function main() {
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
 
+  let skyQuat = Quaternion.byAngle(Vec3.I(), 0.5*Math.PI); // поворот небесного свода (плоскости млечного пути) относительно системы координат планеты
+  let skyAngle = Math.PI*0.12; // угол наклона оси вращения небесной сферы относительно зенита
+  let skyAxis = new Vec3(0., Math.cos(skyAngle), -Math.sin(skyAngle)); // ось вращения небесной сферы
+  let skyPeriod = 1200.; // период полного поворота небесной сферы в секундах
+  let sunDir0 = new Vec3(0., -Math.sin(skyAngle), -Math.cos(skyAngle));
+
   e.onProgramInit = (program) => {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.getUniformLocation(program, 'uCameraViewAngle');
@@ -58,11 +68,14 @@ export default async function main() {
     cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
     cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
 
+    headLightLocation = e.getUniformLocation(program, 'uHeadLight');
+
     sunDirectionLocation = e.getUniformLocation(program, 'uSunDirection');
     sunDiscColorLocation = e.getUniformLocation(program, 'uSunDiscColor');
     sunDiscAngleSinLocation = e.getUniformLocation(program, 'uSunDiscAngleSin');
     e.gl.uniform1f(sunDiscAngleSinLocation, SUN_DISC_ANGLE_SIN);
 
+    skyTransformMatLocation = e.getUniformLocation(program, 'uSkyTransformMat');
     skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
 
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
@@ -98,15 +111,22 @@ export default async function main() {
     e.gl.uniform2f(screenModeLocation, camera.screenMode, camera.mapMode);
     e.gl.uniform1f(mapScaleLocation, camera.mapScale);
 
+    const skyQ = Quaternion.byAngle(skyAxis, -2.*Math.PI*(0.15+time/skyPeriod));
+    const skyMat = skyQ.qmul(skyQuat).mat3();
+    const skyM = [
+      skyMat.i.x, skyMat.i.y, skyMat.i.z,
+      skyMat.j.x, skyMat.j.y, skyMat.j.z,
+      skyMat.k.x, skyMat.k.y, skyMat.k.z,
+    ];
+    e.gl.uniformMatrix3fv(skyTransformMatLocation, false, skyM);
 
-
-    const sunAngle = -0.1*Math.PI+0.005*time;
-//    const sunDirection = new Vec3(Math.sin(sunAngle),0.4,Math.cos(sunAngle)).normalizeMutable();
-    const sunDirection = new Vec3(Math.sin(sunAngle),0.5*Math.sin(sunAngle),Math.cos(sunAngle)).normalizeMutable();
+    const sunDirection = skyQ.rotate(sunDir0).normalize();
     const cameraInShadow = camera.inShadow(atm, camera.position, sunDirection);
 
     e.gl.uniform3f(sunDirectionLocation, sunDirection.x, sunDirection.y, sunDirection.z);
     e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);
+
+    e.gl.uniform3f(headLightLocation, 100., 100., 100.);
 
 
     // Вывод информации на экран с периодичностью 0.5 сек
@@ -128,7 +148,7 @@ export default async function main() {
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
       const skyDirScatter = atm.scattering(pos, Vec3.J(), sunDirection);
-      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.001,0.001,0.001));
+      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.002,0.002,0.002));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}

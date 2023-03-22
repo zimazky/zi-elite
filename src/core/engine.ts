@@ -82,10 +82,14 @@ export class Engine extends GLContext {
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST_MIPMAP_NEAREST);
+//    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST_MIPMAP_NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);//_MIPMAP_LINEAR);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img);
-    this.gl.generateMipmap(this.gl.TEXTURE_2D);
+    
+    // Для сферической проекции нужно отключать МипМап карты, иначе виден шов при переходе координат от 1. к 0.
+    //this.gl.generateMipmap(this.gl.TEXTURE_2D);
+
     const textureLocation = this.gl.getUniformLocation(program, uname);
     // Tell the shader to use texture unit 0 for u_texture
     this.gl.uniform1i(textureLocation, num);
