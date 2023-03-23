@@ -10,6 +10,17 @@ import { TerrainSampler } from './core/terrain';
 import { Vec3 } from './core/vectors';
 import { loadImage } from './utils/loadimg';
 
+//-----------------------------------------------------------------------------
+// TODO: 
+//   1. Облака
+//   2. Наложить ландшафт на сферическую поверхность планеты
+//   3. Добавить водные поверхности
+//   4. Рендерить в отдельный буфер (с картой расстояний) для последующей постобработки
+//   5. Продумать об использовании буфера предыдущего кадра для ускорения рендеринга нового
+//   6. Продумать возможность аналитического вычисления нормалей к поверхности
+//   7. Правильно расположить небесный свод относительно планеты
+//   8. Разработать препроцессор шейдерных программ для компиляции программы из разных файлов
+
 export default async function main() {
 
   const divInfo = document.getElementById('info');
@@ -17,36 +28,52 @@ export default async function main() {
   let infoRefreshTime = 0;
   let positionStoreTime = 0;
 
-  let cameraPositionLocation: WebGLUniformLocation; // Положение камеры xyz, w - высота над поверхностью
-  let cameraViewAngleLocation: WebGLUniformLocation; // Угол объектива камеры по x координате
-  let cameraVelocityLocation: WebGLUniformLocation; // Скорость камеры xyz
-  let cameraOrientationLocation: WebGLUniformLocation; // Кватернион, определяющий ориентацию камеры
-  let cameraTransformMatLocation: WebGLUniformLocation; // Матрица вращения для вершинного шейдера
-  let cameraAngularSpeedLocation: WebGLUniformLocation; // Скорость вращения по осям 
+  /** (uCameraPosition) Положение камеры xyz, w - высота над поверхностью */
+  let cameraPositionLocation: WebGLUniformLocation;
+  /** (uCameraViewAngle) Угол объектива камеры по x координате */
+  let cameraViewAngleLocation: WebGLUniformLocation;
+  /** (uCameraVelocity) Скорость камеры xyz */
+  let cameraVelocityLocation: WebGLUniformLocation;
+  /** (uCameraQuaternion) Кватернион, определяющий ориентацию камеры */
+  let cameraOrientationLocation: WebGLUniformLocation;
+  /** (uTransformMat) Матрица вращения камеры для вершинного шейдера */
+  let cameraTransformMatLocation: WebGLUniformLocation;
+  /** (uCameraRotationSpeed) Скорость вращения камеры по осям */
+  let cameraAngularSpeedLocation: WebGLUniformLocation;
+  /** (uScreenMode) Режим экрана */
   let screenModeLocation: WebGLUniformLocation;
+  /** (uMapScale) Масштаб карты */
   let mapScaleLocation: WebGLUniformLocation;
-  let cameraInShadowLocation: WebGLUniformLocation; // Признак нахождения камеры в тени
+  /** (uCameraInShadow) Признак нахождения камеры в тени */
+  let cameraInShadowLocation: WebGLUniformLocation;
 
-  let sunDirectionLocation: WebGLUniformLocation; // Направление на солнце
-  let sunDiscAngleSinLocation: WebGLUniformLocation; // Синус углового размера солнца
-  let sunDiscColorLocation: WebGLUniformLocation; // Цвет диска солнца
-  let skyColorLocation: WebGLUniformLocation; // Цвет неба
+  /** (uSunDirection) Направление на солнце */
+  let sunDirectionLocation: WebGLUniformLocation;
+  /** (uSunDiscAngleSin) Синус углового размера солнца */
+  let sunDiscAngleSinLocation: WebGLUniformLocation;
+  /** (uSunDiscColor) Цвет диска солнца */
+  let sunDiscColorLocation: WebGLUniformLocation;
+  /** (uSkyColor) Цвет неба для окружающего освещения */
+  let skyColorLocation: WebGLUniformLocation;
 
-  let headLightLocation: WebGLUniformLocation; // Свет фар
+  /** (uHeadLight) Свет фар */
+  let headLightLocation: WebGLUniformLocation;
 
-  let skyTransformMatLocation: WebGLUniformLocation; // Матрица вращения небесного свода
-  let constellationsColor: WebGLUniformLocation; // Подсветка созвездий
+  /** (uSkyTransformMat) Матрица вращения небесного свода */
+  let skyTransformMatLocation: WebGLUniformLocation;
+  /** (uConstellationsColor) Подсветка созвездий, 0. - не подсвечивать */
+  let constellationsColor: WebGLUniformLocation;
 
   initKeyBuffer();
 
-  const img = await loadImage('textures/gray_noise.png');
-  const img2 = await loadImage('textures/blue_noise.png');
+  const grayNoiseImg = await loadImage('textures/gray_noise.png');
+  const blueNoiseImg = await loadImage('textures/blue_noise.png');
   const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
-  const tSampler = new TerrainSampler(new NoiseSampler(img));
+  const tSampler = new TerrainSampler(new NoiseSampler(grayNoiseImg));
 
-  const json = localStorage.getItem('data') ?? '{}';
+  const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
   const obj = JSON.parse(json);
   let pos = Vec3.ZERO();
@@ -81,8 +108,8 @@ export default async function main() {
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
 
-    const texture0 = e.setTexture(program, 'uTextureGrayNoise', img, 0);
-    const texture1 = e.setTexture(program, 'uTextureBlueNoise', img2, 1);
+    const texture0 = e.setTexture(program, 'uTextureGrayNoise', grayNoiseImg, 0);
+    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg, 1);
     const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
     const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
 
@@ -165,7 +192,7 @@ export default async function main() {
     if(time>positionStoreTime) {
       // Сохранение координат в локальнре хранилище каждые 5 секунд
       const dataString = JSON.stringify({ position: camera.position, orientation: camera.orientation });
-      localStorage.setItem('data', dataString);
+      localStorage.setItem('ziEliteData', dataString);
       positionStoreTime = time + 5.;
     }
 
