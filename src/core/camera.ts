@@ -34,6 +34,7 @@ const KEY_M = 77;
 const KEY_N = 78;
 const KEY_G = 71;
 const KEY_H = 72;
+const KEY_L = 76;
 const KEY_COMMA = 188;
 const KEY_PERIOD = 190;
 
@@ -45,8 +46,13 @@ export class Camera {
   altitude: number;
   viewAngle: number;
   orientation: Quaternion;
+  /* Направление камеры */
+  direction: Vec3 = new Vec3(0.,0.,-1.);
   /** Матрица вращения камеры для передачи вершинному шейдеру. Используется для определения направления лучей */
   transformMat: Mat3;
+  /** Яркость фар, 0. - выключены */
+  headLights: number = 0;
+
   tSampler: TerrainSampler;
 
   screenMode: number;
@@ -122,7 +128,7 @@ export class Camera {
 
     this.orientation.normalizeMutable();
 
-
+    this.direction = this.orientation.rotate(new Vec3(0.,0.,-1.));
     // режим экрана
     if(isKeyPress(KEY_M)>0) this.screenMode = this.screenMode==FRONT_VIEW ? MAP_VIEW : FRONT_VIEW;
     if(this.screenMode==MAP_VIEW) {
@@ -131,6 +137,8 @@ export class Camera {
       if(isKeyPress(KEY_H)>0) this.mapMode ^= MAP_HEIGHTS;
     }
     else this.viewAngle += 0.01*(isKeyDown(KEY_MINUS)-isKeyDown(KEY_PLUS));
+
+    if(isKeyPress(KEY_L)>0) this.headLights = this.headLights==0 ? 1000. : 0.;
 
   }
 }

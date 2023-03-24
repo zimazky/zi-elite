@@ -19,7 +19,6 @@ import { loadImage } from './utils/loadimg';
 //   5. Продумать об использовании буфера предыдущего кадра для ускорения рендеринга нового
 //   6. Продумать возможность аналитического вычисления нормалей к поверхности
 //   7. Правильно расположить небесный свод относительно планеты
-//   8. Разработать препроцессор шейдерных программ для компиляции программы из разных файлов
 
 export default async function main() {
 
@@ -34,8 +33,8 @@ export default async function main() {
   let cameraViewAngleLocation: WebGLUniformLocation;
   /** (uCameraVelocity) Скорость камеры xyz */
   let cameraVelocityLocation: WebGLUniformLocation;
-  /** (uCameraQuaternion) Кватернион, определяющий ориентацию камеры */
-  let cameraOrientationLocation: WebGLUniformLocation;
+  /** (uCameraDirection) Вектор направления камеры */
+  let cameraDirectionLocation: WebGLUniformLocation;
   /** (uTransformMat) Матрица вращения камеры для вершинного шейдера */
   let cameraTransformMatLocation: WebGLUniformLocation;
   /** (uCameraRotationSpeed) Скорость вращения камеры по осям */
@@ -89,7 +88,7 @@ export default async function main() {
     cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.getUniformLocation(program, 'uCameraVelocity');
-    cameraOrientationLocation = e.getUniformLocation(program, 'uCameraQuaternion');
+    cameraDirectionLocation = e.getUniformLocation(program, 'uCameraDirection');
     cameraTransformMatLocation = e.getUniformLocation(program, 'uTransformMat');
     cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
     cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
@@ -129,7 +128,7 @@ export default async function main() {
     e.gl.uniform4f(cameraPositionLocation, camera.position.x, camera.position.y, camera.position.z, camera.altitude);
     e.gl.uniform3f(cameraVelocityLocation, camera.velocity.x, camera.velocity.y, camera.velocity.z);
     e.gl.uniform3f(cameraAngularSpeedLocation, camera.angularSpeed.x, camera.angularSpeed.y, camera.angularSpeed.z);
-    e.gl.uniform4f(cameraOrientationLocation, camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w);
+    e.gl.uniform3f(cameraDirectionLocation, camera.direction.x, camera.direction.y, camera.direction.z);
     const m = [
       camera.transformMat.i.x, camera.transformMat.i.y, camera.transformMat.i.z,
       camera.transformMat.j.x, camera.transformMat.j.y, camera.transformMat.j.z,
@@ -155,8 +154,7 @@ export default async function main() {
     e.gl.uniform3f(sunDirectionLocation, sky.sunDirection.x, sky.sunDirection.y, sky.sunDirection.z);
     e.gl.uniform1f(cameraInShadowLocation, cameraInShadow);
 
-    e.gl.uniform3f(headLightLocation, 100., 100., 100.);
-
+    e.gl.uniform3f(headLightLocation, camera.headLights, camera.headLights, camera.headLights);
 
     // Вывод информации на экран с периодичностью 0.5 сек
     if(time>infoRefreshTime) {

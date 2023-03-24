@@ -25,7 +25,7 @@ export class Sky {
   sunDirection: Vec3 = this.sunDir.copy();
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.byAngle(this.axis, -2.*Math.PI*(0.25+time/this.period));
+    this.orientation = Quaternion.byAngle(this.axis, -2.*Math.PI*(0.35+time/this.period));
     this.transformMat = this.orientation.qmul(this.quat).mat3();
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
 

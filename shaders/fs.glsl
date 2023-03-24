@@ -3,29 +3,53 @@
 //precision mediump float;
 precision lowp float;
 
+// разрешение экрана
 uniform vec2 uResolution;
+
+// параметры времени
+// x - время с момента запуска программы в секундах, 
+// y - время с момента отображения предыдущего кадра
 uniform vec2 uTime;
+
+// текстуры
 uniform sampler2D uTextureGrayNoise;
 uniform sampler2D uTextureBlueNoise;
-uniform sampler2D uTextureMilkyway;
-uniform sampler2D uTextureConstellation;
 
+// положение камеры
 uniform vec4 uCameraPosition;
+// скорость камеры
 uniform vec3 uCameraVelocity;
+// скорость вращения камеры
 uniform vec3 uCameraRotationSpeed;
-uniform vec4 uCameraQuaternion;
-uniform float uCameraViewAngle;
+// вектор направления камеры
+uniform vec3 uCameraDirection;
 
-uniform vec3 uHeadLight; // Свет фар: 0. - выключен
+// цвет и интенсивность света фар: vec3(0.) - выключен
+uniform vec3 uHeadLight;
 
-uniform float uCameraInShadow;
+// насколько камера попадает под солнце:
+// 1. - полностью на солнце, 0. - полностью в тени
+uniform float uCameraInShadow; 
+
+// синус половины углового размера солнца
 uniform float uSunDiscAngleSin;
+// направление на солнце
 uniform vec3 uSunDirection;
+// цвет и интенсивность света от солнца
 uniform vec3 uSunDiscColor;
+// цвет и интенсивность света неба
 uniform vec3 uSkyColor;
-uniform float uConstellationsColor;
 
+// x - режим экрана: 
+//   FRONT_VIEW - вид камеры,
+//   MAP_VIEW - вид карты,
+//   DEPTH_VIEW - вид карты глубины (режим отключен)
+// y - опции отображения карты: 
+//   MAP_ONLY - только карта,
+//   MAP_GRID - показывать сетку,
+//   MAP_HEIGHTS - показывать изолинии высот
 uniform vec2 uScreenMode;
+// масштаб карты
 uniform float uMapScale;
 
 in vec3 vRay;    // Луч в системе координат планеты
@@ -36,11 +60,10 @@ out vec4 fragColor;
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
-const float PI = 3.14159265358979323846; //3.14159265358979;
+const float PI = 3.14159265358979323846;
 const mat3  IDENTITY = mat3(vec3(1,0,0),vec3(0,1,0),vec3(0,0,1));
 
 const float MAX_TERRAIN_DISTANCE = 30000.;
-
 
 // View modes
 const float FRONT_VIEW = 0.;
@@ -51,19 +74,18 @@ const int MAP_ONLY = 0;
 const int MAP_GRID = 1;
 const int MAP_HEIGHTS = 2;
 
+// ----------------------------------------------------------------------------
+// Модуль определения общих функций
+// ----------------------------------------------------------------------------
+#ifndef COMM_MODULE
+#include "common.glsl"
+#endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций расчета атмосферного рассеивания
 // ----------------------------------------------------------------------------
 #ifndef ATM_MODULE
 #include "atmosphere.glsl"
-#endif
-
-// ----------------------------------------------------------------------------
-// Модуль определения операций с кватернионами
-// ----------------------------------------------------------------------------
-#ifndef QUAT_MODULE
-#include "quaternion.glsl"
 #endif
 
 // ----------------------------------------------------------------------------
@@ -78,6 +100,13 @@ const int MAP_HEIGHTS = 2;
 // ----------------------------------------------------------------------------
 #ifndef MAP_MODULE
 #include "map.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
+// Модуль определения функции отображения ночного неба
+// ----------------------------------------------------------------------------
+#ifndef SKY_MODULE
+#include "sky.glsl"
 #endif
 
 // ----------------------------------------------------------------------------
@@ -108,33 +137,13 @@ float planetIntersection(vec3 ro, vec3 rd) {
   *   1. - если солнце полностью видно
   */
 float softPlanetShadow(vec3 ro, vec3 rd) {
-  //const pos = ro.sub(PLANET_POS);
+  //const pos = ro - PLANET_POS;
   vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
   float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
   float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
   if(OT>0.) return 1.;
   float d = (PLANET_RADIUS-CT)/OT;
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
-}
-
-// функция определения затененности
-float softShadow(vec3 ro, vec3 rd, float dis) {
-  float planetShadow = softPlanetShadow(ro, rd);
-  if(planetShadow<=0.001) return 0.;
-  float minStep = clamp(0.01*dis,10.,500.);
-  float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
-
-  float res = 1.;
-  float t = 0.01*dis;
-  for(int i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
-	  vec3 p = ro + t*rd;
-    if(p.y>MAX_TRN_ELEVATION) return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
-    float h = p.y - terrainS(p.xz);
-	  res = min(res, cosA*h/t);
-    if(res<-uSunDiscAngleSin) return planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
-    t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
-  }
-  return 0.; //planetShadow*smoothstep(-uSunDiscAngleSin,uSunDiscAngleSin,res);
 }
 
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
@@ -176,44 +185,15 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-/**
- * Преобразование в линейное цветовое пространство из sRGB
- */
-vec3 eotf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( arg / 12.92, pow( ( arg + .055 ) / 1.055, vec3( 2.4 ) ), lessThan( vec3( .04045 ), arg ) );
-		pow(arg, vec3(2.2));
-}
 
-/**
- * Преобразование в sRGB из линейного цветового пространства
- */
-vec3 oetf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( 12.92 * arg, 1.055 * pow( arg, vec3( .416667 ) ) - .055, lessThan( vec3( .0031308 ), arg ) );
-		pow(arg, vec3(1./2.2));
-}
-
-
-vec3 nightSky(vec3 rd) {
-  vec2 ts = vec2(0.5*atan(rd.x,rd.z), 0.5*PI+atan(rd.y,length(rd.xz)));
-  vec3 col = eotf(texture(uTextureMilkyway, ts/PI).rgb + uConstellationsColor*texture(uTextureConstellation, ts/PI).rgb);
-  return col;
-}
-
-
-vec4 render(vec3 ro, vec3 rd, float initDist)
+vec4 render(vec3 ro, vec3 rd)
 {
 
   vec3 light1 = uSunDirection;
-  // bounding plane
-  float tmin = initDist;
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col;
-  float t = raycast(ro, rd, tmin, MAX_TERRAIN_DISTANCE);
+  float t = raycast(ro, rd, 1., MAX_TERRAIN_DISTANCE);
   if(t>MAX_TERRAIN_DISTANCE) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
@@ -240,10 +220,12 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
     float amb = clamp(0.5+0.5*nor.y, 0., 1.);
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
-    float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
-    float shd = LdotN<-xmin ? 0. : softShadow(pos, light1, t);
-    float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
+    float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
+    float shd = softPlanetShadow(pos, light1);
+    if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t);
+    float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
 	  //vec3 lamb = 2.*AMBIENT_LIGHT*amb*lambert(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lambert(kd, RdotN, LdotN);
@@ -308,50 +290,24 @@ vec4 render(vec3 ro, vec3 rd, float initDist)
   return vec4(col, t);
 }
 
-// Матрица преобразования цветового пространства из базиса (615,535,445) в sRGB
-mat3 mat2sRGB = mat3(
-   1.6218, -0.4493,  0.0325,
-  -0.0374,  1.0598, -0.0742,
-  -0.0283, -0.1119,  1.0491
-);
-
-/**
- * Квантование цвета и дитеринг (добавление шума, чтобы не было резких переходов между квантами цвета)
- * quant = 1./255.
- */
-vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
-	vec3 noise = .5/65536. +
-    texelFetch( uTextureBlueNoise, ivec2( fcoord / 8. ) & ( 1024 - 1 ), 0 ).xyz * 255./65536. +
-    texelFetch( uTextureBlueNoise, ivec2( fcoord )		 & ( 1024 - 1 ), 0 ).xyz * 255./256.;
-	vec3 c0 = floor( oetf( col ) / quant ) * quant;
-	vec3 c1 = c0 + quant;
-	vec3 discr = mix( eotf( c0 ), eotf( c1 ), noise );
-	return mix( c0, c1, lessThan( discr, col ) );
-}
-
-
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-  //vec2 m = iMouse.xy-0.5*iResolution.xy;
-  
-  //vec2 uv2 = fragCoord/iResolution.xy;
+
   // значение на предыдущем кадре
   //vec4 data = texture(iChannel2, uv2);
   //float zbuf = data.w;
 
   
   vec3 pos = uCameraPosition.xyz;
-  float angle = uCameraViewAngle;
   vec3 rd = normalize(vRay);
 
-  vec2 screen = uScreenMode;
   vec4 col = vec4(0.);
-  if(screen.x==MAP_VIEW) col = showMap(pos, qRotate(uCameraQuaternion,vec3(0,0,-1)).xz, uv, int(screen.y));
+  if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
   else { 
-    col = render(pos, rd, 1.);
+    col = render(pos, rd);
     col.rgb =  col.rgb*mat2sRGB; // Преобразование в sRGB
   }
-  //if(screen.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
+  //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
   // Квантование и дитеринг с гамма-коррекцией
