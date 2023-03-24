@@ -1,4 +1,5 @@
 import { GLContext } from "./glcontext";
+import { preprocess } from "./shader";
 
 
 interface OnProgramInit {
@@ -24,14 +25,14 @@ export class Engine extends GLContext {
   public async loadShader(sourceUrl: string): Promise<string> {
     let response = await fetch(sourceUrl);
     let source = await response.text();
-    //console.log(source);
     return source;
   }
 
   public async start() {
-    const vsSource = this.loadShader('shaders/vs.glsl');
-    const fsSource = this.loadShader('shaders/fs.glsl');
-    const program = this.createProgram(await vsSource, await fsSource);
+    const vsSource = preprocess('shaders','vs.glsl');
+    const fsSource = await preprocess('shaders','fs.glsl');
+    console.log(fsSource);
+    const program = this.createProgram(await vsSource, fsSource);
     this.gl.useProgram(program);
     this.createBuffer();
     const vertexPosition = this.gl.getAttribLocation(program, "aVertexPosition");

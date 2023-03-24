@@ -12,7 +12,7 @@ export class Planet {
   /** угол наклона экватора к плоскости орбиты (наклон оси вращения) */
   obliquity: number =  rad(23.44);
   /** ось вращения планеты, лежит в плоскости YZ, наклонена в сторону отрицательных значений Y */
-  axis: Vec3 = new Vec3(0., Math.sin(this.obliquity), Math.cos(this.obliquity));
+  axis: Vec3 = new Vec3(0., -Math.sin(this.obliquity), Math.cos(this.obliquity));
   /** радиус планеты */
   radius: number = 6371e3;
   orientation: Quaternion 
