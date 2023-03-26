@@ -46,3 +46,16 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 	return mix( c0, c1, lessThan( discr, col ) );
 }
 
+vec3 TonemapACES(vec3 x)
+{
+	const float A = 2.51f;
+	const float B = 0.03f;
+	const float C = 2.43f;
+	const float D = 0.59f;
+	const float E = 0.14f;
+	return (x * (A * x + B)) / (x * (C * x + D) + E);
+}
+
+float noise(vec2 uv) {
+	return fract(dot(sin(uv.xyx * uv.xyy * 1024.), vec3(341896.483, 891618.637, 602649.7031)));
+}

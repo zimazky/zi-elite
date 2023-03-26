@@ -54,6 +54,24 @@ export default async function main() {
   let sunDiscColorLocation: WebGLUniformLocation;
   /** (uSkyColor) Цвет неба для окружающего освещения */
   let skyColorLocation: WebGLUniformLocation;
+  /** (uBetaRayleigh) Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря */
+  let betaRayleighLocation: WebGLUniformLocation;
+  /** (uBetaMie) Коэффициенты рассеивания Ми для трех частот спектра (rgb) на уровне моря */
+  let betaMieLocation: WebGLUniformLocation;
+  /** (uGMie) Коэффициент фазового рассеивания Ми */
+  let gMieLocation: WebGLUniformLocation;
+  /** 
+   * (uScaleHeight) Масштабная высота (высота 50% плотности молекул воздуха)
+   *  x - для рассеивания Релея
+   *  y - для рассеивания Ми 
+   * */
+  let scaleHeightLocation: WebGLUniformLocation;
+  /** (uAtmRadius) Радиус атмосферы */
+  let atmRadiusLocation: WebGLUniformLocation;
+  /** (uPlanetRadius) Радиус планеты */
+  let planetRadiusLocation: WebGLUniformLocation;
+  /** (uPlanetCenter) Положение центра планеты */
+  let planetCenterLocation: WebGLUniformLocation;
 
   /** (uHeadLight) Свет фар */
   let headLightLocation: WebGLUniformLocation;
@@ -99,6 +117,20 @@ export default async function main() {
     sunDiscColorLocation = e.getUniformLocation(program, 'uSunDiscColor');
     sunDiscAngleSinLocation = e.getUniformLocation(program, 'uSunDiscAngleSin');
     e.gl.uniform1f(sunDiscAngleSinLocation, SUN_DISC_ANGLE_SIN);
+    betaRayleighLocation = e.getUniformLocation(program, 'uBetaRayleigh');
+    e.gl.uniform3f(betaRayleighLocation, atm.betaRayleigh.x, atm.betaRayleigh.y, atm.betaRayleigh.z);
+    betaMieLocation = e.getUniformLocation(program, 'uBetaMie');
+    e.gl.uniform3f(betaMieLocation, atm.betaMie.x, atm.betaMie.y, atm.betaMie.z);
+    gMieLocation = e.getUniformLocation(program, 'uGMie');
+    e.gl.uniform1f(gMieLocation, atm.g);
+    scaleHeightLocation = e.getUniformLocation(program, 'uScaleHeight');
+    e.gl.uniform2f(scaleHeightLocation, atm.heightRayleigh, atm.heightMie);
+    atmRadiusLocation = e.getUniformLocation(program, 'uAtmRadius');
+    e.gl.uniform1f(atmRadiusLocation, atm.radius);
+    planetRadiusLocation = e.getUniformLocation(program, 'uPlanetRadius');
+    e.gl.uniform1f(planetRadiusLocation, atm.planetRadius);
+    planetCenterLocation = e.getUniformLocation(program, 'uPlanetCenter');
+    e.gl.uniform3f(planetCenterLocation, atm.planetCenter.x, atm.planetCenter.y, atm.planetCenter.z);
 
     skyTransformMatLocation = e.getUniformLocation(program, 'uSkyTransformMat');
     skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
@@ -175,7 +207,7 @@ export default async function main() {
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
       const skyDirScatter = atm.scattering(pos, Vec3.J(), sky.sunDirection);
-      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(4.*Math.PI).addMutable(new Vec3(0.001,0.001,0.001));
+      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(8.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}

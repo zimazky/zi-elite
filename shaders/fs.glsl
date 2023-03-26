@@ -113,39 +113,6 @@ const int MAP_HEIGHTS = 2;
 // Рендеринг
 // ----------------------------------------------------------------------------
 
-/** 
-  * Функция определения пересечения луча с планетой
-  *   ro - положение камеры
-  *   rd - направление луча
-  * Возвращает 0. если луч пересекается с планетой
-  */
-float planetIntersection(vec3 ro, vec3 rd) {
-  //const pos = ro.sub(PLANET_POS);
-  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
-  if(OT>0. || CT2>PLANET_RADIUS_SQR) return 1.;
-  return 0.;
-}
-
-/** 
-  * Функция определения мягкой тени от сферической поверхности планеты
-  *   ro - положение точки, для которой производится рассчет
-  *   rd - направление луча на солнце
-  * Возвращает значения от 0. до 1.
-  *   0. - если солнце полностью скрыто планетой
-  *   1. - если солнце полностью видно
-  */
-float softPlanetShadow(vec3 ro, vec3 rd) {
-  //const pos = ro - PLANET_POS;
-  vec3 pos = vec3(0, ro.y+PLANET_RADIUS, 0);
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
-  if(OT>0.) return 1.;
-  float d = (PLANET_RADIUS-CT)/OT;
-  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
-}
-
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   float t = tmin;
   for(int i=0; i<300; i++) {
@@ -185,10 +152,10 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-
+const vec3 LIGHT_INTENSITY = vec3(12.); // Интенсивность света
 vec4 render(vec3 ro, vec3 rd)
 {
-
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   vec3 light1 = uSunDirection;
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
@@ -200,7 +167,10 @@ vec4 render(vec3 ro, vec3 rd)
     col = 0.5*nightSky(normalize(vRaySky));
     col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
     col *= planetIntersection(ro,rd);
-    ResultScattering rs = scattering(ro, rd, light1);
+    ResultScattering rs;
+    //if(LvsR==0.) rs = scatteringOld(ro, rd, light1);
+    //else rs = scattering(ro, rd, light1);
+    rs = scatteringOld(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = -1.0;
   }
@@ -220,7 +190,6 @@ vec4 render(vec3 ro, vec3 rd)
     float amb = clamp(0.5+0.5*nor.y, 0., 1.);
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
-    float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
     float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
     float shd = softPlanetShadow(pos, light1);
@@ -310,10 +279,13 @@ void main(void) {
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
+  //col.rgb = TonemapACES(col.rgb);
   // Квантование и дитеринг с гамма-коррекцией
   vec3 color = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
   //vec3 color = oetf(col.rgb);
-
   fragColor = vec4( color, 1. );
+  //col.rgb += noise(uv*uTime.x) / 127.; // dither
+  //col.rgb = pow(col.rgb, vec3(1./2.2)); // gamma
+  //fragColor = vec4( col.rgb, 1. );
 }
  
