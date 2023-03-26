@@ -19,6 +19,7 @@ import { loadImage } from './utils/loadimg';
 //   5. Продумать об использовании буфера предыдущего кадра для ускорения рендеринга нового
 //   6. Продумать возможность аналитического вычисления нормалей к поверхности
 //   7. Правильно расположить небесный свод относительно планеты
+//   8. Поправить цвета материалов, структурировать работу с материалами
 
 export default async function main() {
 
@@ -93,10 +94,15 @@ export default async function main() {
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
   const obj = JSON.parse(json);
-  let pos = Vec3.ZERO();
+  
+  // одна из предустановленных точек
+  let pos = new Vec3(2316,0,7696);
+  let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
+
+  //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
-  let quat = Quaternion.Identity();
-  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  //let quat = Quaternion.Identity();
+  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
@@ -203,6 +209,7 @@ export default async function main() {
       sunDir.normalizeMutable();
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
       const sunIntensity = SUN_COLOR.mul(10.);
+      const sunColorRaw = sunIntensity.mulEl(sunDirScatter.t);
       const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
@@ -214,6 +221,7 @@ export default async function main() {
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
       alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
       x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}
+      sunR: ${sunColorRaw.x.toFixed(2)}, ${sunColorRaw.y.toFixed(2)}, ${sunColorRaw.z.toFixed(2)}
       sun: ${sunColor.x.toFixed(2)}, ${sunColor.y.toFixed(2)}, ${sunColor.z.toFixed(2)}
       sky: ${skyColor.x.toFixed(2)}, ${skyColor.y.toFixed(2)}, ${skyColor.z.toFixed(2)}`;
 
