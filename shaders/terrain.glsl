@@ -142,7 +142,7 @@ Material terrain_color(vec3 pos, vec3 nor) {
   // полосы на скалах
   vec3 kd = (r*0.25+0.75)*0.9*mix( vec3(0.08,0.05,0.03),
                  vec3(0.10,0.09,0.08), 
-                 texture(uTextureGrayNoise, vec2(0.0077*pos.x/W_SCALE,0.3*pos.y/H_SCALE)).x);
+                 texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
   //kd = vec3(0.05);
   // песок
   float sn = smoothstep(0.7,0.9,nor.y);
@@ -153,7 +153,7 @@ Material terrain_color(vec3 pos, vec3 nor) {
   kd = mix(kd,0.15*vec3(0.30,.30,0.10)*(0.25+0.75*r),gh*gn);
   
   // мелкие и крупные пятна на скалах и траве
-  kd *= 0.1+1.6*sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.03));
+  kd *= 0.7+1.*sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
   float ks = 0.02*(1.-gh*gn);
   float spec = 0.3*(1.-gh*gn*sn);
 

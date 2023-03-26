@@ -133,7 +133,6 @@ export class Atmosphere {
   scattering(ro: Vec3, rd: Vec3, ld: Vec3): ResultScattering {
     // Положение относительно центра планеты
     const start = ro.sub(this.planetCenter);
-    //const start = new Vec3(0,ro.y+this.planetRadius,0);
 
     let r2 = start.dot(start); // квадрат расстояния до центра планеты
     let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
@@ -170,11 +169,12 @@ export class Atmosphere {
     const mu2 = mu * mu;
     const g2 = this.g*this.g;
     const phaseRayleigh = 0.75 * (1.+mu2) * ONE_DIV4PI;
-    const phaseMie = isIntersect ? 0. : 1.5*(1.-g2)/(2.+g2) * (1.+mu2)/Math.pow(1.+g2-2.*mu*this.g, 1.5) * ONE_DIV4PI;
+    const phaseMie = 1.5*(1.-g2)/(2.+g2) * (1.+mu2)/Math.pow(1.+g2-2.*mu*this.g, 1.5) * ONE_DIV4PI;
 
     const stepSize = rayLen/NUM_STEPS; // длина шага
     const step = rd.mul(stepSize); // шаг вдоль луча
-    const pos = start.add(step); // координаты другого конца сегмента 
+    const nextpos = start.add(step); // координаты другого конца сегмента 
+    const pos = start.add(step.mul(0.5)); // координаты середины сегмента 
 
     // оптическая глубина
     let optRayleigh = 0.;
@@ -184,16 +184,17 @@ export class Atmosphere {
     let fDensityRayleigh = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightRayleigh);
     let fDensityMie = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightMie);
 
-    for(let i=0; i<NUM_STEPS; i++) {
-      const height = pos.length() - this.planetRadius;
+    for(let i=0; i<NUM_STEPS; i++, nextpos.addMutable(step), pos.addMutable(step)) {
+      const height = nextpos.length() - this.planetRadius;
       const densityRayleigh = stepSize*Math.exp(-height/this.heightRayleigh); // плотность частиц Релея
       const densityMie = stepSize*Math.exp(-height/this.heightMie); // плотность частиц Ми
-      // определение оптической глубины вдоль луча
+      // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
       optRayleigh += 0.5*(densityRayleigh + fDensityRayleigh);
       optMie += 0.5*(densityMie + fDensityMie);
       fDensityRayleigh = densityRayleigh;
       fDensityMie = densityMie;
 
+      // определение оптической глубины вдоль луча к солнцу (считаем из средней точки сегмента)
       // определение виден ли источник света из данной точки
       const OT = pos.dot(ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
       const CT2 = pos.dot(pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
@@ -202,7 +203,7 @@ export class Atmosphere {
         const normal = pos.normalize();
         // косинус угла луча света к зениту
         const NdotL = normal.dot(ld);
-        const height = pos.length()-this.planetRadius;
+        const height = pos.length() - this.planetRadius;
         // оптическая глубина вдоль направления на свет
         const optRayleigh2 = this.heightRayleigh * this.ChH(this.planetRadius/this.heightRayleigh, height/this.heightRayleigh, NdotL);
         const optMie2 = this.heightMie * this.ChH(this.planetRadius/this.heightMie, height/this.heightMie, NdotL);
@@ -217,7 +218,6 @@ export class Atmosphere {
         totalRayleigh.addMutable(attn.mul(densityRayleigh));
         totalMie.addMutable(attn.mul(densityMie));
       }
-      pos.addMutable(step);
     }
     
     const inScatter = isIntersect 
@@ -237,6 +237,93 @@ export class Atmosphere {
     return { t: transmittance, i: inScatter };
   }
 
+  /** 
+   * Функция вычисления атмосферного рассеивания при прямом направлении на солнце
+   * Определяется цвет поглощения
+   *   ro - положение камеры
+   *   rd - направление на источник света
+   */ 
+  transmittance(ro: Vec3, rd: Vec3): Vec3 {
+    // Положение относительно центра планеты
+    const start = ro.sub(this.planetCenter);
+
+    let r2 = start.dot(start); // квадрат расстояния до центра планеты
+    let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
+    const CT2 = r2 - OT*OT;    // квадрат минимального расстояния от луча до центра планеты
+    if(CT2 >= this.radius2) return Vec3.ZERO(); // луч проходит выше атмосферы
+    const AT = Math.sqrt(this.radius2-CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
+    let rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
+    if(r2 > this.radius2) {
+      // выше атмосферы
+      if(OT < 0.) return Vec3.ZERO(); // направление от планеты
+      // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
+      start.addMutable(rd.mul(OT - AT));
+      r2 = this.radius2;
+      OT = AT;
+    }
+    else rayLen = AT - start.dot(rd); // пересчитываем длину луча с учетом нахождения внутри сферы атмосферы
+
+    const normal = start.normalize();
+    const NdotD = normal.dot(rd);
+    let isIntersect = false; // признак пересечения с планетой
+    if(NdotD < 0.) {
+      // Поиск длины луча в случае попадания в поверхность планеты
+      if(CT2 < this.planetRadius2) {
+        rayLen = OT - Math.sqrt(this.planetRadius2 - CT2);
+        isIntersect = true;
+      }
+    }
+    
+    // Расчет фазовой функции
+    // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
+    // Для рассеяния Ми g принимают 0,76 ... 0,999.
+    // Отрицательные значения g рассеивают больше в прямом направлении, а положительные - рассеивают свет назад к источнику света
+    const g2 = this.g*this.g;
+    const phaseRayleigh = 1.5 * ONE_DIV4PI;
+    const phaseMie = 1.5*(1.-g2)/(2.+g2) * 2./Math.pow(1.+g2-2.*this.g, 1.5) * ONE_DIV4PI;
+
+    const stepSize = rayLen/NUM_STEPS; // длина шага
+    const step = rd.mul(stepSize); // шаг вдоль луча
+    const nextpos = start.add(step); // координаты другого конца сегмента 
+    const pos = start.add(step.mul(0.5)); // координаты середины сегмента 
+
+    // оптическая глубина
+    let optRayleigh = 0.;
+    let optMie = 0.;
+    const totalRayleigh = Vec3.ZERO();
+    const totalMie = Vec3.ZERO();
+    let fDensityRayleigh = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightRayleigh);
+    let fDensityMie = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightMie);
+
+    for(let i=0; i<NUM_STEPS; i++, nextpos.addMutable(step), pos.addMutable(step)) {
+      const nextheight = nextpos.length() - this.planetRadius;
+      const densityRayleigh = stepSize*Math.exp(-nextheight/this.heightRayleigh); // плотность частиц Релея
+      const densityMie = stepSize*Math.exp(-nextheight/this.heightMie); // плотность частиц Ми
+      // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
+      optRayleigh += 0.5*(densityRayleigh + fDensityRayleigh);
+      optMie += 0.5*(densityMie + fDensityMie);
+      fDensityRayleigh = densityRayleigh;
+      fDensityMie = densityMie;
+
+      // ослабление света за счет рассеивания
+      // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
+      const attn = 
+        this.betaRayleigh.mul(-optRayleigh)
+        .addMutable(this.betaMie.mul(-optMie))
+        .exp();
+
+      // total += T(CP) * T(PA) * ρ(h) * ds
+      totalRayleigh.addMutable(attn.mul(densityRayleigh));
+      totalMie.addMutable(attn.mul(densityMie));
+    }
+    
+    // I = β(λ) * γ(θ) * total
+    const transmittance = 
+      this.betaRayleigh.mulEl(totalRayleigh).mulMutable(phaseRayleigh)
+      .addMutable(this.betaMie.mulEl(totalMie).mulMutable(phaseMie));
+
+    return transmittance;
+  }
 
 }
 

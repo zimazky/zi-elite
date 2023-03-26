@@ -170,7 +170,7 @@ vec4 render(vec3 ro, vec3 rd)
     ResultScattering rs;
     //if(LvsR==0.) rs = scatteringOld(ro, rd, light1);
     //else rs = scattering(ro, rd, light1);
-    rs = scatteringOld(ro, rd, light1);
+    rs = scattering(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = -1.0;
   }
@@ -249,7 +249,7 @@ vec4 render(vec3 ro, vec3 rd)
     //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
     //col = mix(col, FOG_COLOR, fo );
 
-    ResultScattering rs = calculate_scattering2(ro,rd,light1,t);
+    ResultScattering rs = scatteringWithIntersection(ro,rd,light1,t);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
 
 	}
