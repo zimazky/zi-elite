@@ -103,7 +103,7 @@ export default async function main() {
   //let pos = new Vec3(0,12000000,0);
   //let quat = Quaternion.Identity();
   //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
-  if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
+  //if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
   const sky = new Sky();
@@ -145,7 +145,7 @@ export default async function main() {
     screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
 
-    const texture0 = e.setTexture(program, 'uTextureGrayNoise', grayNoiseImg, 0);
+    const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg, 0);
     const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg, 1);
     const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
     const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
@@ -228,7 +228,7 @@ export default async function main() {
       infoRefreshTime = time + 0.5;
     }
     if(time>positionStoreTime) {
-      // Сохранение координат в локальнре хранилище каждые 5 секунд
+      // Сохранение координат в локальное хранилище каждые 5 секунд
       const dataString = JSON.stringify({ position: camera.position, orientation: camera.orientation });
       localStorage.setItem('ziEliteData', dataString);
       positionStoreTime = time + 5.;
