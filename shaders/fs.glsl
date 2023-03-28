@@ -27,6 +27,15 @@ uniform vec3 uCameraDirection;
 // цвет и интенсивность света фар: vec3(0.) - выключен
 uniform vec3 uHeadLight;
 
+// положение 1-ой сигнальной ракеты
+uniform vec3 uFlare1Position;
+// цвет и интенсивность света 1-ой сигнальной ракеты
+uniform vec3 uFlare1Light;
+// положение 2-ой сигнальной ракеты
+uniform vec3 uFlare2Position;
+// цвет и интенсивность света 2-ой сигнальной ракеты
+uniform vec3 uFlare2Light;
+
 // насколько камера попадает под солнце:
 // 1. - полностью на солнце, 0. - полностью в тени
 uniform float uCameraInShadow; 
@@ -191,6 +200,17 @@ vec4 render(vec3 ro, vec3 rd)
 	  float LdotN = dot(light1, nor);
     float RdotN = clamp(-dot(rd, nor), 0., 1.);
 
+    // 1-ая световая ракета
+    vec3 fd1 = uFlare1Position-pos;
+    float fdist1sqr = dot(fd1,fd1);
+    fd1 /= sqrt(fdist1sqr);
+    float F1dotN = clamp(dot(fd1, nor), 0., 1.);
+    // 2-ая световая ракета
+    vec3 fd2 = uFlare2Position-pos;
+    float fdist2sqr = dot(fd2,fd2);
+    fd2 /= sqrt(fdist2sqr);
+    float F2dotN = clamp(dot(fd2, nor), 0., 1.);
+
     float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
     float shd = softPlanetShadow(pos, light1);
     if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t);
@@ -201,7 +221,9 @@ vec4 render(vec3 ro, vec3 rd)
 	  //vec3 lomm = 2.*AMBIENT_LIGHT*amb*lommel_seeliger(kd, RdotN, amb) + SUN_LIGHT*LdotN*shd*lommel_seeliger(kd, RdotN, LdotN);
 	  vec3 lunar = uSkyColor*amb*lunar_lambert(kd, RdotN, amb)     // свет от неба
       + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца
-      + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t);  // свет фар
+      + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
+      + uFlare1Light*F1dotN*lunar_lambert(kd, RdotN, F1dotN)/(fdist1sqr)  // свет 1-ой сигнальной ракеты
+      + uFlare2Light*F2dotN*lunar_lambert(kd, RdotN, F2dotN)/(fdist2sqr);  // свет 2-ой сигнальной ракеты
     col = lunar;//mix(lomm, lunar, LvsR);
     
     // specular
@@ -255,6 +277,21 @@ vec4 render(vec3 ro, vec3 rd)
 	}
   // sun scatter
   col += uCameraInShadow*0.3*uSunDiscColor*pow(sundot, 8.0)/LIGHT_INTENSITY;
+
+  // 1-ая световая ракета
+  vec3 fd = uFlare1Position - ro;
+  float fdist2 = dot(fd,fd);
+  float fdist = sqrt(fdist2);
+  fd /= fdist;
+  float f = step(0.999999, dot(fd,rd));
+  col = (fdist-t)*sign(t)<0. ? mix(col,uFlare1Light,f) : col;
+  // 2-ая световая ракета
+   fd = uFlare2Position - ro;
+  fdist2 = dot(fd,fd);
+  fdist = sqrt(fdist2);
+  fd /= fdist;
+  f = step(0.999999, dot(fd,rd));
+  col = (fdist-t)*sign(t)<0. ? mix(col,uFlare2Light,f) : col;
 
   return vec4(col, t);
 }

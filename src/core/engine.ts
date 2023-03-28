@@ -59,7 +59,6 @@ export class Engine extends GLContext {
     ];
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
-    //this.gl.bindBuffer(this.gl.ARRAY_BUFFER, undefined);
   }
 
   resizeCanvasToDisplaySize(): void {
@@ -73,24 +72,17 @@ export class Engine extends GLContext {
     }
   }
 
-  getUniformLocation(program: WebGLProgram, name: string): WebGLUniformLocation {
-    return this.gl.getUniformLocation(program, name);
-  }
-
+  /** Привязка текстуры без генерации данных MIPMAP */
   setTexture(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
     const texture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
-//    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST_MIPMAP_NEAREST);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);//_MIPMAP_LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img);
     
-    // Для сферической проекции нужно отключать МипМап карты, иначе виден шов при переходе координат от 1. к 0.
-    //this.gl.generateMipmap(this.gl.TEXTURE_2D);
-
     const textureLocation = this.gl.getUniformLocation(program, uname);
     // Tell the shader to use texture unit 0 for u_texture
     this.gl.uniform1i(textureLocation, num);
@@ -98,6 +90,7 @@ export class Engine extends GLContext {
     return texture;
   }
 
+  /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
     const texture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
@@ -119,8 +112,6 @@ export class Engine extends GLContext {
 
 
   private loop(): void {
-    //this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    //this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     this.resizeCanvasToDisplaySize();
 
     const lCurrentTime = performance.now()/1000.;

@@ -2,6 +2,7 @@ import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
 import { SUN_COLOR, SUN_DISC_ANGLE_SIN } from './core/constants';
 import { Engine } from './core/engine'
+import { Flare } from './core/flare';
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
 import { Quaternion } from './core/quaternion';
@@ -82,6 +83,15 @@ export default async function main() {
   /** (uConstellationsColor) Подсветка созвездий, 0. - не подсвечивать */
   let constellationsColor: WebGLUniformLocation;
 
+  /** (uFlare1Position) Положение 1-ой сигнальной ракеты */
+  let flare1PositionLocation: WebGLUniformLocation;
+  /** (uFlare1Light) Цвет и интенсивность свечения 1-ой сигнальной ракеты */
+  let flare1LightLocation: WebGLUniformLocation;
+  /** (uFlare2Position) Положение 2-ой сигнальной ракеты */
+  let flare2PositionLocation: WebGLUniformLocation;
+  /** (uFlare2Light) Цвет и интенсивность свечения 2-ой сигнальной ракеты */
+  let flare2LightLocation: WebGLUniformLocation;
+
   initKeyBuffer();
 
   const grayNoiseImg = await loadImage('textures/gray_noise.png');
@@ -107,43 +117,49 @@ export default async function main() {
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
   const sky = new Sky();
+  const flare1 = new Flare(camera);
+  const flare2 = new Flare(camera);
 
   e.onProgramInit = (program) => {
-    cameraPositionLocation = e.getUniformLocation(program, 'uCameraPosition');
-    cameraViewAngleLocation = e.getUniformLocation(program, 'uCameraViewAngle');
-    cameraVelocityLocation = e.getUniformLocation(program, 'uCameraVelocity');
-    cameraDirectionLocation = e.getUniformLocation(program, 'uCameraDirection');
-    cameraTransformMatLocation = e.getUniformLocation(program, 'uTransformMat');
-    cameraAngularSpeedLocation = e.getUniformLocation(program, 'uCameraRotationSpeed');
-    cameraInShadowLocation = e.getUniformLocation(program, 'uCameraInShadow');
+    cameraPositionLocation = e.gl.getUniformLocation(program, 'uCameraPosition');
+    cameraViewAngleLocation = e.gl.getUniformLocation(program, 'uCameraViewAngle');
+    cameraVelocityLocation = e.gl.getUniformLocation(program, 'uCameraVelocity');
+    cameraDirectionLocation = e.gl.getUniformLocation(program, 'uCameraDirection');
+    cameraTransformMatLocation = e.gl.getUniformLocation(program, 'uTransformMat');
+    cameraAngularSpeedLocation = e.gl.getUniformLocation(program, 'uCameraRotationSpeed');
+    cameraInShadowLocation = e.gl.getUniformLocation(program, 'uCameraInShadow');
 
-    headLightLocation = e.getUniformLocation(program, 'uHeadLight');
+    headLightLocation = e.gl.getUniformLocation(program, 'uHeadLight');
+    flare1PositionLocation = e.gl.getUniformLocation(program, 'uFlare1Position');
+    flare1LightLocation = e.gl.getUniformLocation(program, 'uFlare1Light');
+    flare2PositionLocation = e.gl.getUniformLocation(program, 'uFlare2Position');
+    flare2LightLocation = e.gl.getUniformLocation(program, 'uFlare2Light');
 
-    sunDirectionLocation = e.getUniformLocation(program, 'uSunDirection');
-    sunDiscColorLocation = e.getUniformLocation(program, 'uSunDiscColor');
-    sunDiscAngleSinLocation = e.getUniformLocation(program, 'uSunDiscAngleSin');
+    sunDirectionLocation = e.gl.getUniformLocation(program, 'uSunDirection');
+    sunDiscColorLocation = e.gl.getUniformLocation(program, 'uSunDiscColor');
+    sunDiscAngleSinLocation = e.gl.getUniformLocation(program, 'uSunDiscAngleSin');
     e.gl.uniform1f(sunDiscAngleSinLocation, SUN_DISC_ANGLE_SIN);
-    betaRayleighLocation = e.getUniformLocation(program, 'uBetaRayleigh');
+    betaRayleighLocation = e.gl.getUniformLocation(program, 'uBetaRayleigh');
     e.gl.uniform3f(betaRayleighLocation, atm.betaRayleigh.x, atm.betaRayleigh.y, atm.betaRayleigh.z);
-    betaMieLocation = e.getUniformLocation(program, 'uBetaMie');
+    betaMieLocation = e.gl.getUniformLocation(program, 'uBetaMie');
     e.gl.uniform3f(betaMieLocation, atm.betaMie.x, atm.betaMie.y, atm.betaMie.z);
-    gMieLocation = e.getUniformLocation(program, 'uGMie');
+    gMieLocation = e.gl.getUniformLocation(program, 'uGMie');
     e.gl.uniform1f(gMieLocation, atm.g);
-    scaleHeightLocation = e.getUniformLocation(program, 'uScaleHeight');
+    scaleHeightLocation = e.gl.getUniformLocation(program, 'uScaleHeight');
     e.gl.uniform2f(scaleHeightLocation, atm.heightRayleigh, atm.heightMie);
-    atmRadiusLocation = e.getUniformLocation(program, 'uAtmRadius');
+    atmRadiusLocation = e.gl.getUniformLocation(program, 'uAtmRadius');
     e.gl.uniform1f(atmRadiusLocation, atm.radius);
-    planetRadiusLocation = e.getUniformLocation(program, 'uPlanetRadius');
+    planetRadiusLocation = e.gl.getUniformLocation(program, 'uPlanetRadius');
     e.gl.uniform1f(planetRadiusLocation, atm.planetRadius);
-    planetCenterLocation = e.getUniformLocation(program, 'uPlanetCenter');
+    planetCenterLocation = e.gl.getUniformLocation(program, 'uPlanetCenter');
     e.gl.uniform3f(planetCenterLocation, atm.planetCenter.x, atm.planetCenter.y, atm.planetCenter.z);
 
-    skyTransformMatLocation = e.getUniformLocation(program, 'uSkyTransformMat');
-    skyColorLocation = e.getUniformLocation(program, 'uSkyColor');
-    constellationsColor = e.getUniformLocation(program, 'uConstellationsColor');
+    skyTransformMatLocation = e.gl.getUniformLocation(program, 'uSkyTransformMat');
+    skyColorLocation = e.gl.getUniformLocation(program, 'uSkyColor');
+    constellationsColor = e.gl.getUniformLocation(program, 'uConstellationsColor');
 
-    screenModeLocation = e.getUniformLocation(program, 'uScreenMode');
-    mapScaleLocation = e.getUniformLocation(program, 'uMapScale');
+    screenModeLocation = e.gl.getUniformLocation(program, 'uScreenMode');
+    mapScaleLocation = e.gl.getUniformLocation(program, 'uMapScale');
 
     const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg, 0);
     const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg, 1);
@@ -233,6 +249,16 @@ export default async function main() {
       localStorage.setItem('ziEliteData', dataString);
       positionStoreTime = time + 5.;
     }
+
+    flare1.update(time, timeDelta);
+    e.gl.uniform3f(flare1PositionLocation, flare1.position.x, flare1.position.y, flare1.position.z);
+    if(flare1.isVisible) e.gl.uniform3f(flare1LightLocation, 1000, 1000, 1000);
+    else e.gl.uniform3f(flare1LightLocation, 0, 0, 0);
+
+    flare2.update(time, timeDelta);
+    e.gl.uniform3f(flare2PositionLocation, flare2.position.x, flare2.position.y, flare2.position.z);
+    if(flare2.isVisible) e.gl.uniform3f(flare2LightLocation, 1000, 1000, 1000);
+    else e.gl.uniform3f(flare2LightLocation, 0, 0, 0);
 
   }
   

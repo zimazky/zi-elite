@@ -69,6 +69,16 @@ export class TerrainSampler {
     return H_SCALE*a;
   }
 
+  calcNormalM(pos: Vec3, t: number): Vec3 {
+    const eps = new Vec2(0.001*t, 0.0);
+    return new Vec3(
+      this.terrainM(new Vec2(pos.x-eps.x, pos.z-eps.y)) - this.terrainM(new Vec2(pos.x+eps.x, pos.z+eps.y)),
+      2.0*eps.x,
+      this.terrainM(new Vec2(pos.x-eps.y,pos.z-eps.x)) - this.terrainM(new Vec2(pos.x+eps.y, pos.z+eps.x))
+    ).normalize();
+  }
+  
+
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
     const minStep = 1.;
