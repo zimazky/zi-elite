@@ -252,12 +252,12 @@ export default async function main() {
 
     flare1.update(time, timeDelta);
     e.gl.uniform3f(flare1PositionLocation, flare1.position.x, flare1.position.y, flare1.position.z);
-    if(flare1.isVisible) e.gl.uniform3f(flare1LightLocation, 1000, 1000, 1000);
+    if(flare1.isVisible) e.gl.uniform3f(flare1LightLocation, flare1.light.x, flare1.light.y, flare1.light.z);
     else e.gl.uniform3f(flare1LightLocation, 0, 0, 0);
 
     flare2.update(time, timeDelta);
     e.gl.uniform3f(flare2PositionLocation, flare2.position.x, flare2.position.y, flare2.position.z);
-    if(flare2.isVisible) e.gl.uniform3f(flare2LightLocation, 1000, 1000, 1000);
+    if(flare2.isVisible) e.gl.uniform3f(flare2LightLocation, flare2.light.x, flare2.light.y, flare2.light.z);
     else e.gl.uniform3f(flare2LightLocation, 0, 0, 0);
 
   }

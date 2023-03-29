@@ -190,8 +190,7 @@ vec4 render(vec3 ro, vec3 rd)
     vec3 hal = normalize(light1-rd);
         
     // цвет
-    Material mat = terrain_color(pos, nor);
-    vec3 kd = mat.kd.rgb;
+    vec3 kd = terrain_color(pos, nor).rgb;
 
     // lighting		
     
@@ -226,47 +225,7 @@ vec4 render(vec3 ro, vec3 rd)
       + uFlare2Light*F2dotN*lunar_lambert(kd, RdotN, F2dotN)/(fdist2sqr);  // свет 2-ой сигнальной ракеты
     col = lunar;//mix(lomm, lunar, LvsR);
     
-    // specular
-    /*
-    float n = exp2(12.*mat.ks.a);
-    vec3 ks = mat.ks.rgb;
-    ks *= 0.5*(n+1.)/PI;
-    float RdotV = clamp(dot(reflect(light1, nor), rd), 0., 1.);
-    col += (1.-LvsR)*ks*(SUN_LIGHT*shd*LdotN*pow(RdotV,n) + AMBIENT_LIGHT*pow(amb,n));
-    */
-
-////////////////////
-/*
-	col = kd;
-    float bac = clamp(0.2 + 0.8*dot(normalize(vec3(-light1.x, 0.0, light1.z)), nor), 0.0, 1.0);
-
-    vec3 lin  = vec3(0.0);
-    // цветной ореол у тени
-    lin += dif*vec3(8.00,5.00,3.00)*1.3*vec3(shd, shd*shd*0.5+0.5*shd, shd*shd*0.8+0.2*shd);
-    lin += amb*vec3(0.40,0.60,1.00)*1.2;
-    //lin += bac*vec3(0.40,0.50,0.60);
-	col *= lin;
-
-
-    vec3 ref = reflect( rd, nor );
-    float fre = clamp( 1.0+dot(rd,nor), 0.0, 1.0 );
-
-    float h = smoothstep(800.0,1000.0,pos.y + 250.0*fbm(pos.xz/W_SCALE) );
-    float e = smoothstep(1.0-0.5*h,1.0-0.1*h,nor.y);
-    float o = 0.3 + 0.7*smoothstep(0.0,0.1,nor.x+h*h);
-
-    float s = h*e*o;
-    float gh = smoothstep(500.,600.,pos.y);
-
-    //specular
-    
-    col += (0.+0.2*gh)*(0.04+0.96*pow(clamp(1.0+dot(hal,rd),0.0,1.0),5.0))*
-               vec3(7.0,5.0,3.0)*dif*shd*
-               pow( clamp(dot(nor,hal), 0.0, 1.0),16.0);
-       
-    col += s*0.65*pow(fre,4.0)*vec3(0.3,0.5,0.6)*smoothstep(0.0,0.6,ref.y);
-*/
-//////////////////
+    //////////////////
 	  // fog
     //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
     //col = mix(col, FOG_COLOR, fo );

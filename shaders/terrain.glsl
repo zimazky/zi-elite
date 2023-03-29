@@ -109,24 +109,8 @@ float softShadow(vec3 ro, vec3 rd, float dis) {
   return 0.;
 }
 
-// ----------------------------------------------------------------------------
-// Материалы
-// ----------------------------------------------------------------------------
-
-struct Material {
-  vec4 kd;  // rgb - diffuse color, a - opacity, a<0 для источника света
-  vec4 ks;  // rgb - specular color, a - glossiness
-};
-
-Material matGrass = Material(vec4(0.15*vec3(0.30,.30,0.10),1.),vec4(0));
-Material matRockDark = Material(vec4(vec3(0.08,0.05,0.03),1.),vec4(vec3(0.02),0.3));
-Material matRockLight = Material(vec4(vec3(0.10,0.09,0.08),1.),vec4(vec3(0.02),0.3));
-Material matSand = Material(vec4(0.20*vec3(0.45,.30,0.15),1.),vec4(0));
-Material matSnow = Material(vec4(0.29*vec3(0.62,0.65,0.7),1.),vec4(vec3(0.2),0.3));
-
 const mat2 m2 = mat2(0.8,-0.6,0.6,0.8);
-float fbm(vec2 p)
-{
+float fbm(vec2 p) {
   float f = 0.0;
   f += 0.5000*texture(uTextureGrayNoise, p/256.0 ).x; p = m2*p*2.02;
   f += 0.2500*texture(uTextureGrayNoise, p/256.0 ).x; p = m2*p*2.03;
@@ -135,37 +119,52 @@ float fbm(vec2 p)
   return f/0.9375;
 }
 
+// ----------------------------------------------------------------------------
+// Материалы
+// ----------------------------------------------------------------------------
+
+// rgb - альбедо, a - зарезервировано
+vec4 grassAlbedo = vec4(0.032, 0.032, 0.011, 1.);
+//vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
+vec4 darkRockAlbedo = vec4(0.072, 0.045, 0.027, 1.);
+vec4 lightRockAlbedo = vec4(0.09, 0.081, 0.072, 1.);
+vec4 sandAlbedo = 1.7*vec4(0.09, 0.081, 0.072, 1.);
+vec4 darkSandAlbedo = vec4(0.030, 0.022, 0.010, 1.);
+vec4 snowAlbedo = vec4(0.1798, 0.1885, 0.203, 1.);
+
 // определение цвета пикселя
-Material terrain_color(vec3 pos, vec3 nor) {
+vec4 terrain_color(vec3 pos, vec3 nor) {
   // мелкий шум в текстуре
   float r = texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
-  // полосы на скалах
-  vec3 kd = (r*0.25+0.75)*0.9*mix( vec3(0.08,0.05,0.03),
-                 vec3(0.10,0.09,0.08), 
-                 texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
-  //kd = vec3(0.05);
-  // песок
-  float sn = smoothstep(0.7,0.9,nor.y);
-  kd = mix(kd, 0.20*vec3(0.45,.30,0.15)*(0.50+0.50*r),sn);
-  // трава
-  float gh = 1.-smoothstep(500.,600.,pos.y);
-  float gn = smoothstep(0.60,1.0,nor.y);
-  kd = mix(kd,0.15*vec3(0.30,.30,0.10)*(0.25+0.75*r),gh*gn);
-  
   // мелкие и крупные пятна на скалах и траве
-  kd *= 0.7+1.*sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
-  float ks = 0.02*(1.-gh*gn);
-  float spec = 0.3*(1.-gh*gn*sn);
+  float r2 = 0.7 + sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
+  // полосы на скалах
+  vec4 albedo = r2*(r*0.25+0.75)*mix( darkRockAlbedo, lightRockAlbedo,
+                 texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
 
+  // песок
+  float sh = smoothstep(500.,600.,pos.y); // фактор высоты
+  float sn = smoothstep(0.7, 0.9, nor.y); // фактор наклона поверхности
+  albedo = mix(albedo, sandAlbedo*(0.5+0.5*r), sn*sh);
+
+  // земля
+  float dh = 1.-smoothstep(500.,650.,pos.y); // фактор высоты
+  float dn = smoothstep(0.5, 0.9, nor.y); // фактор наклона поверхности
+  albedo = mix(albedo, r2*darkSandAlbedo*(0.5+0.5*r), dn*dh);
+
+  // трава
+  float gh = 1.-smoothstep(500.,600.,pos.y); // фактор высоты
+  float gn = smoothstep(0.6, 1.0, nor.y); // фактор наклона поверхности
+  albedo = mix(albedo, r2*grassAlbedo*(0.25+0.75*r), smoothstep(0.3, 0.6, r2*gh*gn));
+  //albedo = mix(albedo, r2*grassAlbedo*(0.25+0.75*r), gh*gn);
+  
   // снег на высоте от 800 м 
-  float h = smoothstep(800.0,1000.0,pos.y + 250.0*fbm(pos.xz/W_SCALE));
+  float h = smoothstep(800., 1000., pos.y + 250.*fbm(pos.xz/W_SCALE));
   // угол уклона
-  float e = smoothstep(1.0-0.5*h,1.0-0.1*h,nor.y);
+  float e = smoothstep(1.-0.5*h, 1.-0.1*h, nor.y);
   // северное направление
-  float o = 0.3 + 0.7*smoothstep(0.,0.1,-nor.z+h*h);
+  float o = 0.3 + 0.7*smoothstep(0., 0.1, -nor.z+h*h);
   float s = h*e*o;
-  ks = mix(ks,0.2,s);
-  spec = mix(spec,0.3,s);
-  kd = mix(kd, 0.29*vec3(0.62,0.65,0.7), smoothstep(0.1, 0.9, s));
-  return Material(vec4(kd,1.),vec4(vec3(ks),spec));
+  albedo = mix(albedo, snowAlbedo, smoothstep(0.1, 0.9, s));
+  return vec4(albedo.rgb, 1.);
 }
