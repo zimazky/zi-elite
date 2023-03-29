@@ -199,6 +199,12 @@ export class Vec3 implements IVectors<Vec3> {
     return this.div(d); 
   }
 
+  colorNormalize(): Vec3 {
+    const max = Math.max(this.x, this.y, this.z);
+    if(max<Number.MIN_VALUE) return Vec3.ZERO();
+    return this.div(max);
+  }
+
   add(v: Vec3): Vec3 { return this.copy().addMutable(v); }
 
   sub(v: Vec3): Vec3 { return this.copy().subMutable(v); }

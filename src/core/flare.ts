@@ -21,7 +21,7 @@ export class Flare {
   /** Видимость ракеты */
   isVisible: boolean = false;
   /** Интенсивность свечения ракеты */
-  light: Vec3 = new Vec3(1000,1000,1000);
+  light: Vec3;
   /** Ускорение свободного падения */
   g: number = 9.81;
   /** Ссылка на экземпляр камеры, для отслеживания положения */
@@ -29,7 +29,7 @@ export class Flare {
   /** Число столкновений с поверхностью */
   n: number = 0;
 
-  constructor(cam: Camera, light: Vec3 = new Vec3(1000,1000,1000)) {
+  constructor(cam: Camera, light: Vec3 = new Vec3(100,100,100)) {
     this.camera = cam;
     this.position = this.camera.position.copy();
     this.light = light

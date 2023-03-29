@@ -161,7 +161,7 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-const vec3 LIGHT_INTENSITY = vec3(12.); // Интенсивность света
+const vec3 LIGHT_INTENSITY = vec3(15.); // Интенсивность света
 vec4 render(vec3 ro, vec3 rd)
 {
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
@@ -235,7 +235,7 @@ vec4 render(vec3 ro, vec3 rd)
 
 	}
   // sun scatter
-  col += uCameraInShadow*0.3*uSunDiscColor*pow(sundot, 8.0)/LIGHT_INTENSITY;
+  col += 0.3*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
   // 1-ая световая ракета
   vec3 fd = uFlare1Position - ro;
@@ -270,11 +270,11 @@ void main(void) {
   if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
   else { 
     col = render(pos, rd);
-    col.rgb =  col.rgb*mat2sRGB; // Преобразование в sRGB
   }
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
+  col.rgb =  col.rgb*mat2sRGB; // Преобразование в sRGB
   //col.rgb = TonemapACES(col.rgb);
   // Квантование и дитеринг с гамма-коррекцией
   vec3 color = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);

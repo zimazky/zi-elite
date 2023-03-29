@@ -224,13 +224,22 @@ export default async function main() {
       if(sunDir.y<0.) sunDir.y = 0.;
       sunDir.normalizeMutable();
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
-      const sunIntensity = SUN_COLOR.mul(10.);
-      const sunColorRaw = sunIntensity.mulEl(sunDirScatter.t);
-      const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10.);
+      const sunIntensity = SUN_COLOR.mul(20.);
+      const sunColorRaw = SUN_COLOR.mulEl(sunDirScatter.t);
+      const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10);
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
-      const skyDirScatter = atm.scattering(pos, Vec3.J(), sky.sunDirection);
-      const skyColor = sunIntensity.mulEl(skyDirScatter.t).mulMutable(8.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
+
+      const oneDivSqrt2 = 1./Math.sqrt(2.);
+      // светимость неба по 5-ти точкам
+      const skyDirScatter = 
+        atm.scattering(pos, Vec3.J(), sky.sunDirection).t
+        .add(atm.scattering(pos, new Vec3(oneDivSqrt2, oneDivSqrt2, 0), sky.sunDirection).t)
+        .add(atm.scattering(pos, new Vec3(-oneDivSqrt2, oneDivSqrt2, 0), sky.sunDirection).t)
+        .add(atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), sky.sunDirection).t)
+        .add(atm.scattering(pos, new Vec3(0, oneDivSqrt2, -oneDivSqrt2), sky.sunDirection).t)
+        .div(5.);
+      const skyColor = sunIntensity.mulEl(skyDirScatter).mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}

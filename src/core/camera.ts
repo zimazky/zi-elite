@@ -138,7 +138,7 @@ export class Camera {
     }
     else this.viewAngle += 0.01*(isKeyDown(KEY_MINUS)-isKeyDown(KEY_PLUS));
 
-    if(isKeyPress(KEY_L)>0) this.headLights = this.headLights==0 ? 1000. : 0.;
+    if(isKeyPress(KEY_L)>0) this.headLights = this.headLights==0 ? 100. : 0.;
 
   }
 }

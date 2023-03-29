@@ -132,6 +132,16 @@ vec4 sandAlbedo = 1.7*vec4(0.09, 0.081, 0.072, 1.);
 vec4 darkSandAlbedo = vec4(0.030, 0.022, 0.010, 1.);
 vec4 snowAlbedo = vec4(0.1798, 0.1885, 0.203, 1.);
 
+//vec4 grassAlbedo = vec4(0.158, 0.158, 0.053, 1.);
+//vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
+//vec4 darkRockAlbedo = vec4(0.252, 0.158, 0.095, 1.);
+//vec4 lightRockAlbedo = vec4(0.315, 0.284, 0.252, 1.);
+//vec4 sandAlbedo = vec4(0.252, 0.158, 0.095, 1.);
+//vec4 sandAlbedo = vec4(0.585, 0.482, 0.428, 1.);
+//vec4 darkSandAlbedo = vec4(0.150, 0.110, 0.050, 1.);
+//vec4 snowAlbedo = vec4(0.750, 0.940, 1.00, 1.);
+//vec4 snowAlbedo = vec4(0.750, 0.740, 0.74, 1.);
+
 // определение цвета пикселя
 vec4 terrain_color(vec3 pos, vec3 nor) {
   // мелкий шум в текстуре
@@ -139,7 +149,7 @@ vec4 terrain_color(vec3 pos, vec3 nor) {
   // мелкие и крупные пятна на скалах и траве
   float r2 = 0.7 + sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
   // полосы на скалах
-  vec4 albedo = r2*(r*0.25+0.75)*mix( darkRockAlbedo, lightRockAlbedo,
+  vec4 albedo = r2*(r*0.25+0.75)*mix(darkRockAlbedo, lightRockAlbedo,
                  texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
 
   // песок

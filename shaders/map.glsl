@@ -28,7 +28,7 @@ vec4 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode) {
   float h = terrainM(p);
   vec3 nor = calcNormalM(vec3(p.x,h,p.y), 100.);
   vec4 albedo = terrain_color(vec3(p.x,h,p.y), nor);
-  vec3 col = 0.3+0.6*vec3(dot(nor.xyz,normalize(vec3(-1,1,-1))))*10.*albedo.rgb;
+  vec3 col = vec3(0.5+0.5*dot(nor.xyz,normalize(vec3(-1,1,-1))))*albedo.rgb;
   // положение камеры
   col *= smoothstep(.01,0.012,length(pos.xz-p)/mapScale);
   // направление камеры
