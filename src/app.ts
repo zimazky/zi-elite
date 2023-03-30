@@ -22,6 +22,16 @@ import { loadImage } from './utils/loadimg';
 //   7. Правильно расположить небесный свод относительно планеты
 //   8. Поправить цвета материалов, структурировать работу с материалами
 
+//-----------------------------------------------------------------------------
+// Новый алгоритм
+// 1. В первом шейдере создаем карту высот и нормалей в полярных координатах.
+//    Выполняем не в каждом кадре, только при больших смещениях.
+//    Можно использовать предыдущую карту для ускорения.
+// 2. Во втором шейдере, на основании карты высот создаем карту теней и карту цвета освещения.
+//    В полярных координатах.
+//    Выполняем не в каждом кадре, при больших смещениях солнца.
+// 3. В третьем шейдере формируем полигоны на основании карты высот и отрисовываем кадр.
+
 export default async function main() {
 
   const divInfo = document.getElementById('info');
@@ -226,7 +236,7 @@ export default async function main() {
       const sunDirScatter = atm.scattering(pos, sunDir, sunDir);
       const sunIntensity = SUN_COLOR.mul(20.);
       const sunColorRaw = SUN_COLOR.mulEl(sunDirScatter.t);
-      const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(10);
+      const sunColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
       //const sunColor = sunIntensity.mulEl(sunDirScatter.t);
       e.gl.uniform3f(sunDiscColorLocation, sunColor.x, sunColor.y, sunColor.z);
 
@@ -239,7 +249,7 @@ export default async function main() {
         .add(atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), sky.sunDirection).t)
         .add(atm.scattering(pos, new Vec3(0, oneDivSqrt2, -oneDivSqrt2), sky.sunDirection).t)
         .div(5.);
-      const skyColor = sunIntensity.mulEl(skyDirScatter).mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
+      const skyColor = sunIntensity.mulEl(skyDirScatter);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
       e.gl.uniform3f(skyColorLocation, skyColor.x, skyColor.y, skyColor.z);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}

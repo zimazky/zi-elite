@@ -124,13 +124,13 @@ float fbm(vec2 p) {
 // ----------------------------------------------------------------------------
 
 // rgb - альбедо, a - зарезервировано
-vec4 grassAlbedo = vec4(0.032, 0.032, 0.011, 1.);
+vec4 grassAlbedo = 5.*vec4(0.042, 0.042, 0.015, 1.);
 //vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
-vec4 darkRockAlbedo = vec4(0.072, 0.045, 0.027, 1.);
-vec4 lightRockAlbedo = vec4(0.09, 0.081, 0.072, 1.);
-vec4 sandAlbedo = 1.7*vec4(0.09, 0.081, 0.072, 1.);
-vec4 darkSandAlbedo = vec4(0.030, 0.022, 0.010, 1.);
-vec4 snowAlbedo = vec4(0.1798, 0.1885, 0.203, 1.);
+vec4 darkRockAlbedo = 5.*vec4(0.072, 0.045, 0.027, 1.);
+vec4 lightRockAlbedo = 5.*vec4(0.09, 0.081, 0.072, 1.);
+vec4 sandAlbedo = 5.*1.7*vec4(0.09, 0.081, 0.072, 1.);
+vec4 darkSandAlbedo = 5.*vec4(0.030, 0.022, 0.010, 1.);
+//vec4 snowAlbedo = 5.*vec4(0.1798, 0.1885, 0.203, 1.);
 
 //vec4 grassAlbedo = vec4(0.158, 0.158, 0.053, 1.);
 //vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
@@ -140,7 +140,7 @@ vec4 snowAlbedo = vec4(0.1798, 0.1885, 0.203, 1.);
 //vec4 sandAlbedo = vec4(0.585, 0.482, 0.428, 1.);
 //vec4 darkSandAlbedo = vec4(0.150, 0.110, 0.050, 1.);
 //vec4 snowAlbedo = vec4(0.750, 0.940, 1.00, 1.);
-//vec4 snowAlbedo = vec4(0.750, 0.740, 0.74, 1.);
+vec4 snowAlbedo = vec4(0.75, 0.80, 0.95, 1.);
 
 // определение цвета пикселя
 vec4 terrain_color(vec3 pos, vec3 nor) {
