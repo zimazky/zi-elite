@@ -235,7 +235,7 @@ vec4 render(vec3 ro, vec3 rd)
 
 	}
   // sun scatter
-  col += 0.3*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
+  col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
   // 1-ая световая ракета
   vec3 fd = uFlare1Position - ro;
