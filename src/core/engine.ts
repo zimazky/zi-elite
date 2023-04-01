@@ -11,13 +11,27 @@ interface OnProgramLoop {
 }
 
 export class Engine extends GLContext {
+  /** Время запуска программы */
   startTime: number;
+  /** Текущее время */
   currentTime: number;
-  resolutionUniform: WebGLUniformLocation;
-  timeUniform: WebGLUniformLocation;
-  onProgramInit: OnProgramInit = (program) => {};
+  /** Обратный вызов для инициализации программы A */
+  onProgramAInit: OnProgramInit = (program) => {};
+  /** Обратный вызов для инициализации финальной программы рендеринга */
+  onProgramRenderInit: OnProgramInit = (program) => {};
+  /** Обратный вызов для обновления данных программ */
   onProgramLoop: OnProgramLoop = (t, dt) => {};
-  fb: WebGLFramebuffer;
+  /** Буфер программы A */
+  frameBufferA: WebGLFramebuffer;
+  /** Программа A */
+  programA: WebGLProgram;
+  /** Программа финального рендеринга */
+  programRender: WebGLProgram;
+  resolutionALocation: WebGLUniformLocation;
+  timeALocation: WebGLUniformLocation;
+  resolutionRenderLocation: WebGLUniformLocation;
+  timeRenderLocation: WebGLUniformLocation;
+
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -42,29 +56,41 @@ export class Engine extends GLContext {
     this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
     this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
     // Создаем и привязываем framebuffer
-    this.fb = this.gl.createFramebuffer();
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
-    // Прикрепляем текстуру как первое цветовое вложение
+    this.frameBufferA = this.gl.createFramebuffer();
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
     this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, targetTexture, 0);
 
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
 
-    const vsSource = preprocess('shaders','vs.glsl');
-    const fsSource = await preprocess('shaders','fs.glsl');
-    console.log(fsSource);
-    const program = this.createProgram(await vsSource, fsSource);
-    this.gl.useProgram(program);
-    this.createBuffer();
-    const vertexPosition = this.gl.getAttribLocation(program, "aVertexPosition");
+    const vsSourceA = preprocess('shaders','vsA.glsl');
+    const fsSourceA = preprocess('shaders','fsA.glsl');
+    const vsSourceRender = preprocess('shaders','vsRender.glsl');
+    const fsSourceRender = preprocess('shaders','fsRender.glsl');
+
+    this.programA = this.createProgram(await vsSourceA, await fsSourceA);
+    this.gl.useProgram(this.programA);
+    const vertices = [
+      1.0,  1.0,
+     -1.0,  1.0,
+      1.0, -1.0,
+     -1.0, -1.0,
+    ];
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+    const vertexPosition = this.gl.getAttribLocation(this.programA, "aVertexPosition");
     this.gl.enableVertexAttribArray(vertexPosition);
     this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
 
-    // определение uniform переменных
-    this.resolutionUniform = this.gl.getUniformLocation(program, 'uResolution');
-    this.timeUniform = this.gl.getUniformLocation(program, 'uTime');
-    // определение кастомных uniform переменных
-    this.onProgramInit(program);
+    // определение uniform переменных программы A
+    this.resolutionALocation = this.gl.getUniformLocation(this.programA, 'uResolution');
+    this.timeALocation = this.gl.getUniformLocation(this.programA, 'uTime');
+    this.onProgramAInit(this.programA);
+
+    // определение uniform переменных финальной программы рендеринга
+    this.resolutionRenderLocation = this.gl.getUniformLocation(this.programRender, 'uResolution');
+    this.timeRenderLocation = this.gl.getUniformLocation(this.programRender, 'uTime');
+    this.onProgramRenderInit(this.programRender);
 
     this.startTime = this.currentTime = performance.now()/1000.;
 
@@ -141,13 +167,17 @@ export class Engine extends GLContext {
     this.currentTime = lCurrentTime;
   
     // задание uniform переменных
-    this.gl.uniform2f(this.resolutionUniform, this.canvas.width, this.canvas.height);
-    this.gl.uniform2f(this.timeUniform, time, timeDelta);
+    this.gl.uniform2f(this.resolutionALocation, this.canvas.width, this.canvas.height);
+    this.gl.uniform2f(this.timeALocation, time, timeDelta);
+    this.gl.uniform2f(this.resolutionRenderLocation, this.canvas.width, this.canvas.height);
+    this.gl.uniform2f(this.timeRenderLocation, time, timeDelta);
+
     // задание кастомных uniform переменных
     this.onProgramLoop(time, timeDelta);
 
     // Отрисовка первого шейдера
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
     // TODO
 
