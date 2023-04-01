@@ -17,6 +17,7 @@ export class Engine extends GLContext {
   timeUniform: WebGLUniformLocation;
   onProgramInit: OnProgramInit = (program) => {};
   onProgramLoop: OnProgramLoop = (t, dt) => {};
+  fb: WebGLFramebuffer;
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -29,6 +30,26 @@ export class Engine extends GLContext {
   }
 
   public async start() {
+
+    // Создание пустой текстуры, в которую будет рендериться первый шейдер
+    const targetTextureWidth = 1500;
+    const targetTextureHeight = 700;
+    const targetTexture = this.gl.createTexture();
+    this.gl.bindTexture(this.gl.TEXTURE_2D, targetTexture);
+    // Определение формата текстуры
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, targetTextureWidth, targetTextureHeight, 0, this.gl.RGBA, this.gl.FLOAT, null);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+    // Создаем и привязываем framebuffer
+    this.fb = this.gl.createFramebuffer();
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+    // Прикрепляем текстуру как первое цветовое вложение
+    this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, targetTexture, 0);
+
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+
     const vsSource = preprocess('shaders','vs.glsl');
     const fsSource = await preprocess('shaders','fs.glsl');
     console.log(fsSource);
@@ -125,6 +146,14 @@ export class Engine extends GLContext {
     // задание кастомных uniform переменных
     this.onProgramLoop(time, timeDelta);
 
+    // Отрисовка первого шейдера
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+
+    // TODO
+
+
+    // Отрисовка второго шейдера
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     requestAnimationFrame(this.loop.bind(this));
   }

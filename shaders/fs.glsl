@@ -122,8 +122,12 @@ const int MAP_HEIGHTS = 2;
 // Рендеринг
 // ----------------------------------------------------------------------------
 
+/** Рейтрейсинг для случая плоской поверхности планеты */
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   float t = tmin;
+  float d = ro.y - MAX_TRN_ELEVATION;
+  if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
+
   for(int i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return tmax + 1.;
@@ -133,6 +137,26 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   }
   return t;
 }
+
+/** Рейтрейсинг для случая сферической поверхности планеты */
+float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax) {
+  float t = tmin;
+  /*
+  НЕОБХОДИМО ПЕРЕРАБОТАТЬ
+  float d = ro.y - MAX_TRN_ELEVATION;
+  if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
+
+  for(int i=0; i<300; i++) {
+    vec3 pos = ro + t*rd;
+    if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return tmax + 1.;
+    float h = pos.y - terrainM(pos.xz);
+    if( abs(h)<(0.003*t) || t>tmax ) break; // двоятся детали при большем значении
+    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+  }
+  */
+  return t;
+}
+
 
 vec3 lambert(vec3 omega, float mu, float mu_0) {
 	return omega;
