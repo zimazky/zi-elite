@@ -2,10 +2,10 @@
 
 uniform mat3 uTransformMat;
 uniform mat3 uSkyTransformMat;
-//uniform mediump float uCameraViewAngle;
-//uniform mediump vec2 uResolution;
-uniform lowp float uCameraViewAngle;
-uniform lowp vec2 uResolution;
+uniform mediump float uCameraViewAngle;
+uniform mediump vec2 uResolution;
+//uniform lowp float uCameraViewAngle;
+//uniform lowp vec2 uResolution;
 
 in vec3 aVertexPosition;
 

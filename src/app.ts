@@ -175,16 +175,6 @@ export default async function main() {
     const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg, 1);
     const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
     const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
-
-    e.gl.activeTexture(e.gl.TEXTURE0);
-    e.gl.bindTexture(e.gl.TEXTURE_2D, texture0);
-    e.gl.activeTexture(e.gl.TEXTURE1);
-    e.gl.bindTexture(e.gl.TEXTURE_2D, texture1);
-    e.gl.activeTexture(e.gl.TEXTURE2);
-    e.gl.bindTexture(e.gl.TEXTURE_2D, texture2);
-    e.gl.activeTexture(e.gl.TEXTURE3);
-    e.gl.bindTexture(e.gl.TEXTURE_2D, texture3);
-
   }
   
   e.onProgramLoop = (time, timeDelta) => {

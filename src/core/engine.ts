@@ -122,6 +122,7 @@ export class Engine extends GLContext {
   /** Привязка текстуры без генерации данных MIPMAP */
   setTexture(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
     const texture = this.gl.createTexture();
+    this.gl.activeTexture(this.gl.TEXTURE0+num);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -140,6 +141,7 @@ export class Engine extends GLContext {
   /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
     const texture = this.gl.createTexture();
+    this.gl.activeTexture(this.gl.TEXTURE0+num);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);

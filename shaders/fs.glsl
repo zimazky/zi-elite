@@ -1,7 +1,7 @@
 #version 300 es
 
-//precision mediump float;
-precision lowp float;
+precision mediump float;
+//precision lowp float;
 
 // разрешение экрана
 uniform vec2 uResolution;
@@ -156,7 +156,6 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax) {
   */
   return t;
 }
-
 
 vec3 lambert(vec3 omega, float mu, float mu_0) {
 	return omega;
