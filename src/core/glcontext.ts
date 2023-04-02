@@ -41,4 +41,23 @@ export class GLContext {
     return shaderProgram;
   }
 
+  /** Функция создания фреймбуффера и связанной текстуры */
+  createFramebuffer(width: number, height: number): [WebGLFramebuffer, WebGLTexture] {
+    const texture = this.gl.createTexture();
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    // Определение формата текстуры
+    //this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, width, height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+    // Создаем и привязываем framebuffer
+    const framebuffer = this.gl.createFramebuffer();
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+    this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, texture, 0);
+    const e = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER);
+    if (e !== this.gl.FRAMEBUFFER_COMPLETE) throw new Error('Framebuffer object is incomplete: ' + e.toString());
+    return [framebuffer, texture]
+  }
+
 }

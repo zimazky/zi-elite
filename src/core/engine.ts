@@ -10,6 +10,36 @@ interface OnProgramLoop {
   (time: number, timeDelta: number): void;
 }
 
+class Framebuffer {
+  /** Ширина фреймбуфера */
+  width: number;
+  /** Высота фреймбуфера */
+  height: number;
+  /** Шейдерная программа */
+  program: WebGLProgram;
+  /** Фреймбуфер */
+  framebuffer: WebGLFramebuffer;
+  /** Текстура фреймбуфера */
+  fbTexture: WebGLTexture;
+  /** Колбэк-функция, вызываемая при инициализации шейдерной программы */
+  onProgramInit: OnProgramInit = (program) => {};
+  /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
+  onProgramLoop: OnProgramLoop = (t, dt) => {};
+  resolutionLocation: WebGLUniformLocation;
+  timeLocation: WebGLUniformLocation;
+
+  constructor(width: number, height: number, 
+    program: WebGLProgram, framebuffer: WebGLFramebuffer, fbtexture: WebGLTexture,
+    onLoop: OnProgramLoop) {
+    this.width = width;
+    this.height = height;
+    this.program = program;
+    this.framebuffer = framebuffer;
+    this.fbTexture = fbtexture;
+    this.onProgramLoop = onLoop;
+  }
+}
+
 export class Engine extends GLContext {
   /** Время запуска программы */
   startTime: number;
@@ -21,8 +51,11 @@ export class Engine extends GLContext {
   onProgramRenderInit: OnProgramInit = (program) => {};
   /** Обратный вызов для обновления данных программ */
   onProgramLoop: OnProgramLoop = (t, dt) => {};
+  /** Количество текстур */
+  textureCount: number = 0;
   /** Буфер программы A */
   frameBufferA: WebGLFramebuffer;
+  textureA: WebGLTexture;
   /** Программа A */
   programA: WebGLProgram;
   /** Программа финального рендеринга */
@@ -33,8 +66,26 @@ export class Engine extends GLContext {
   timeRenderLocation: WebGLUniformLocation;
 
 
+  framebuffers: Framebuffer[];
+
   public constructor(elementId?: string) {
     super(elementId);
+  }
+
+  /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
+  async addFramebuffer(width: number, height: number, baseUrl: string, vsUrl: string, fsUrl: string, 
+    onInit: OnProgramInit, onLoop: OnProgramLoop) {
+
+    const vsSource = preprocess(baseUrl,vsUrl);
+    const fsSource = preprocess(baseUrl,fsUrl);
+    const program = this.createProgram(await vsSource, await fsSource);
+    const [framebuffer, fbtexture] = this.createFramebuffer(width, height);
+    this.createSimplePlaneVertexBuffer();
+    this.setVertexBuffer(program, 'aVertexPosition');
+    const resolutionLocation = this.gl.getUniformLocation(this.programA, 'uResolution');
+    const timeLocation = this.gl.getUniformLocation(this.programA, 'uTime');
+    this.framebuffers.push(new Framebuffer(width, height, program, framebuffer, fbtexture, onLoop));
+    onInit(program);
   }
 
   public async loadShader(sourceUrl: string): Promise<string> {
@@ -45,42 +96,19 @@ export class Engine extends GLContext {
 
   public async start() {
 
-    // Создание пустой текстуры, в которую будет рендериться первый шейдер
-    const targetTextureWidth = 1500;
-    const targetTextureHeight = 700;
-    const targetTexture = this.gl.createTexture();
-    this.gl.bindTexture(this.gl.TEXTURE_2D, targetTexture);
-    // Определение формата текстуры
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, targetTextureWidth, targetTextureHeight, 0, this.gl.RGBA, this.gl.FLOAT, null);
-    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-    // Создаем и привязываем framebuffer
-    this.frameBufferA = this.gl.createFramebuffer();
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
-    this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, targetTexture, 0);
-
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-
-
-    const vsSourceA = preprocess('shaders','vsA.glsl');
-    const fsSourceA = preprocess('shaders','fsA.glsl');
-    const vsSourceRender = preprocess('shaders','vsRender.glsl');
-    const fsSourceRender = preprocess('shaders','fsRender.glsl');
+    const vsSourceA = preprocess('shaders/a','vs.glsl');
+    const fsSourceA = preprocess('shaders/a','fs.glsl');
+    const vsSourceRender = preprocess('shaders/render','vs.glsl');
+    const fsSourceRender = preprocess('shaders/render','fs.glsl');
 
     this.programA = this.createProgram(await vsSourceA, await fsSourceA);
-    this.gl.useProgram(this.programA);
-    const vertices = [
-      1.0,  1.0,
-     -1.0,  1.0,
-      1.0, -1.0,
-     -1.0, -1.0,
-    ];
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
-    const vertexPosition = this.gl.getAttribLocation(this.programA, "aVertexPosition");
-    this.gl.enableVertexAttribArray(vertexPosition);
-    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+    this.programRender = this.createProgram(await vsSourceRender, await fsSourceRender);
+
+    [this.frameBufferA, this.textureA] = this.createFramebuffer(256,256);
+
+    this.createSimplePlaneVertexBuffer();
+    this.setVertexBuffer(this.programA, 'aVertexPosition');
+    this.setVertexBuffer(this.programRender, 'aVertexPosition');
 
     // определение uniform переменных программы A
     this.resolutionALocation = this.gl.getUniformLocation(this.programA, 'uResolution');
@@ -90,6 +118,7 @@ export class Engine extends GLContext {
     // определение uniform переменных финальной программы рендеринга
     this.resolutionRenderLocation = this.gl.getUniformLocation(this.programRender, 'uResolution');
     this.timeRenderLocation = this.gl.getUniformLocation(this.programRender, 'uTime');
+    this.setRenderedTexture(this.programRender, this.textureA, 'uTextureProgramA');
     this.onProgramRenderInit(this.programRender);
 
     this.startTime = this.currentTime = performance.now()/1000.;
@@ -97,15 +126,28 @@ export class Engine extends GLContext {
     this.loop();
   }
 
-  createBuffer() {
-    const vertices = [
-      1.0,  1.0,
-     -1.0,  1.0,
-      1.0, -1.0,
-     -1.0, -1.0,
-    ];
+  /** Создание буфера вершин для простой плоскости */
+  createSimplePlaneVertexBuffer() {
+    const vertices = [1.0,  1.0, -1.0,  1.0, 1.0, -1.0, -1.0, -1.0];
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+  }
+
+  /** Установка буфера вершин */
+  setVertexBuffer(program: WebGLProgram, name: string) {
+    const vertexPosition = this.gl.getAttribLocation(program, name);
+    this.gl.enableVertexAttribArray(vertexPosition);
+    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+  }
+
+  setRenderedTexture(program: WebGLProgram, texture: WebGLTexture, name: string) {
+    const textureLocation = this.gl.getUniformLocation(this.programRender, name);
+    this.gl.useProgram(program);
+    const n = this.textureCount;
+    this.gl.uniform1i(textureLocation, n);
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.textureCount++;
   }
 
   resizeCanvasToDisplaySize(): void {
@@ -120,9 +162,10 @@ export class Engine extends GLContext {
   }
 
   /** Привязка текстуры без генерации данных MIPMAP */
-  setTexture(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
+  setTexture(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
-    this.gl.activeTexture(this.gl.TEXTURE0+num);
+    const n = this.textureCount;
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -132,16 +175,17 @@ export class Engine extends GLContext {
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img);
     
     const textureLocation = this.gl.getUniformLocation(program, uname);
-    // Tell the shader to use texture unit 0 for u_texture
-    this.gl.uniform1i(textureLocation, num);
-    
+    this.gl.uniform1i(textureLocation, n);
+    this.textureCount++;
+
     return texture;
   }
 
   /** Привязка текстуры с генерацией данных MIPMAP */
-  setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource, num: number): WebGLTexture {
+  setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
-    this.gl.activeTexture(this.gl.TEXTURE0+num);
+    const n = this.textureCount;
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -153,39 +197,35 @@ export class Engine extends GLContext {
     this.gl.generateMipmap(this.gl.TEXTURE_2D);
 
     const textureLocation = this.gl.getUniformLocation(program, uname);
-    // Tell the shader to use texture unit 0 for u_texture
-    this.gl.uniform1i(textureLocation, num);
-    
+    this.gl.uniform1i(textureLocation, n);
+    this.textureCount++;
+
     return texture;
   }
 
-
   private loop(): void {
-    this.resizeCanvasToDisplaySize();
-
     const lCurrentTime = performance.now()/1000.;
     const time = lCurrentTime - this.startTime;
     const timeDelta = lCurrentTime - this.currentTime;
     this.currentTime = lCurrentTime;
-  
-    // задание uniform переменных
-    this.gl.uniform2f(this.resolutionALocation, this.canvas.width, this.canvas.height);
+
+    // Шейдер A, рендеринг в текстуру
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
+    this.gl.useProgram(this.programA);
+
+    this.gl.uniform2f(this.resolutionALocation, 256, 256);
     this.gl.uniform2f(this.timeALocation, time, timeDelta);
+    this.onProgramLoop(time, timeDelta);
+
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+    // Финальный рендер
+    this.resizeCanvasToDisplaySize();
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+    this.gl.useProgram(this.programRender);
     this.gl.uniform2f(this.resolutionRenderLocation, this.canvas.width, this.canvas.height);
     this.gl.uniform2f(this.timeRenderLocation, time, timeDelta);
 
-    // задание кастомных uniform переменных
-    this.onProgramLoop(time, timeDelta);
-
-    // Отрисовка первого шейдера
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-
-    // TODO
-
-
-    // Отрисовка второго шейдера
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     requestAnimationFrame(this.loop.bind(this));
   }

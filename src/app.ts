@@ -130,7 +130,7 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
-  e.onProgramInit = (program) => {
+  e.onProgramAInit = (program) => {
     cameraPositionLocation = e.gl.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.gl.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.gl.getUniformLocation(program, 'uCameraVelocity');
@@ -171,10 +171,10 @@ export default async function main() {
     screenModeLocation = e.gl.getUniformLocation(program, 'uScreenMode');
     mapScaleLocation = e.gl.getUniformLocation(program, 'uMapScale');
 
-    const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg, 0);
-    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg, 1);
-    const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
-    const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
+    const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg);
+    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg);
+    //const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
+    //const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
   }
   
   e.onProgramLoop = (time, timeDelta) => {
