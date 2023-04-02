@@ -13,6 +13,7 @@ export class GLContext {
     }
     this.gl = this.canvas.getContext('webgl2');
     if (!this.gl) throw new Error('Unable to initialize WebGL. Your browser or machine may not support it.');
+    this.gl.getExtension('EXT_color_buffer_float');
   }
 
   createShader(type: number, source: string): WebGLShader {
@@ -47,7 +48,7 @@ export class GLContext {
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // Определение формата текстуры
     //this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, width, height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
     this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
     this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
     this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);

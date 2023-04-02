@@ -10,7 +10,7 @@ interface OnProgramLoop {
   (time: number, timeDelta: number): void;
 }
 
-class Framebuffer {
+type Framebuffer = {
   /** Ширина фреймбуфера */
   width: number;
   /** Высота фреймбуфера */
@@ -22,22 +22,22 @@ class Framebuffer {
   /** Текстура фреймбуфера */
   fbTexture: WebGLTexture;
   /** Колбэк-функция, вызываемая при инициализации шейдерной программы */
-  onProgramInit: OnProgramInit = (program) => {};
+  onProgramInit: OnProgramInit;
   /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
-  onProgramLoop: OnProgramLoop = (t, dt) => {};
+  onProgramLoop: OnProgramLoop;
   resolutionLocation: WebGLUniformLocation;
   timeLocation: WebGLUniformLocation;
+}
 
-  constructor(width: number, height: number, 
-    program: WebGLProgram, framebuffer: WebGLFramebuffer, fbtexture: WebGLTexture,
-    onLoop: OnProgramLoop) {
-    this.width = width;
-    this.height = height;
-    this.program = program;
-    this.framebuffer = framebuffer;
-    this.fbTexture = fbtexture;
-    this.onProgramLoop = onLoop;
-  }
+type Renderbufer = {
+  /** Шейдерная программа */
+  program: WebGLProgram;
+  /** Колбэк-функция, вызываемая при инициализации шейдерной программы */
+  onProgramInit: OnProgramInit;
+  /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
+  onProgramLoop: OnProgramLoop;
+  resolutionLocation: WebGLUniformLocation;
+  timeLocation: WebGLUniformLocation;
 }
 
 export class Engine extends GLContext {
@@ -45,28 +45,11 @@ export class Engine extends GLContext {
   startTime: number;
   /** Текущее время */
   currentTime: number;
-  /** Обратный вызов для инициализации программы A */
-  onProgramAInit: OnProgramInit = (program) => {};
-  /** Обратный вызов для инициализации финальной программы рендеринга */
-  onProgramRenderInit: OnProgramInit = (program) => {};
-  /** Обратный вызов для обновления данных программ */
-  onProgramLoop: OnProgramLoop = (t, dt) => {};
   /** Количество текстур */
   textureCount: number = 0;
-  /** Буфер программы A */
-  frameBufferA: WebGLFramebuffer;
-  textureA: WebGLTexture;
-  /** Программа A */
-  programA: WebGLProgram;
-  /** Программа финального рендеринга */
-  programRender: WebGLProgram;
-  resolutionALocation: WebGLUniformLocation;
-  timeALocation: WebGLUniformLocation;
-  resolutionRenderLocation: WebGLUniformLocation;
-  timeRenderLocation: WebGLUniformLocation;
 
-
-  framebuffers: Framebuffer[];
+  framebuffers: Framebuffer[] = [];
+  renderbufer: Renderbufer;
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -74,56 +57,43 @@ export class Engine extends GLContext {
 
   /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
   async addFramebuffer(width: number, height: number, baseUrl: string, vsUrl: string, fsUrl: string, 
-    onInit: OnProgramInit, onLoop: OnProgramLoop) {
+    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}) {
 
     const vsSource = preprocess(baseUrl,vsUrl);
     const fsSource = preprocess(baseUrl,fsUrl);
     const program = this.createProgram(await vsSource, await fsSource);
-    const [framebuffer, fbtexture] = this.createFramebuffer(width, height);
+    const [framebuffer, fbTexture] = this.createFramebuffer(width, height);
+    this.gl.useProgram(program);
     this.createSimplePlaneVertexBuffer();
     this.setVertexBuffer(program, 'aVertexPosition');
-    const resolutionLocation = this.gl.getUniformLocation(this.programA, 'uResolution');
-    const timeLocation = this.gl.getUniformLocation(this.programA, 'uTime');
-    this.framebuffers.push(new Framebuffer(width, height, program, framebuffer, fbtexture, onLoop));
-    onInit(program);
+    const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
+    const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+    this.framebuffers.push({
+      width, height, program, framebuffer, fbTexture, 
+      resolutionLocation, timeLocation,
+      onProgramInit: onInit,
+      onProgramLoop: onLoop});
+  }
+
+  /** Настройка финального рендербуфера */
+  async setRenderbuffer(baseUrl: string, vsUrl: string, fsUrl: string, 
+    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}) {
+
+    const vsSource = preprocess(baseUrl,vsUrl);
+    const fsSource = preprocess(baseUrl,fsUrl);
+    const program = this.createProgram(await vsSource, await fsSource);
+    this.gl.useProgram(program);
+    this.createSimplePlaneVertexBuffer();
+    this.setVertexBuffer(program, 'aVertexPosition');
+    const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
+    const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+    this.renderbufer = {program, resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
   public async loadShader(sourceUrl: string): Promise<string> {
     let response = await fetch(sourceUrl);
     let source = await response.text();
     return source;
-  }
-
-  public async start() {
-
-    const vsSourceA = preprocess('shaders/a','vs.glsl');
-    const fsSourceA = preprocess('shaders/a','fs.glsl');
-    const vsSourceRender = preprocess('shaders/render','vs.glsl');
-    const fsSourceRender = preprocess('shaders/render','fs.glsl');
-
-    this.programA = this.createProgram(await vsSourceA, await fsSourceA);
-    this.programRender = this.createProgram(await vsSourceRender, await fsSourceRender);
-
-    [this.frameBufferA, this.textureA] = this.createFramebuffer(256,256);
-
-    this.createSimplePlaneVertexBuffer();
-    this.setVertexBuffer(this.programA, 'aVertexPosition');
-    this.setVertexBuffer(this.programRender, 'aVertexPosition');
-
-    // определение uniform переменных программы A
-    this.resolutionALocation = this.gl.getUniformLocation(this.programA, 'uResolution');
-    this.timeALocation = this.gl.getUniformLocation(this.programA, 'uTime');
-    this.onProgramAInit(this.programA);
-
-    // определение uniform переменных финальной программы рендеринга
-    this.resolutionRenderLocation = this.gl.getUniformLocation(this.programRender, 'uResolution');
-    this.timeRenderLocation = this.gl.getUniformLocation(this.programRender, 'uTime');
-    this.setRenderedTexture(this.programRender, this.textureA, 'uTextureProgramA');
-    this.onProgramRenderInit(this.programRender);
-
-    this.startTime = this.currentTime = performance.now()/1000.;
-
-    this.loop();
   }
 
   /** Создание буфера вершин для простой плоскости */
@@ -141,7 +111,7 @@ export class Engine extends GLContext {
   }
 
   setRenderedTexture(program: WebGLProgram, texture: WebGLTexture, name: string) {
-    const textureLocation = this.gl.getUniformLocation(this.programRender, name);
+    const textureLocation = this.gl.getUniformLocation(program, name);
     this.gl.useProgram(program);
     const n = this.textureCount;
     this.gl.uniform1i(textureLocation, n);
@@ -203,6 +173,26 @@ export class Engine extends GLContext {
     return texture;
   }
 
+  public start() {
+    this.resizeCanvasToDisplaySize();
+
+    this.framebuffers.forEach(e=>{
+      this.gl.useProgram(e.program);
+      e.onProgramInit(e.program); 
+    })
+
+    this.gl.useProgram(this.renderbufer.program);
+    this.renderbufer.onProgramInit(this.renderbufer.program);
+
+    const fbNum = this.framebuffers.length;
+    if(fbNum > 0) {
+      this.setRenderedTexture(this.renderbufer.program, this.framebuffers[fbNum-1].fbTexture, 'uTextureProgramA');
+    }
+    this.startTime = this.currentTime = performance.now()/1000.;
+
+    this.loop();
+  }
+
   private loop(): void {
     const lCurrentTime = performance.now()/1000.;
     const time = lCurrentTime - this.startTime;
@@ -210,23 +200,25 @@ export class Engine extends GLContext {
     this.currentTime = lCurrentTime;
 
     // Шейдер A, рендеринг в текстуру
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.frameBufferA);
-    this.gl.useProgram(this.programA);
-
-    this.gl.uniform2f(this.resolutionALocation, 256, 256);
-    this.gl.uniform2f(this.timeALocation, time, timeDelta);
-    this.onProgramLoop(time, timeDelta);
-
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    this.framebuffers.forEach(e => {
+      this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, e.framebuffer);
+      this.gl.useProgram(e.program);
+      this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
+      this.gl.uniform2f(e.timeLocation, time, timeDelta);
+      e.onProgramLoop(time, timeDelta);
+      this.gl.viewport(0, 0, e.width, e.height);
+      this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    });
 
     // Финальный рендер
     this.resizeCanvasToDisplaySize();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-    this.gl.useProgram(this.programRender);
-    this.gl.uniform2f(this.resolutionRenderLocation, this.canvas.width, this.canvas.height);
-    this.gl.uniform2f(this.timeRenderLocation, time, timeDelta);
-
+    this.gl.useProgram(this.renderbufer.program);
+    this.gl.uniform2f(this.renderbufer.resolutionLocation, this.canvas.width, this.canvas.height);
+    this.gl.uniform2f(this.renderbufer.timeLocation, time, timeDelta);
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
     requestAnimationFrame(this.loop.bind(this));
   }
 }

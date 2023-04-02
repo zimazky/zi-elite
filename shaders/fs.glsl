@@ -13,7 +13,6 @@ uniform vec2 uTime;
 
 // текстуры
 uniform sampler2D uTextureGrayNoise;
-uniform sampler2D uTextureBlueNoise;
 
 // положение камеры
 uniform vec4 uCameraPosition;
@@ -82,13 +81,6 @@ const float DEPTH_VIEW = 2.;
 const int MAP_ONLY = 0;
 const int MAP_GRID = 1;
 const int MAP_HEIGHTS = 2;
-
-// ----------------------------------------------------------------------------
-// Модуль определения общих функций
-// ----------------------------------------------------------------------------
-#ifndef COMM_MODULE
-#include "common.glsl"
-#endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций расчета атмосферного рассеивания
@@ -297,14 +289,6 @@ void main(void) {
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
 
-  col.rgb =  col.rgb*mat2sRGB; // Преобразование в sRGB
-  //col.rgb = TonemapACES(col.rgb);
-  // Квантование и дитеринг с гамма-коррекцией
-  vec3 color = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-  //vec3 color = oetf(col.rgb);
-  fragColor = vec4( color, 1. );
-  //col.rgb += noise(uv*uTime.x) / 127.; // dither
-  //col.rgb = pow(col.rgb, vec3(1./2.2)); // gamma
-  //fragColor = vec4( col.rgb, 1. );
+  fragColor = col;
 }
  

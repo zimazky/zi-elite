@@ -130,7 +130,7 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
-  e.onProgramAInit = (program) => {
+  const onProgramAInit = (program: WebGLProgram) => {
     cameraPositionLocation = e.gl.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.gl.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.gl.getUniformLocation(program, 'uCameraVelocity');
@@ -172,12 +172,11 @@ export default async function main() {
     mapScaleLocation = e.gl.getUniformLocation(program, 'uMapScale');
 
     const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg);
-    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg);
-    //const texture2 = e.setTexture(program, 'uTextureMilkyway', milkywayImg, 2);
-    //const texture3 = e.setTexture(program, 'uTextureConstellation', constellationImg, 3);
+    const texture1 = e.setTexture(program, 'uTextureMilkyway', milkywayImg);
+    const texture2 = e.setTexture(program, 'uTextureConstellation', constellationImg);
   }
   
-  e.onProgramLoop = (time, timeDelta) => {
+  const onProgramALoop = (time: number, timeDelta: number) => {
     camera.loopCalculation(time, timeDelta);
     e.gl.uniform4f(cameraPositionLocation, camera.position.x, camera.position.y, camera.position.z, camera.altitude);
     e.gl.uniform3f(cameraVelocityLocation, camera.velocity.x, camera.velocity.y, camera.velocity.z);
@@ -268,9 +267,21 @@ export default async function main() {
     e.gl.uniform3f(flare2PositionLocation, flare2.position.x, flare2.position.y, flare2.position.z);
     if(flare2.isVisible) e.gl.uniform3f(flare2LightLocation, flare2.light.x, flare2.light.y, flare2.light.z);
     else e.gl.uniform3f(flare2LightLocation, 0, 0, 0);
+  }
 
+  const onProgramRenderInit = (program: WebGLProgram) => {
+    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg);
   }
   
+  console.log(e.canvas.width, e.canvas.height);
+  await e.addFramebuffer(
+    //1400, 960,
+    900, 600, 
+    'shaders', 'vs.glsl', 'fs.glsl', 
+    onProgramAInit, onProgramALoop
+  );
+  await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', onProgramRenderInit);
+
   e.start();
   
 }
