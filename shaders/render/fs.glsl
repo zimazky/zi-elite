@@ -19,22 +19,12 @@ out vec4 fragColor;
 /**
  * Преобразование в линейное цветовое пространство из sRGB
  */
-vec3 eotf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( arg / 12.92, pow( ( arg + .055 ) / 1.055, vec3( 2.4 ) ), lessThan( vec3( .04045 ), arg ) );
-		pow(arg, vec3(2.2));
-}
+vec3 eotf(vec3 arg) {	return pow(arg, vec3(2.2)); }
 
 /**
  * Преобразование в sRGB из линейного цветового пространства
  */
-vec3 oetf(vec3 arg) {
-	return 
-    // точное преобразование с помощью кусочной функции
-		//mix( 12.92 * arg, 1.055 * pow( arg, vec3( .416667 ) ) - .055, lessThan( vec3( .0031308 ), arg ) );
-		pow(arg, vec3(1./2.2));
-}
+vec3 oetf(vec3 arg) {	return pow(arg, vec3(1./2.2)); }
 
 // Матрица преобразования цветового пространства из базиса (615,535,445) в sRGB
 mat3 mat2sRGB = mat3(
@@ -60,9 +50,12 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
 
-  vec3 col = texture(uTextureProgramA, uv).rgb;
+  vec4 buf = texture(uTextureProgramA, uv);
+  vec3 col = buf.rgb;
   col =  col*mat2sRGB; // Преобразование в sRGB
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+
+  //col = vec3(sqrt(buf.w/30000.));
   fragColor = vec4(col, 1.);
 }
  

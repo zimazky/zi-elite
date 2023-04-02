@@ -196,7 +196,7 @@ vec4 render(vec3 ro, vec3 rd)
     //else rs = scattering(ro, rd, light1);
     rs = scattering(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
-    t = -1.0;
+    t = 2. * MAX_TERRAIN_DISTANCE;//-1.0;
   }
   else {
     // mountains		
@@ -258,26 +258,21 @@ vec4 render(vec3 ro, vec3 rd)
   float fdist = sqrt(fdist2);
   fd /= fdist;
   float f = step(0.999999, dot(fd,rd));
-  col = (fdist-t)*sign(t)<0. ? mix(col,uFlare1Light,f) : col;
+  col = fdist-t <0. ? mix(col,uFlare1Light,f) : col;
   // 2-ая световая ракета
    fd = uFlare2Position - ro;
   fdist2 = dot(fd,fd);
   fdist = sqrt(fdist2);
   fd /= fdist;
   f = step(0.999999, dot(fd,rd));
-  col = (fdist-t)*sign(t)<0. ? mix(col,uFlare2Light,f) : col;
+  col = fdist-t < 0. ? mix(col,uFlare2Light,f) : col;
 
   return vec4(col, t);
 }
 
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-
-  // значение на предыдущем кадре
-  //vec4 data = texture(iChannel2, uv2);
-  //float zbuf = data.w;
-
-  
+ 
   vec3 pos = uCameraPosition.xyz;
   vec3 rd = normalize(vRay);
 

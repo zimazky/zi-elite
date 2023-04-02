@@ -277,7 +277,7 @@ export default async function main() {
   await e.addFramebuffer(
     //1400, 960,
     900, 600, 
-    'shaders', 'vs.glsl', 'fs.glsl', 
+    'shaders/b', 'vs.glsl', 'fs.glsl', 
     onProgramAInit, onProgramALoop
   );
   await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', onProgramRenderInit);
