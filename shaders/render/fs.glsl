@@ -50,19 +50,14 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 
 void main() {
 
-  float aspect = uTextureBResolution.x/uTextureBResolution.y;
-
-  float tres = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y ? uTextureBResolution.x : uTextureBResolution.y;
-  //float tres = max(uTextureBResolution.x, uTextureBResolution.y);
-  vec2 uv = gl_FragCoord.xy/uResolution*uTextureBResolution/tres+0.5*(vec2(tres)-uTextureBResolution)/uResolution;//*(uResolution.x-res)/uResolution.x);
-
-
+  float k = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y ? 
+    uTextureBResolution.x/uResolution.x : uTextureBResolution.y/uResolution.y;
+  vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
 
   vec4 buf = texture(uTextureProgramB, uv);
   vec3 col = buf.rgb;
   col =  col*mat2sRGB; // Преобразование в sRGB
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-
   //col = vec3(sqrt(buf.w/30000.));
   fragColor = vec4(col, 1.);
 }
