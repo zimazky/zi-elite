@@ -130,7 +130,7 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
-  const onProgramAInit = (program: WebGLProgram) => {
+  const onProgramBInit = (program: WebGLProgram) => {
     cameraPositionLocation = e.gl.getUniformLocation(program, 'uCameraPosition');
     cameraViewAngleLocation = e.gl.getUniformLocation(program, 'uCameraViewAngle');
     cameraVelocityLocation = e.gl.getUniformLocation(program, 'uCameraVelocity');
@@ -176,7 +176,7 @@ export default async function main() {
     const texture2 = e.setTexture(program, 'uTextureConstellation', constellationImg);
   }
   
-  const onProgramALoop = (time: number, timeDelta: number) => {
+  const onProgramBLoop = (time: number, timeDelta: number) => {
     camera.loopCalculation(time, timeDelta);
     e.gl.uniform4f(cameraPositionLocation, camera.position.x, camera.position.y, camera.position.z, camera.altitude);
     e.gl.uniform3f(cameraVelocityLocation, camera.velocity.x, camera.velocity.y, camera.velocity.z);
@@ -270,15 +270,27 @@ export default async function main() {
   }
 
   const onProgramRenderInit = (program: WebGLProgram) => {
+    const fbNum = e.framebuffers.length;
+    if(fbNum > 0) {
+      e.setRenderedTexture(program, e.framebuffers[fbNum-1].fbTexture, 'uTextureProgramB');
+      const width = e.framebuffers[fbNum-1].width;
+      const height = e.framebuffers[fbNum-1].height;
+      const textureBResolution = e.gl.getUniformLocation(program, 'uTextureBResolution');
+      e.gl.uniform2f(textureBResolution, width, height);
+    }
     const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg);
   }
   
-  console.log(e.canvas.width, e.canvas.height);
+  const onProgramAInit = (program: WebGLProgram) => {
+
+  }
+
+
   await e.addFramebuffer(
     //1400, 960,
     900, 600, 
     'shaders/b', 'vs.glsl', 'fs.glsl', 
-    onProgramAInit, onProgramALoop
+    onProgramBInit, onProgramBLoop
   );
   await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', onProgramRenderInit);
 

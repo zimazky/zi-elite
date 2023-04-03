@@ -4,6 +4,7 @@ precision mediump float;
 
 // разрешение экрана
 uniform vec2 uResolution;
+uniform vec2 uTextureBResolution;
 
 // параметры времени
 // x - время с момента запуска программы в секундах, 
@@ -11,7 +12,7 @@ uniform vec2 uResolution;
 uniform vec2 uTime;
 
 // текстуры
-uniform sampler2D uTextureProgramA;
+uniform sampler2D uTextureProgramB;
 uniform sampler2D uTextureBlueNoise;
 
 out vec4 fragColor;
@@ -48,9 +49,16 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy/uResolution;
 
-  vec4 buf = texture(uTextureProgramA, uv);
+  float aspect = uTextureBResolution.x/uTextureBResolution.y;
+
+  float tres = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y ? uTextureBResolution.x : uTextureBResolution.y;
+  //float tres = max(uTextureBResolution.x, uTextureBResolution.y);
+  vec2 uv = gl_FragCoord.xy/uResolution*uTextureBResolution/tres+0.5*(vec2(tres)-uTextureBResolution)/uResolution;//*(uResolution.x-res)/uResolution.x);
+
+
+
+  vec4 buf = texture(uTextureProgramB, uv);
   vec3 col = buf.rgb;
   col =  col*mat2sRGB; // Преобразование в sRGB
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);

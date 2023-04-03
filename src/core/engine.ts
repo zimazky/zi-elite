@@ -10,25 +10,6 @@ interface OnProgramLoop {
   (time: number, timeDelta: number): void;
 }
 
-type Framebuffer = {
-  /** Ширина фреймбуфера */
-  width: number;
-  /** Высота фреймбуфера */
-  height: number;
-  /** Шейдерная программа */
-  program: WebGLProgram;
-  /** Фреймбуфер */
-  framebuffer: WebGLFramebuffer;
-  /** Текстура фреймбуфера */
-  fbTexture: WebGLTexture;
-  /** Колбэк-функция, вызываемая при инициализации шейдерной программы */
-  onProgramInit: OnProgramInit;
-  /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
-  onProgramLoop: OnProgramLoop;
-  resolutionLocation: WebGLUniformLocation;
-  timeLocation: WebGLUniformLocation;
-}
-
 type Renderbufer = {
   /** Шейдерная программа */
   program: WebGLProgram;
@@ -36,8 +17,21 @@ type Renderbufer = {
   onProgramInit: OnProgramInit;
   /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
   onProgramLoop: OnProgramLoop;
+  /** (uResolution) Разрешение */
   resolutionLocation: WebGLUniformLocation;
+  /** (uTime) Время */
   timeLocation: WebGLUniformLocation;
+}
+
+type Framebuffer = Renderbufer & {
+  /** Ширина фреймбуфера */
+  width: number;
+  /** Высота фреймбуфера */
+  height: number;
+  /** Фреймбуфер */
+  framebuffer: WebGLFramebuffer;
+  /** Текстура фреймбуфера */
+  fbTexture: WebGLTexture;
 }
 
 export class Engine extends GLContext {
@@ -50,6 +44,8 @@ export class Engine extends GLContext {
 
   framebuffers: Framebuffer[] = [];
   renderbufer: Renderbufer;
+  /** Времена выполнения отработки программ */
+  renderTimes: number[] = [];
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -137,7 +133,6 @@ export class Engine extends GLContext {
     const n = this.textureCount;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
@@ -157,7 +152,6 @@ export class Engine extends GLContext {
     const n = this.textureCount;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    // задаём параметры, чтобы можно было отрисовать изображение любого размера
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
     //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST_MIPMAP_NEAREST);
@@ -184,10 +178,6 @@ export class Engine extends GLContext {
     this.gl.useProgram(this.renderbufer.program);
     this.renderbufer.onProgramInit(this.renderbufer.program);
 
-    const fbNum = this.framebuffers.length;
-    if(fbNum > 0) {
-      this.setRenderedTexture(this.renderbufer.program, this.framebuffers[fbNum-1].fbTexture, 'uTextureProgramA');
-    }
     this.startTime = this.currentTime = performance.now()/1000.;
 
     this.loop();
@@ -205,9 +195,9 @@ export class Engine extends GLContext {
       this.gl.useProgram(e.program);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);
-      e.onProgramLoop(time, timeDelta);
       this.gl.viewport(0, 0, e.width, e.height);
       this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+      e.onProgramLoop(time, timeDelta);
     });
 
     // Финальный рендер
@@ -218,6 +208,7 @@ export class Engine extends GLContext {
     this.gl.uniform2f(this.renderbufer.timeLocation, time, timeDelta);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    this.renderbufer.onProgramLoop(time, timeDelta);
 
     requestAnimationFrame(this.loop.bind(this));
   }
