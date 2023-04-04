@@ -1,3 +1,5 @@
+import { rad } from "./mathutils";
+
 interface IVectors<T> {
   /** Мутабельное сложение с вектором */
   addMutable(v: T): T;
@@ -37,6 +39,8 @@ interface IVectors<T> {
   floor(): T;
   /** Вектор с дробными частями элементов */
   fract(): T;
+  /** Получить компоненты в виде массива */
+  getArray(): number[];
 }
 
 interface IMatrixes<T> {
@@ -44,6 +48,8 @@ interface IMatrixes<T> {
   mul(v: T): T;
   /** Произведение транспонированного вектора на матрицу (произведение матрицы на вектор слева) */
   mulLeft(v: T): T;
+  /** Получить компоненты в виде массива */
+  getArray(): number[];
 }
 
 /****************************************************************************** 
@@ -119,6 +125,8 @@ export class Vec4 implements IVectors<Vec4> {
   }
 
   fract(): Vec4 { return this.copy().subMutable(this.floor()); }
+
+  getArray(): number[] { return [this.x, this.y, this.z, this.w]; }
 }
 
 /****************************************************************************** 
@@ -134,14 +142,59 @@ export class Mat4 implements IMatrixes<Vec4> {
     this.i = i.copy(); this.j = j.copy(); this.k = k.copy(); this.l = l.copy();
   }
 
-  mulLeft(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.j.dot(v)); }
+  mulLeft(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.l.dot(v)); }
 
   mul(v: Vec4): Vec4 {
     return new Vec4(
-      v.x*this.i.x + v.y*this.j.x + v.z*this.k.x + v.w*this.j.x,
-      v.x*this.i.y + v.y*this.j.y + v.z*this.k.y + v.w*this.j.y,
-      v.x*this.i.z + v.y*this.j.z + v.z*this.k.z + v.w*this.j.z,
-      v.x*this.i.w + v.y*this.j.w + v.z*this.k.w + v.w*this.j.w,
+      v.x*this.i.x + v.y*this.j.x + v.z*this.k.x + v.w*this.l.x,
+      v.x*this.i.y + v.y*this.j.y + v.z*this.k.y + v.w*this.l.y,
+      v.x*this.i.z + v.y*this.j.z + v.z*this.k.z + v.w*this.l.z,
+      v.x*this.i.w + v.y*this.j.w + v.z*this.k.w + v.w*this.l.w,
+    );
+  }
+
+  getArray(): number[] {
+    return [
+      this.i.x, this.i.y, this.i.z, this.i.w,
+      this.j.x, this.j.y, this.j.z, this.j.w,
+      this.k.x, this.k.y, this.k.z, this.k.w,
+      this.l.x, this.l.y, this.l.z, this.l.w,
+    ]
+  }
+
+  /**
+   * Получить матрицу ортогональной проекции
+   * @param left - расстояние до левой плоскости отсечения
+   * @param right - расстояние до правой плоскости отсечения
+   * @param bottom - расстояние до нижней плоскости отсечения
+   * @param top - расстояние до верхней плоскости отсечения
+   * @param near - расстояние до ближней плоскости отсечения
+   * @param far - расстояние до дальней плоскости отсечения
+   * @returns матрица ортогональной проекции
+   */
+  static orthoProjectMatrix(
+    left: number, right: number, bottom: number, top: number, near: number, far: number): Mat4 {
+    return new Mat4(
+      new Vec4(2./(right-left), 0., 0., -(right+left)/(right-left)),
+      new Vec4(0., 2./(top-bottom), 0., -(top+bottom)/(top-bottom)),
+      new Vec4(0., 0., -2./(far-near),  -(far+near)/(far-near)),
+      new Vec4(0., 0., 0., 1.)
+    );
+  }
+  /**
+   * Получить матрицу перспективной проекции
+   * @param fov - величина угла поля зрения по горизонтали в градусах
+   * @param aspect - соотношение сторон (ширина/высота)
+   * @param near - расстояние до ближней плоскости отсечения, должно быть больше 0
+   * @param far - расстояние до дальней плоскости отсечения, должно быть больше 0
+   * @returns матрица перспективной проекции
+   */
+  static perspectiveProjectMatrix(fov: number, aspect: number, near: number, far: number): Mat4 {
+    return new Mat4(
+      new Vec4(aspect/Math.tan(0.5*rad(fov)), 0., 0., 0.),
+      new Vec4(0., 1./Math.tan(0.5*rad(fov)), 0., 0.),
+      new Vec4(0., 0., -(far+near)/(far-near), -2.*far*near/(far-near)),
+      new Vec4(0., 0., -1., 0.)
     );
   }
 }
@@ -233,6 +286,8 @@ export class Vec3 implements IVectors<Vec3> {
     return new Vec3(Math.exp(this.x), Math.exp(this.y), Math.exp(this.z));
   }
 
+  getArray(): number[] { return [this.x, this.y, this.z]; }
+
 /** Векторное произведение */
   cross(v: Vec3): Vec3 {
     return new Vec3(
@@ -263,6 +318,14 @@ export class Mat3 implements IMatrixes<Vec3> {
       v.x*this.i.y + v.y*this.j.y + v.z*this.k.y,
       v.x*this.i.z + v.y*this.j.z + v.z*this.k.z
     );
+  }
+
+  getArray(): number[] {
+    return [
+      this.i.x, this.i.y, this.i.z,
+      this.j.x, this.j.y, this.j.z,
+      this.k.x, this.k.y, this.k.z
+    ]
   }
 }
 
@@ -336,6 +399,8 @@ export class Vec2 implements IVectors<Vec2> {
 
   fract(): Vec2 { return this.copy().subMutable(this.floor()); }
 
+  getArray(): number[] { return [this.x, this.y]; }
+
   /** Векторное произведение */
   cross(v: Vec2): number { return this.x*v.y - this.y*v.x; }
 }
@@ -359,5 +424,12 @@ export class Mat2 implements IMatrixes<Vec2> {
       v.x*this.i.x + v.y*this.j.x,
       v.x*this.i.y + v.y*this.j.y,
     );
+  }
+
+  getArray(): number[] {
+    return [
+      this.i.x, this.i.y,
+      this.j.x, this.j.y
+    ]
   }
 }

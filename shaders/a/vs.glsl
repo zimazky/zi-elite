@@ -1,5 +1,6 @@
 #version 300 es
 
+uniform mat4 uProjectMatrix;
 uniform vec2 uTextureBResolution;
 
 // текстуры
@@ -15,6 +16,6 @@ void main() {
   vTextureBColor = buf.rgb;
 
   //gl_Position = vec4(aVertexPosition.x, aVertexPosition.y, -buf.w, 1.0);
-  gl_Position = vec4(aVertexPosition, 1.0);
+  gl_Position = vec4(aVertexPosition.xy, -buf.w/65000., 1.0);
 
 }

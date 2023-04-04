@@ -8,7 +8,7 @@ import { NoiseSampler } from './core/noise';
 import { Quaternion } from './core/quaternion';
 import { Sky } from './core/sky';
 import { TerrainSampler } from './core/terrain';
-import { Vec3 } from './core/vectors';
+import { Mat4, Vec3 } from './core/vectors';
 import { loadImage } from './utils/loadimg';
 
 //-----------------------------------------------------------------------------
@@ -290,6 +290,10 @@ export default async function main() {
     const height = shaderB.height;
     const textureBResolution = e.gl.getUniformLocation(shader.program, 'uTextureBResolution');
     e.gl.uniform2f(textureBResolution, width, height);
+    const projectMatrix = e.gl.getUniformLocation(shader.program, 'uProjectMatrix');
+    //e.gl.uniformMatrix4fv(projectMatrix, false, Mat4.perspectiveProjectMatrix(80, width/height, 1., 30000.).getArray());
+    e.gl.uniformMatrix4fv(projectMatrix, false, Mat4.orthoProjectMatrix(-1.,1.,-1.,1.,1.,60000.).getArray());
+
     
     // формирование координат вершин
     const vertices: number[] = [];
