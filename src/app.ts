@@ -1,7 +1,7 @@
 import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
 import { SUN_COLOR, SUN_DISC_ANGLE_SIN } from './core/constants';
-import { Engine } from './core/engine'
+import { Engine, Renderbufer } from './core/engine'
 import { Flare } from './core/flare';
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
@@ -130,50 +130,53 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
-  const onProgramBInit = (program: WebGLProgram) => {
-    cameraPositionLocation = e.gl.getUniformLocation(program, 'uCameraPosition');
-    cameraViewAngleLocation = e.gl.getUniformLocation(program, 'uCameraViewAngle');
-    cameraVelocityLocation = e.gl.getUniformLocation(program, 'uCameraVelocity');
-    cameraDirectionLocation = e.gl.getUniformLocation(program, 'uCameraDirection');
-    cameraTransformMatLocation = e.gl.getUniformLocation(program, 'uTransformMat');
-    cameraAngularSpeedLocation = e.gl.getUniformLocation(program, 'uCameraRotationSpeed');
-    cameraInShadowLocation = e.gl.getUniformLocation(program, 'uCameraInShadow');
+  let shaderA;
+  let shaderB;
 
-    headLightLocation = e.gl.getUniformLocation(program, 'uHeadLight');
-    flare1PositionLocation = e.gl.getUniformLocation(program, 'uFlare1Position');
-    flare1LightLocation = e.gl.getUniformLocation(program, 'uFlare1Light');
-    flare2PositionLocation = e.gl.getUniformLocation(program, 'uFlare2Position');
-    flare2LightLocation = e.gl.getUniformLocation(program, 'uFlare2Light');
+  const onProgramBInit = (shader: Renderbufer) => {
+    cameraPositionLocation = e.gl.getUniformLocation(shader.program, 'uCameraPosition');
+    cameraViewAngleLocation = e.gl.getUniformLocation(shader.program, 'uCameraViewAngle');
+    cameraVelocityLocation = e.gl.getUniformLocation(shader.program, 'uCameraVelocity');
+    cameraDirectionLocation = e.gl.getUniformLocation(shader.program, 'uCameraDirection');
+    cameraTransformMatLocation = e.gl.getUniformLocation(shader.program, 'uTransformMat');
+    cameraAngularSpeedLocation = e.gl.getUniformLocation(shader.program, 'uCameraRotationSpeed');
+    cameraInShadowLocation = e.gl.getUniformLocation(shader.program, 'uCameraInShadow');
 
-    sunDirectionLocation = e.gl.getUniformLocation(program, 'uSunDirection');
-    sunDiscColorLocation = e.gl.getUniformLocation(program, 'uSunDiscColor');
-    sunDiscAngleSinLocation = e.gl.getUniformLocation(program, 'uSunDiscAngleSin');
+    headLightLocation = e.gl.getUniformLocation(shader.program, 'uHeadLight');
+    flare1PositionLocation = e.gl.getUniformLocation(shader.program, 'uFlare1Position');
+    flare1LightLocation = e.gl.getUniformLocation(shader.program, 'uFlare1Light');
+    flare2PositionLocation = e.gl.getUniformLocation(shader.program, 'uFlare2Position');
+    flare2LightLocation = e.gl.getUniformLocation(shader.program, 'uFlare2Light');
+
+    sunDirectionLocation = e.gl.getUniformLocation(shader.program, 'uSunDirection');
+    sunDiscColorLocation = e.gl.getUniformLocation(shader.program, 'uSunDiscColor');
+    sunDiscAngleSinLocation = e.gl.getUniformLocation(shader.program, 'uSunDiscAngleSin');
     e.gl.uniform1f(sunDiscAngleSinLocation, SUN_DISC_ANGLE_SIN);
-    betaRayleighLocation = e.gl.getUniformLocation(program, 'uBetaRayleigh');
+    betaRayleighLocation = e.gl.getUniformLocation(shader.program, 'uBetaRayleigh');
     e.gl.uniform3f(betaRayleighLocation, atm.betaRayleigh.x, atm.betaRayleigh.y, atm.betaRayleigh.z);
-    betaMieLocation = e.gl.getUniformLocation(program, 'uBetaMie');
+    betaMieLocation = e.gl.getUniformLocation(shader.program, 'uBetaMie');
     e.gl.uniform3f(betaMieLocation, atm.betaMie.x, atm.betaMie.y, atm.betaMie.z);
-    gMieLocation = e.gl.getUniformLocation(program, 'uGMie');
+    gMieLocation = e.gl.getUniformLocation(shader.program, 'uGMie');
     e.gl.uniform1f(gMieLocation, atm.g);
-    scaleHeightLocation = e.gl.getUniformLocation(program, 'uScaleHeight');
+    scaleHeightLocation = e.gl.getUniformLocation(shader.program, 'uScaleHeight');
     e.gl.uniform2f(scaleHeightLocation, atm.heightRayleigh, atm.heightMie);
-    atmRadiusLocation = e.gl.getUniformLocation(program, 'uAtmRadius');
+    atmRadiusLocation = e.gl.getUniformLocation(shader.program, 'uAtmRadius');
     e.gl.uniform1f(atmRadiusLocation, atm.radius);
-    planetRadiusLocation = e.gl.getUniformLocation(program, 'uPlanetRadius');
+    planetRadiusLocation = e.gl.getUniformLocation(shader.program, 'uPlanetRadius');
     e.gl.uniform1f(planetRadiusLocation, atm.planetRadius);
-    planetCenterLocation = e.gl.getUniformLocation(program, 'uPlanetCenter');
+    planetCenterLocation = e.gl.getUniformLocation(shader.program, 'uPlanetCenter');
     e.gl.uniform3f(planetCenterLocation, atm.planetCenter.x, atm.planetCenter.y, atm.planetCenter.z);
 
-    skyTransformMatLocation = e.gl.getUniformLocation(program, 'uSkyTransformMat');
-    skyColorLocation = e.gl.getUniformLocation(program, 'uSkyColor');
-    constellationsColor = e.gl.getUniformLocation(program, 'uConstellationsColor');
+    skyTransformMatLocation = e.gl.getUniformLocation(shader.program, 'uSkyTransformMat');
+    skyColorLocation = e.gl.getUniformLocation(shader.program, 'uSkyColor');
+    constellationsColor = e.gl.getUniformLocation(shader.program, 'uConstellationsColor');
 
-    screenModeLocation = e.gl.getUniformLocation(program, 'uScreenMode');
-    mapScaleLocation = e.gl.getUniformLocation(program, 'uMapScale');
+    screenModeLocation = e.gl.getUniformLocation(shader.program, 'uScreenMode');
+    mapScaleLocation = e.gl.getUniformLocation(shader.program, 'uMapScale');
 
-    const texture0 = e.setTextureWithMIP(program, 'uTextureGrayNoise', grayNoiseImg);
-    const texture1 = e.setTexture(program, 'uTextureMilkyway', milkywayImg);
-    const texture2 = e.setTexture(program, 'uTextureConstellation', constellationImg);
+    const texture0 = e.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
+    const texture1 = e.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
+    const texture2 = e.setTexture(shader.program, 'uTextureConstellation', constellationImg);
   }
   
   const onProgramBLoop = (time: number, timeDelta: number) => {
@@ -269,30 +272,72 @@ export default async function main() {
     else e.gl.uniform3f(flare2LightLocation, 0, 0, 0);
   }
 
-  const onProgramRenderInit = (program: WebGLProgram) => {
-    const fbNum = e.framebuffers.length;
-    if(fbNum > 0) {
-      e.setRenderedTexture(program, e.framebuffers[fbNum-1].fbTexture, 'uTextureProgramB');
-      const width = e.framebuffers[fbNum-1].width;
-      const height = e.framebuffers[fbNum-1].height;
-      const textureBResolution = e.gl.getUniformLocation(program, 'uTextureBResolution');
-      e.gl.uniform2f(textureBResolution, width, height);
-    }
-    const texture1 = e.setTexture(program, 'uTextureBlueNoise', blueNoiseImg);
+  const onProgramRenderInit = (shader: Renderbufer) => {
+    e.setRenderedTexture(shader.program, shaderA.fbTexture, 'uTextureProgramB');
+    const width = shaderA.width;
+    const height = shaderA.height;
+    const textureBResolution = e.gl.getUniformLocation(shader.program, 'uTextureBResolution');
+    e.gl.uniform2f(textureBResolution, width, height);
+    const texture1 = e.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
   }
   
-  const onProgramAInit = (program: WebGLProgram) => {
+  const onProgramAInit = (shader: Renderbufer) => {
+    // привязка текстуры из шейдера B
+    e.setRenderedTexture(shader.program, shaderB.fbTexture, 'uTextureProgramB');
 
+    // установка разрешения текстуры шейдера B
+    const width = shaderB.width;
+    const height = shaderB.height;
+    const textureBResolution = e.gl.getUniformLocation(shader.program, 'uTextureBResolution');
+    e.gl.uniform2f(textureBResolution, width, height);
+    
+    // формирование координат вершин
+    const vertices: number[] = [];
+    const numx = 480;
+    const numy = 300;
+
+    for(let j=0; j<numy+1; j++) {
+      for(let i=0; i<numx+1; i++) {
+        vertices.push(-1. + i*2./numx);
+        vertices.push(1. - j*2./numy);
+      }
+    }
+
+    // формирование индексов вершин для отрисовки методом TRIANGLE_STRIP
+    const indices: number[] = [];
+    for(let j=0; j<numy; j++) {
+      // слева направо
+      for(let i=0; i<numx+1; i++) {
+        indices.push(i + j*(numx+1));
+        indices.push(i + (j+1)*(numx+1));
+      }
+      j++;
+      if(j>=numy) break;
+      // справа налево
+      for(let i=numx; i>=0; i--) {
+        indices.push(i + j*(numx+1));
+        indices.push(i + (j+1)*(numx+1));
+      }
+    }
+
+    // привязка массива вершин
+    e.setVertexArray(shader, 'aVertexPosition', vertices, indices, 2);
   }
 
+  shaderA = await e.addFramebuffer(
+    900, 600, 
+    'shaders/a', 'vs.glsl', 'fs.glsl',
+    onProgramAInit
+  );
 
-  await e.addFramebuffer(
+  shaderB = await e.addFramebuffer(
     //1400, 960,
     //900, 600, 
     1536, 762,
     'shaders/b', 'vs.glsl', 'fs.glsl', 
     onProgramBInit, onProgramBLoop
   );
+
   await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', onProgramRenderInit);
 
   e.start();

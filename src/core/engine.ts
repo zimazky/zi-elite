@@ -3,27 +3,33 @@ import { preprocess } from "./shader";
 
 
 interface OnProgramInit {
-  (program: WebGLProgram): void;
+  (shader: Renderbufer): void;
 }
 
 interface OnProgramLoop {
   (time: number, timeDelta: number): void;
 }
 
-type Renderbufer = {
+export type Renderbufer = {
   /** Шейдерная программа */
   program: WebGLProgram;
   /** Колбэк-функция, вызываемая при инициализации шейдерной программы */
   onProgramInit: OnProgramInit;
   /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
   onProgramLoop: OnProgramLoop;
+  /** Объект вершинных массивов */
+  vertexArray: WebGLVertexArrayObject;
+  /** Количество вершин */
+  numOfVertices: number;
+  /** Признак применения поэлементной отрисовки с помощью gl.drawElements */
+  isElementDraw: boolean;
   /** (uResolution) Разрешение */
   resolutionLocation: WebGLUniformLocation;
   /** (uTime) Время */
   timeLocation: WebGLUniformLocation;
 }
 
-type Framebuffer = Renderbufer & {
+export type Framebuffer = Renderbufer & {
   /** Ширина фреймбуфера */
   width: number;
   /** Высота фреймбуфера */
@@ -53,22 +59,22 @@ export class Engine extends GLContext {
 
   /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
   async addFramebuffer(width: number, height: number, baseUrl: string, vsUrl: string, fsUrl: string, 
-    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}) {
+    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Promise<Framebuffer> {
 
     const vsSource = preprocess(baseUrl,vsUrl);
     const fsSource = preprocess(baseUrl,fsUrl);
     const program = this.createProgram(await vsSource, await fsSource);
     const [framebuffer, fbTexture] = this.createFramebuffer(width, height);
     this.gl.useProgram(program);
-    this.createSimplePlaneVertexBuffer();
-    this.setVertexBuffer(program, 'aVertexPosition');
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
     this.framebuffers.push({
-      width, height, program, framebuffer, fbTexture, 
+      width, height, program, framebuffer, fbTexture,
+      vertexArray: null, numOfVertices: 4, isElementDraw: false,
       resolutionLocation, timeLocation,
       onProgramInit: onInit,
       onProgramLoop: onLoop});
+    return this.framebuffers[this.framebuffers.length-1];
   }
 
   /** Настройка финального рендербуфера */
@@ -79,11 +85,10 @@ export class Engine extends GLContext {
     const fsSource = preprocess(baseUrl,fsUrl);
     const program = this.createProgram(await vsSource, await fsSource);
     this.gl.useProgram(program);
-    this.createSimplePlaneVertexBuffer();
-    this.setVertexBuffer(program, 'aVertexPosition');
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
-    this.renderbufer = {program, resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
+    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false,
+      resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
   public async loadShader(sourceUrl: string): Promise<string> {
@@ -92,18 +97,29 @@ export class Engine extends GLContext {
     return source;
   }
 
-  /** Создание буфера вершин для простой плоскости */
-  createSimplePlaneVertexBuffer() {
-    const vertices = [1.0,  1.0, -1.0,  1.0, 1.0, -1.0, -1.0, -1.0];
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+  /**
+   * Создание и инициализация массива вершин для фреймбуфера
+   * @param buffer - фреймбуфер
+   * @param name - наименование атрибута массива вершин в шейдере
+   * @param vertices - массив с координатами вершин
+   * @param pointSize - размер элемента вершинных координат, по умолчанию 2 (x, y)
+   */
+  setVertexArray(buffer: Renderbufer, name: string, vertices: number[], indices: number[], pointSize: number = 2) {
+    buffer.vertexArray = this.gl.createVertexArray();
+    buffer.numOfVertices = vertices.length/pointSize;
+    this.gl.bindVertexArray(buffer.vertexArray);
+    const positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
-  }
-
-  /** Установка буфера вершин */
-  setVertexBuffer(program: WebGLProgram, name: string) {
-    const vertexPosition = this.gl.getAttribLocation(program, name);
-    this.gl.enableVertexAttribArray(vertexPosition);
-    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+    const attributeLocation = this.gl.getAttribLocation(buffer.program, name);
+    this.gl.enableVertexAttribArray(attributeLocation);
+    this.gl.vertexAttribPointer(attributeLocation, pointSize, this.gl.FLOAT, false, 0, 0);
+    if(indices === null) return;
+    buffer.isElementDraw = true;
+    buffer.numOfVertices = indices.length;
+    const indexBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW);
   }
 
   setRenderedTexture(program: WebGLProgram, texture: WebGLTexture, name: string) {
@@ -170,13 +186,22 @@ export class Engine extends GLContext {
   public start() {
     this.resizeCanvasToDisplaySize();
 
+    // По умолчанию во всех буферах используется простая сетка плоскости из 4-ех вершин
+    const vertices = [1.0,  1.0, -1.0,  1.0, 1.0, -1.0, -1.0, -1.0];
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+    // Используется первый массив в дефолтном VAO, независимо от наименования в шейдере
+    const vertexPosition = 0; //this.gl.getAttribLocation(program, name);
+    this.gl.enableVertexAttribArray(vertexPosition);
+    this.gl.vertexAttribPointer(vertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+
     this.framebuffers.forEach(e=>{
       this.gl.useProgram(e.program);
-      e.onProgramInit(e.program); 
+      e.onProgramInit(e); 
     })
 
     this.gl.useProgram(this.renderbufer.program);
-    this.renderbufer.onProgramInit(this.renderbufer.program);
+    this.renderbufer.onProgramInit(this.renderbufer);
 
     this.startTime = this.currentTime = performance.now()/1000.;
 
@@ -193,10 +218,13 @@ export class Engine extends GLContext {
     this.framebuffers.forEach(e => {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, e.framebuffer);
       this.gl.useProgram(e.program);
+      this.gl.bindVertexArray(e.vertexArray);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);
       this.gl.viewport(0, 0, e.width, e.height);
-      this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+      if(e.isElementDraw) this.gl.drawElements(this.gl.LINE_STRIP, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
+      else this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, e.numOfVertices);
+      //console.log(e.numOfVertices);
       e.onProgramLoop(time, timeDelta);
     });
 
@@ -204,10 +232,13 @@ export class Engine extends GLContext {
     this.resizeCanvasToDisplaySize();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     this.gl.useProgram(this.renderbufer.program);
+    this.gl.bindVertexArray(this.renderbufer.vertexArray);
     this.gl.uniform2f(this.renderbufer.resolutionLocation, this.canvas.width, this.canvas.height);
     this.gl.uniform2f(this.renderbufer.timeLocation, time, timeDelta);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    if(this.renderbufer.isElementDraw) 
+      this.gl.drawElements(this.gl.TRIANGLE_STRIP, this.renderbufer.numOfVertices, this.gl.UNSIGNED_INT, 0);
+    else this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.renderbufer.numOfVertices);
     this.renderbufer.onProgramLoop(time, timeDelta);
 
     requestAnimationFrame(this.loop.bind(this));

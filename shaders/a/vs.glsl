@@ -1,18 +1,20 @@
 #version 300 es
 
-uniform mat3 uTransformMat;
-uniform mat3 uSkyTransformMat;
-uniform mediump float uCameraViewAngle;
-uniform mediump vec2 uResolution;
+uniform vec2 uTextureBResolution;
+
+// текстуры
+uniform sampler2D uTextureProgramB;
 
 in vec3 aVertexPosition;
 
-out vec3 vRay;    // Лучи в системе координат планеты
-out vec3 vRaySky; // Лучи в системе координат небесного свода
+out vec3 vTextureBColor;
 
 void main() {
+  vec2 uv = 0.5*(vec2(1.)+aVertexPosition.xy);
+  vec4 buf = texture(uTextureProgramB, uv);
+  vTextureBColor = buf.rgb;
+
+  //gl_Position = vec4(aVertexPosition.x, aVertexPosition.y, -buf.w, 1.0);
   gl_Position = vec4(aVertexPosition, 1.0);
-  float t = tan(0.5*uCameraViewAngle);
-  vRay = uTransformMat*vec3(aVertexPosition.xy*uResolution*t/uResolution.x, -1.);
-  vRaySky = vRay*uSkyTransformMat;
+
 }
