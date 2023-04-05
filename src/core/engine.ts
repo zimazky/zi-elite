@@ -1,5 +1,6 @@
 import { GLContext } from "./glcontext";
 import { preprocess } from "./shader";
+import { Vec4 } from "./vectors";
 
 
 interface OnProgramInit {
@@ -7,6 +8,10 @@ interface OnProgramInit {
 }
 
 interface OnProgramLoop {
+  (time: number, timeDelta: number): void;
+}
+
+interface OnUpdate {
   (time: number, timeDelta: number): void;
 }
 
@@ -23,6 +28,8 @@ export type Renderbufer = {
   numOfVertices: number;
   /** Признак применения поэлементной отрисовки с помощью gl.drawElements */
   isElementDraw: boolean;
+  /** Цвет очистки буфера перед отрисовкой, null если очистка не нужна */
+  clearColor: Vec4;
   /** (uResolution) Разрешение */
   resolutionLocation: WebGLUniformLocation;
   /** (uTime) Время */
@@ -48,10 +55,12 @@ export class Engine extends GLContext {
   /** Количество текстур */
   textureCount: number = 0;
 
+  /** Список фреймбуферов со собственными программами */
   framebuffers: Framebuffer[] = [];
+  /** Финальный рендер в canvas */
   renderbufer: Renderbufer;
-  /** Времена выполнения отработки программ */
-  renderTimes: number[] = [];
+
+  onUpdate: OnUpdate = (t,dt)=>{};
 
   public constructor(elementId?: string) {
     super(elementId);
@@ -70,7 +79,7 @@ export class Engine extends GLContext {
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
     this.framebuffers.push({
       width, height, program, framebuffer, fbTexture,
-      vertexArray: null, numOfVertices: 4, isElementDraw: false,
+      vertexArray: null, numOfVertices: 4, isElementDraw: false, clearColor: null,
       resolutionLocation, timeLocation,
       onProgramInit: onInit,
       onProgramLoop: onLoop});
@@ -87,7 +96,7 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
-    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false,
+    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false, clearColor: null,
       resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
@@ -214,10 +223,19 @@ export class Engine extends GLContext {
     const timeDelta = lCurrentTime - this.currentTime;
     this.currentTime = lCurrentTime;
 
+    this.onUpdate(time, timeDelta);
+
     // Шейдер A, рендеринг в текстуру
     this.framebuffers.forEach(e => {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, e.framebuffer);
       this.gl.useProgram(e.program);
+      if(e.clearColor !== null) {
+        this.gl.clearColor(e.clearColor.x, e.clearColor.y, e.clearColor.z, e.clearColor.w);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+
+        //this.gl.enable(this.gl.DEPTH_TEST);
+        //this.gl.enable(this.gl.CULL_FACE);
+      }
       this.gl.bindVertexArray(e.vertexArray);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);

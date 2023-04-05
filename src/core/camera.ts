@@ -47,9 +47,13 @@ export class Camera {
   viewAngle: number;
   orientation: Quaternion;
   /* Направление камеры */
-  direction: Vec3 = new Vec3(0.,0.,-1.);
+  direction: Vec3 = new Vec3(0., 0., -1.);
   /** Матрица вращения камеры для передачи вершинному шейдеру. Используется для определения направления лучей */
-  transformMat: Mat3;
+  transformMat: Mat3 = Mat3.ID();
+  /** Матрица вращения камеры предыдущего кадра */
+  transformMatPrev: Mat3 = Mat3.ID();
+  /** Изменение положения камеры относительно предыдущего кадра */
+  positionDelta: Vec3 = Vec3.ZERO();
   /** Яркость фар, 0. - выключены */
   headLights: number = 0;
 
@@ -86,6 +90,8 @@ export class Camera {
       isKeyDown(KEY_S) - isKeyDown(KEY_W)
     );
 
+    this.transformMatPrev = this.transformMat;
+
     const mdir = this.orientation.mat3();
     this.transformMat = mdir;
 
@@ -99,6 +105,7 @@ export class Camera {
     if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO();
 
     // перемещение
+    this.positionDelta = this.position.copy();
     this.position.addMutable(this.velocity.mul(timeDelta));
 
     // не даем провалиться ниже поверхности
@@ -107,6 +114,8 @@ export class Camera {
       this.velocity.y = 0.;
       this.position.y = height;
     }
+    // вычисление изменения положения камеры
+    this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
     this.altitude = this.position.y - height;
 

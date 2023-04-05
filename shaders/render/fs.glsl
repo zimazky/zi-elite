@@ -57,7 +57,8 @@ void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
   vec4 buf = texture(uTextureProgramB, uv);
   vec3 col = buf.rgb;
-  //col =  col*mat2sRGB; // Преобразование в sRGB
+  col =  col*mat2sRGB; // Преобразование в sRGB
+  col = pow(col, vec3(1./2.2));
   //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
   //col = vec3(sqrt(buf.w/30000.));
   fragColor = vec4(col, 1.);

@@ -2,6 +2,11 @@
 
 uniform mat4 uProjectMatrix;
 uniform vec2 uTextureBResolution;
+uniform float uCameraViewAngle;
+uniform mat3 uTransformMatrixPrev;
+uniform mat3 uTransformMatrix;
+uniform vec3 uPositionDelta;
+
 
 // текстуры
 uniform sampler2D uTextureProgramB;
@@ -15,7 +20,12 @@ void main() {
   vec4 buf = texture(uTextureProgramB, uv);
   vTextureBColor = buf.rgb;
 
-  //gl_Position = vec4(aVertexPosition.x, aVertexPosition.y, -buf.w, 1.0);
-  gl_Position = vec4(aVertexPosition.xy, -buf.w/65000., 1.0);
+  float t = tan(0.5*uCameraViewAngle);
+  vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
+  vec3 pos = rd*buf.w;
+  pos = pos*inverse(uTransformMatrixPrev);
+  pos = (pos - uPositionDelta)*uTransformMatrix;
+
+  gl_Position = uProjectMatrix*vec4(pos, 1);
 
 }
