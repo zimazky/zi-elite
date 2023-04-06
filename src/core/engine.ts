@@ -233,11 +233,18 @@ export class Engine extends GLContext {
       this.gl.useProgram(e.program);
       if(e.clearColor !== null) {
         this.gl.clearColor(e.clearColor.x, e.clearColor.y, e.clearColor.z, e.clearColor.w);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
         if(e.isDepthTest) this.gl.enable(this.gl.DEPTH_TEST);
         else this.gl.disable(this.gl.DEPTH_TEST);
         //this.gl.enable(this.gl.CULL_FACE);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+      }
+      else {
+        if(e.isDepthTest) {
+          this.gl.enable(this.gl.DEPTH_TEST);
+          this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
+        }
+        else this.gl.disable(this.gl.DEPTH_TEST);
       }
       this.gl.bindVertexArray(e.vertexArray);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
