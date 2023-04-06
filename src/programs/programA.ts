@@ -6,6 +6,10 @@ export class ProgramA {
   engine: Engine;
   bufferInput: Framebuffer;
   camera: Camera;
+  /** Число треугольников сетки в направлении X */
+  numX: number = 240;
+  /** Число треугольников сетки в направлении Y */
+  numY: number = 120;
 
   // Shader uniforms
   uCameraViewAngle: WebGLUniformLocation;
@@ -27,7 +31,11 @@ export class ProgramA {
     // установка разрешения текстуры шейдера B
     const textureBResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureBResolution');
     this.engine.gl.uniform2f(textureBResolution, this.bufferInput.width, this.bufferInput.height);
-    //this.engine.gl.uniform2f(textureBResolution, 240, 120);
+
+    // установка разрешения сетки полигонов
+    const uNetResolution = this.engine.gl.getUniformLocation(shader.program, 'uNetResolution');
+    this.engine.gl.uniform2f(uNetResolution, this.numX, this.numY);
+
 
     this.uProjectMatrix = this.engine.gl.getUniformLocation(shader.program, 'uProjectMatrix');
     this.uTransformMatrix = this.engine.gl.getUniformLocation(shader.program, 'uTransformMatrix');
@@ -37,36 +45,36 @@ export class ProgramA {
 
     // формирование координат вершин
     const vertices: number[] = [];
-    const numx = 240;
-    const numy = 120;
 
-    for(let j=0; j<numy+1; j++) {
-      for(let i=0; i<numx+1; i++) {
-        vertices.push(-1. + i*2./numx);
-        vertices.push(1. - j*2./numy);
+    for(let j=0; j<this.numY+1; j++) {
+      for(let i=0; i<this.numX+1; i++) {
+        vertices.push(-1. + i*2./this.numX);
+        vertices.push(1. - j*2./this.numY);
       }
     }
 
     // формирование индексов вершин для отрисовки методом TRIANGLE_STRIP
     const indices: number[] = [];
-    for(let j=0; j<numy; j++) {
+    for(let j=0; j<this.numY; j++) {
       // слева направо
-      for(let i=0; i<numx+1; i++) {
-        indices.push(i + j*(numx+1));
-        indices.push(i + (j+1)*(numx+1));
+      for(let i=0; i<this.numX+1; i++) {
+        indices.push(i + j*(this.numX+1));
+        indices.push(i + (j+1)*(this.numX+1));
       }
       j++;
-      if(j>=numy) break;
+      if(j>=this.numY) break;
       // справа налево
-      for(let i=numx; i>=0; i--) {
-        indices.push(i + j*(numx+1));
-        indices.push(i + (j+1)*(numx+1));
+      for(let i=this.numX; i>=0; i--) {
+        indices.push(i + j*(this.numX+1));
+        indices.push(i + (j+1)*(this.numX+1));
       }
     }
 
     // привязка массива вершин
     this.engine.setVertexArray(shader, 'aVertexPosition', vertices, indices, 2);
-    shader.clearColor = new Vec4(0, 0, 0, 60000);
+    shader.clearColor = new Vec4(0, 0, 0, 0);
+
+    //shader.isDepthTest = true;
   }
 
   update() {

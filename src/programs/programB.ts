@@ -92,6 +92,13 @@ export class ProgramB {
   }
 
   init(shader: Renderbufer, grayNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource) {
+
+    // привязка текстуры из шейдера A
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTexture, 'uTextureProgramA');
+    // установка разрешения текстуры шейдера A
+    const textureAResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureAResolution');
+    this.engine.gl.uniform2f(textureAResolution, this.bufferInput.width, this.bufferInput.height);
+
     this.cameraPositionLocation = this.engine.gl.getUniformLocation(shader.program, 'uCameraPosition');
     this.cameraViewAngleLocation = this.engine.gl.getUniformLocation(shader.program, 'uCameraViewAngle');
     this.cameraVelocityLocation = this.engine.gl.getUniformLocation(shader.program, 'uCameraVelocity');

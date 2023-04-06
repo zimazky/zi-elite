@@ -28,6 +28,8 @@ export type Renderbufer = {
   numOfVertices: number;
   /** Признак применения поэлементной отрисовки с помощью gl.drawElements */
   isElementDraw: boolean;
+  /** Признак необходимости проверки глубины при отрисовке */
+  isDepthTest: boolean;
   /** Цвет очистки буфера перед отрисовкой, null если очистка не нужна */
   clearColor: Vec4;
   /** (uResolution) Разрешение */
@@ -79,7 +81,7 @@ export class Engine extends GLContext {
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
     this.framebuffers.push({
       width, height, program, framebuffer, fbTexture,
-      vertexArray: null, numOfVertices: 4, isElementDraw: false, clearColor: null,
+      vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false, clearColor: null,
       resolutionLocation, timeLocation,
       onProgramInit: onInit,
       onProgramLoop: onLoop});
@@ -96,7 +98,7 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
-    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false, clearColor: null,
+    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false,  clearColor: null,
       resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
@@ -233,14 +235,15 @@ export class Engine extends GLContext {
         this.gl.clearColor(e.clearColor.x, e.clearColor.y, e.clearColor.z, e.clearColor.w);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
-        //this.gl.enable(this.gl.DEPTH_TEST);
+        if(e.isDepthTest) this.gl.enable(this.gl.DEPTH_TEST);
+        else this.gl.disable(this.gl.DEPTH_TEST);
         //this.gl.enable(this.gl.CULL_FACE);
       }
       this.gl.bindVertexArray(e.vertexArray);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);
       this.gl.viewport(0, 0, e.width, e.height);
-      if(e.isElementDraw) this.gl.drawElements(this.gl.LINE_STRIP, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
+      if(e.isElementDraw) this.gl.drawElements(this.gl.TRIANGLE_STRIP, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
       else this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, e.numOfVertices);
       //console.log(e.numOfVertices);
       e.onProgramLoop(time, timeDelta);
@@ -248,6 +251,7 @@ export class Engine extends GLContext {
 
     // Финальный рендер
     this.resizeCanvasToDisplaySize();
+    this.gl.disable(this.gl.DEPTH_TEST);
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     this.gl.useProgram(this.renderbufer.program);
     this.gl.bindVertexArray(this.renderbufer.vertexArray);

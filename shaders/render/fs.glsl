@@ -12,6 +12,7 @@ uniform vec2 uTextureBResolution;
 uniform vec2 uTime;
 
 // текстуры
+uniform sampler2D uTextureProgramA;
 uniform sampler2D uTextureProgramB;
 uniform sampler2D uTextureBlueNoise;
 
@@ -55,12 +56,17 @@ void main() {
   //vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
 
   vec2 uv = gl_FragCoord.xy/uResolution;
-  vec4 buf = texture(uTextureProgramB, uv);
-  vec3 col = buf.rgb;
+  vec4 bufA = texture(uTextureProgramA, uv);
+  vec4 bufB = texture(uTextureProgramB, uv);
+  //vec3 col = bufA.r==0. ? bufB.rgb : bufA.rgb;
+  //vec3 col = -vec3(bufB.w-bufA.w)/100.;
+  //vec3 col = mix(bufB.rgb, bufA.rgb, 0.75);
+  vec3 col = bufB.rgb;
+
   col =  col*mat2sRGB; // Преобразование в sRGB
   col = pow(col, vec3(1./2.2));
   //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-  //col = vec3(sqrt(buf.w/30000.));
+  //col = vec3(sqrt(bufA.w/30000.));
   fragColor = vec4(col, 1.);
 }
  

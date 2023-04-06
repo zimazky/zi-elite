@@ -13,6 +13,8 @@ uniform vec2 uTime;
 
 // текстуры
 uniform sampler2D uTextureGrayNoise;
+uniform sampler2D uTextureProgramA;
+uniform vec2 uTextureAResolution;
 
 // положение камеры
 uniform vec4 uCameraPosition;
@@ -177,14 +179,14 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 }
 
 const vec3 LIGHT_INTENSITY = vec3(15.); // Интенсивность света
-vec4 render(vec3 ro, vec3 rd)
+vec4 render(vec3 ro, vec3 rd, float t0)
 {
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   vec3 light1 = uSunDirection;
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col;
-  float t = raycast(ro, rd, 1., MAX_TERRAIN_DISTANCE);
+  float t = t0>MAX_TERRAIN_DISTANCE ? 2.*MAX_TERRAIN_DISTANCE : raycast(ro, rd, t0, MAX_TERRAIN_DISTANCE);
   if(t>MAX_TERRAIN_DISTANCE) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
@@ -276,13 +278,18 @@ void main(void) {
   vec3 pos = uCameraPosition.xyz;
   vec3 rd = normalize(vRay);
 
+  vec2 ts = gl_FragCoord.xy/uResolution;
+  vec4 bufA = texture(uTextureProgramA, ts);
+
+
   vec4 col = vec4(0.);
   if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
   else { 
-    col = render(pos, rd);
+    col = render(pos, rd, bufA.w);
   }
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
+  //col.r = bufA.w/30000.;
 
   fragColor = col;
 }

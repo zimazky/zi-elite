@@ -130,7 +130,8 @@ export default async function main() {
   }
 
   const onProgramRenderInit = (shader: Renderbufer) => {
-    e.setRenderedTexture(shader.program, shaderA.fbTexture, 'uTextureProgramB');
+    e.setRenderedTexture(shader.program, shaderA.fbTexture, 'uTextureProgramA');
+    e.setRenderedTexture(shader.program, shaderB.fbTexture, 'uTextureProgramB');
     const width = shaderA.width;
     const height = shaderA.height;
     const textureBResolution = e.gl.getUniformLocation(shader.program, 'uTextureBResolution');
