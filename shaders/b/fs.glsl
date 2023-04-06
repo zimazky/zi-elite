@@ -120,7 +120,7 @@ const int MAP_HEIGHTS = 2;
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
   float t = tmin;
   float d = ro.y - MAX_TRN_ELEVATION;
-  if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
+  if(d >= 0.) t = clamp(-d/rd.y, t, tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
 
   for(int i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
@@ -194,8 +194,6 @@ vec4 render(vec3 ro, vec3 rd, float t0)
     col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
     col *= planetIntersection(ro,rd);
     ResultScattering rs;
-    //if(LvsR==0.) rs = scatteringOld(ro, rd, light1);
-    //else rs = scattering(ro, rd, light1);
     rs = scattering(ro, rd, light1);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
     t = 2. * MAX_TERRAIN_DISTANCE;//-1.0;
@@ -285,6 +283,7 @@ void main(void) {
   vec4 col = vec4(0.);
   if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
   else { 
+    //col = render(pos, rd, 1.);
     col = render(pos, rd, bufA.w);
   }
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);

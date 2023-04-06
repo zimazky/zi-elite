@@ -53,14 +53,15 @@ void main() {
 
   float k = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y ? 
     uTextureBResolution.x/uResolution.x : uTextureBResolution.y/uResolution.y;
-  //vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
+  vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
 
-  vec2 uv = gl_FragCoord.xy/uResolution;
+  //vec2 uv = gl_FragCoord.xy/uResolution;
   vec4 bufA = texture(uTextureProgramA, uv);
   vec4 bufB = texture(uTextureProgramB, uv);
   //vec3 col = bufA.r==0. ? bufB.rgb : bufA.rgb;
   //vec3 col = -vec3(bufB.w-bufA.w)/100.;
   //vec3 col = mix(bufB.rgb, bufA.rgb, 0.75);
+  
   vec3 col = bufB.rgb;
 
   col =  col*mat2sRGB; // Преобразование в sRGB
