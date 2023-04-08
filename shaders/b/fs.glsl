@@ -117,12 +117,12 @@ const int MAP_HEIGHTS = 2;
 // ----------------------------------------------------------------------------
 
 /** Рейтрейсинг для случая плоской поверхности планеты */
-float raycast(vec3 ro, vec3 rd, float tmin, float tmax) {
+float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   float d = ro.y - MAX_TRN_ELEVATION;
   if(d >= 0.) t = clamp(-d/rd.y, t, tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
 
-  for(int i=0; i<300; i++) {
+  for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return tmax + 1.;
     float h = pos.y - terrainM(pos.xz);
@@ -186,7 +186,9 @@ vec4 render(vec3 ro, vec3 rd, float t0)
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col;
-  float t = t0>MAX_TERRAIN_DISTANCE ? 2.*MAX_TERRAIN_DISTANCE : raycast(ro, rd, t0, MAX_TERRAIN_DISTANCE);
+  int raycastIterations = 0;
+  int shadowIterations = 0;
+  float t = t0>MAX_TERRAIN_DISTANCE ? 2.*MAX_TERRAIN_DISTANCE : raycast(ro, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
   if(t>MAX_TERRAIN_DISTANCE) {
     // небо
     float sunsin = sqrt(1.-sundot*sundot);
@@ -227,7 +229,7 @@ vec4 render(vec3 ro, vec3 rd, float t0)
 
     float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
     float shd = softPlanetShadow(pos, light1);
-    if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t);
+    if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations);
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
@@ -267,12 +269,14 @@ vec4 render(vec3 ro, vec3 rd, float t0)
   f = step(0.999999, dot(fd,rd));
   col = fdist-t < 0. ? mix(col,uFlare2Light,f) : col;
 
+  //col = vec3(raycastIterations)/300.;
   return vec4(col, t);
 }
 
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
- 
+ float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
   vec3 pos = uCameraPosition.xyz;
   vec3 rd = normalize(vRay);
 
@@ -285,6 +289,7 @@ void main(void) {
   else { 
     //col = render(pos, rd, 1.);
     col = render(pos, rd, bufA.w);
+    //col = render(pos, rd, LvsR==1. ? bufA.w : 1.);
   }
   //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
   //else 
