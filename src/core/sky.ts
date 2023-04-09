@@ -1,6 +1,9 @@
 import { Quaternion } from "./quaternion";
 import { Mat3, Vec3 } from "./vectors";
 import { isKeyPress, isKeyDown } from "./keyboard";
+import { Camera } from "./camera";
+import { Atmosphere } from "./atmosphere";
+import { SUN_COLOR } from "./constants";
 
 const KEY_C = 67;
 
@@ -24,6 +27,19 @@ export class Sky {
   /** направление на солнце на данный момент */
   sunDirection: Vec3 = this.sunDir.copy();
 
+  camera: Camera;
+  atm: Atmosphere;
+
+  skyRefreshTime: number = 0.;
+
+  sunDiscColor: Vec3 = Vec3.ZERO();
+  skyColor: Vec3 = Vec3.ZERO();
+
+  constructor(camera: Camera, atm: Atmosphere) {
+    this.camera = camera;
+    this.atm = atm;
+  }
+
   loopCalculation(time: number, timeDelta: number) {
     this.orientation = Quaternion.byAngle(this.axis, -2.*Math.PI*(0.25+time/this.period));
     this.transformMat = this.orientation.qmul(this.quat).mat3();
@@ -31,6 +47,31 @@ export class Sky {
 
     // отображение созвездий
     if(isKeyPress(KEY_C)>0) this.isShowConstellations = !this.isShowConstellations;
+
+    if(time>this.skyRefreshTime) {
+      // Определение цвета неба и цвета диска солнца
+      const pos = new Vec3(this.camera.position.x, 0., this.camera.position.z); // положение для которого рассчитываем цвета
+      const sunDir = this.sunDirection.copy();
+      if(sunDir.y<0.) sunDir.y = 0.;
+      sunDir.normalizeMutable();
+      const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
+      const sunIntensity = SUN_COLOR.mul(20.);
+      this.sunDiscColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
+
+      const oneDivSqrt2 = 1./Math.sqrt(2.);
+      // светимость неба по 5-ти точкам
+      const skyDirScatter = 
+        this.atm.scattering(pos, Vec3.J(), this.sunDirection).t
+        .add(this.atm.scattering(pos, new Vec3(oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
+        .add(this.atm.scattering(pos, new Vec3(-oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
+        .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), this.sunDirection).t)
+        .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, -oneDivSqrt2), this.sunDirection).t)
+        .div(5.);
+      this.skyColor = sunIntensity.mulEl(skyDirScatter).mulMutable(3);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
+
+      this.skyRefreshTime = time + 0.5;
+    }
+
   }
 
 }

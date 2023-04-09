@@ -1,27 +1,16 @@
 #version 300 es
 
 precision mediump float;
-//precision lowp float;
 
 // разрешение экрана
 uniform vec2 uResolution;
 
-// параметры времени
-// x - время с момента запуска программы в секундах, 
-// y - время с момента отображения предыдущего кадра
-uniform vec2 uTime;
-
 // текстуры
-uniform sampler2D uTextureGrayNoise;
 uniform sampler2D uTextureProgramA;
 uniform vec2 uTextureAResolution;
 
 // положение камеры
-uniform vec4 uCameraPosition;
-// скорость камеры
-uniform vec3 uCameraVelocity;
-// скорость вращения камеры
-uniform vec3 uCameraRotationSpeed;
+uniform vec3 uCameraPosition;
 // вектор направления камеры
 uniform vec3 uCameraDirection;
 
@@ -37,10 +26,6 @@ uniform vec3 uFlare2Position;
 // цвет и интенсивность света 2-ой сигнальной ракеты
 uniform vec3 uFlare2Light;
 
-// насколько камера попадает под солнце:
-// 1. - полностью на солнце, 0. - полностью в тени
-uniform float uCameraInShadow; 
-
 // синус половины углового размера солнца
 uniform float uSunDiscAngleSin;
 // направление на солнце
@@ -49,6 +34,11 @@ uniform vec3 uSunDirection;
 uniform vec3 uSunDiscColor;
 // цвет и интенсивность света неба
 uniform vec3 uSkyColor;
+// Радиус планеты
+uniform float uPlanetRadius;
+// Положение центра планеты
+uniform vec3 uPlanetCenter;
+
 
 // x - режим экрана: 
 //   FRONT_VIEW - вид камеры,
@@ -63,17 +53,12 @@ uniform vec2 uScreenMode;
 uniform float uMapScale;
 
 in vec3 vRay;    // Луч в системе координат планеты
-in vec3 vRaySky; // Луч в системе координат небесного свода
 
 out vec4 fragColor;
 
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
-const float PI = 3.14159265358979323846;
-const mat3  IDENTITY = mat3(vec3(1,0,0),vec3(0,1,0),vec3(0,0,1));
-
-const float MAX_TERRAIN_DISTANCE = 30000.;
 
 // View modes
 const float FRONT_VIEW = 0.;
@@ -85,10 +70,10 @@ const int MAP_GRID = 1;
 const int MAP_HEIGHTS = 2;
 
 // ----------------------------------------------------------------------------
-// Модуль определения функций расчета атмосферного рассеивания
+// Модуль определения констант
 // ----------------------------------------------------------------------------
-#ifndef ATM_MODULE
-#include "atmosphere.glsl"
+#ifndef CONST_MODULE
+#include "constants.glsl"
 #endif
 
 // ----------------------------------------------------------------------------
@@ -106,15 +91,29 @@ const int MAP_HEIGHTS = 2;
 #endif
 
 // ----------------------------------------------------------------------------
-// Модуль определения функции отображения ночного неба
-// ----------------------------------------------------------------------------
-#ifndef SKY_MODULE
-#include "sky.glsl"
-#endif
-
-// ----------------------------------------------------------------------------
 // Рендеринг
 // ----------------------------------------------------------------------------
+
+
+/** 
+  * Функция определения мягкой тени от сферической поверхности планеты
+  *   ro - положение точки, для которой производится рассчет
+  *   rd - направление луча на солнце
+  * Возвращает значения от 0. до 1.
+  *   0. - если солнце полностью скрыто планетой
+  *   1. - если солнце полностью видно
+  */
+float softPlanetShadow(vec3 ro, vec3 rd) {
+  vec3 pos = ro - uPlanetCenter;
+  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
+
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
+  if(OT>0.) return 1.;
+  float d = (uPlanetRadius-CT)/OT;
+  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
+}
+
 
 /** Рейтрейсинг для случая плоской поверхности планеты */
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
@@ -178,27 +177,23 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
-const vec3 LIGHT_INTENSITY = vec3(15.); // Интенсивность света
 vec4 render(vec3 ro, vec3 rd, float t0)
 {
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   vec3 light1 = uSunDirection;
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
-  vec3 col;
+  vec3 col = vec3(0);
   int raycastIterations = 0;
   int shadowIterations = 0;
   float t = t0>MAX_TERRAIN_DISTANCE ? 2.*MAX_TERRAIN_DISTANCE : raycast(ro, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
   if(t>MAX_TERRAIN_DISTANCE) {
-    // небо
-    float sunsin = sqrt(1.-sundot*sundot);
-    col = 0.5*nightSky(normalize(vRaySky));
-    col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
-    col *= planetIntersection(ro,rd);
-    ResultScattering rs;
-    rs = scattering(ro, rd, light1);
-    col = rs.t*LIGHT_INTENSITY + rs.i*col;
-    t = 2. * MAX_TERRAIN_DISTANCE;//-1.0;
+    t = 2. * MAX_TERRAIN_DISTANCE;
+
+  #ifdef RAYCAST_ITERATIONS_VIEW
+    t = 0.;
+  #endif
+  
   }
   else {
     // mountains		
@@ -246,54 +241,61 @@ vec4 render(vec3 ro, vec3 rd, float t0)
 	  // fog
     //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
     //col = mix(col, FOG_COLOR, fo );
-
-    ResultScattering rs = scatteringWithIntersection(ro,rd,light1,t);
-    col = rs.t*LIGHT_INTENSITY + rs.i*col;
-
 	}
-  // sun scatter
-  col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
   // 1-ая световая ракета
   vec3 fd = uFlare1Position - ro;
-  float fdist2 = dot(fd,fd);
+  float fdist2 = dot(fd, fd);
   float fdist = sqrt(fdist2);
   fd /= fdist;
-  float f = step(0.999999, dot(fd,rd));
-  col = fdist-t <0. ? mix(col,uFlare1Light,f) : col;
+  float f = dot(fd, rd);
+  if(f>=0.999999 && fdist<t) {
+    col = uFlare1Light;
+    t = fdist;
+  }
   // 2-ая световая ракета
-   fd = uFlare2Position - ro;
-  fdist2 = dot(fd,fd);
+  fd = uFlare2Position - ro;
+  fdist2 = dot(fd, fd);
   fdist = sqrt(fdist2);
   fd /= fdist;
-  f = step(0.999999, dot(fd,rd));
-  col = fdist-t < 0. ? mix(col,uFlare2Light,f) : col;
+  f = dot(fd, rd);
+  if(f>=0.999999 && fdist<t) {
+    col = uFlare2Light;
+    t = fdist;
+  }
 
-  //col = vec3(raycastIterations)/300.;
+#ifdef RAYCAST_ITERATIONS_VIEW
+  col = vec3(raycastIterations)/300.;
+#endif
+
+#ifdef SHADOWS_ITERATIONS_VIEW
+  col = vec3(shadowIterations)/200.;
+#endif
+
   return vec4(col, t);
 }
 
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
- float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
-  vec3 pos = uCameraPosition.xyz;
+  vec3 pos = uCameraPosition;
   vec3 rd = normalize(vRay);
 
   vec2 ts = gl_FragCoord.xy/uResolution;
   vec4 bufA = texture(uTextureProgramA, ts);
 
-
   vec4 col = vec4(0.);
   if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
-  else { 
-    //col = render(pos, rd, 1.);
+  else {
+
+#ifdef DEPTH_ERROR_VIEW
+    col = render(pos, rd, 1.);
+#else
     col = render(pos, rd, bufA.w);
-    //col = render(pos, rd, LvsR==1. ? bufA.w : 1.);
+#endif
+
   }
-  //if(uScreenMode.x == DEPTH_VIEW) fragColor = vec4(1.-vec3(pow(col.w/500.,0.1)), col.w);
-  //else 
-  //col.r = bufA.w/30000.;
 
   fragColor = col;
 }

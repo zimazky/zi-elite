@@ -4,8 +4,8 @@ import { Quaternion } from "./quaternion";
 import { TerrainSampler } from "./terrain";
 import { Mat3, Vec2, Vec3 } from "./vectors";
 
-const FRONT_VIEW = 0;
-const MAP_VIEW = 1;
+export const FRONT_VIEW = 0;
+export const MAP_VIEW = 1;
 
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;

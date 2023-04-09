@@ -4,19 +4,52 @@ precision mediump float;
 
 // разрешение экрана
 uniform vec2 uResolution;
-uniform vec2 uTextureBResolution;
 
-// параметры времени
-// x - время с момента запуска программы в секундах, 
-// y - время с момента отображения предыдущего кадра
-uniform vec2 uTime;
+// положение камеры
+uniform vec3 uCameraPosition;
+// насколько камера попадает под солнце:
+// 1. - полностью на солнце, 0. - полностью в тени
+uniform float uCameraInShadow;
+// синус половины углового размера солнца
+uniform float uSunDiscAngleSin;
+// направление на солнце
+uniform vec3 uSunDirection;
+// цвет и интенсивность света от солнца
+uniform vec3 uSunDiscColor;
+
 
 // текстуры
 uniform sampler2D uTextureProgramA;
 uniform sampler2D uTextureProgramB;
+uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
 
+in vec3 vRay;
+in vec3 vRaySky;
+
 out vec4 fragColor;
+
+// ----------------------------------------------------------------------------
+// Модуль определения констант
+// ----------------------------------------------------------------------------
+#ifndef CONST_MODULE
+#include "constants.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
+// Модуль определения функций расчета атмосферного рассеивания
+// ----------------------------------------------------------------------------
+#ifndef ATM_MODULE
+#include "atmosphere.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
+// Модуль определения функции отображения ночного неба
+// ----------------------------------------------------------------------------
+#ifndef SKY_MODULE
+#include "sky.glsl"
+#endif
+
 
 /**
  * Преобразование в линейное цветовое пространство из sRGB
@@ -51,23 +84,56 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 
 void main() {
 
-  float k = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y ? 
-    uTextureBResolution.x/uResolution.x : uTextureBResolution.y/uResolution.y;
+  float k = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y
+    ? uTextureBResolution.x/uResolution.x
+    : uTextureBResolution.y/uResolution.y;
   vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
 
-  //vec2 uv = gl_FragCoord.xy/uResolution;
+#ifdef DEPTH_ERROR_VIEW
+  uv = gl_FragCoord.xy/uResolution;
   vec4 bufA = texture(uTextureProgramA, uv);
+#endif
+
   vec4 bufB = texture(uTextureProgramB, uv);
-  //vec3 col = bufA.r==0. ? bufB.rgb : bufA.rgb;
-  //vec3 col = -vec3(bufB.w-bufA.w)/100.;
-  //vec3 col = mix(bufB.rgb, bufA.rgb, 0.75);
-  
+
+#ifdef DEPTH_ERROR_VIEW
+  float derr = bufB.w-bufA.w;
+  vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
+  col = pow(col, vec3(1./2.2));
+#else
+
   vec3 col = bufB.rgb;
+  float t = bufB.w;
+
+  vec3 rd = normalize(vRay);
+  // косинус угла между лучем и солнцем 
+  float sundot = clamp(dot(rd, uSunDirection),0.,1.);
+
+  if(t > MAX_TERRAIN_DISTANCE) {
+    // небо из текстуры
+    col = 0.5*nightSky(normalize(vRaySky));
+    // диск солнца
+    float sunsin = sqrt(1.-sundot*sundot);
+    col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
+    // горизонт планеты
+    col *= planetIntersection(uCameraPosition, rd);
+    // атмосферное рассеивание
+    ResultScattering rs;
+    rs = scattering(uCameraPosition, rd, uSunDirection);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
+  }
+  else {
+    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
+  }
+  // засвечивание солнцем
+  col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
   col =  col*mat2sRGB; // Преобразование в sRGB
-  col = pow(col, vec3(1./2.2));
-  //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-  //col = vec3(sqrt(bufA.w/30000.));
+  col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+
+#endif
+
   fragColor = vec4(col, 1.);
 }
  

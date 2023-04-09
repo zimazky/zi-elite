@@ -1,16 +1,16 @@
 import { Atmosphere } from './core/atmosphere';
 import { Camera } from './core/camera';
-import { SUN_COLOR, SUN_DISC_ANGLE_SIN } from './core/constants';
-import { Engine, Framebuffer, Renderbufer } from './core/engine'
+import { Engine, Renderbufer } from './core/engine'
 import { Flare } from './core/flare';
 import { initKeyBuffer } from './core/keyboard';
 import { NoiseSampler } from './core/noise';
 import { Quaternion } from './core/quaternion';
 import { Sky } from './core/sky';
 import { TerrainSampler } from './core/terrain';
-import { Mat4, Vec3, Vec4 } from './core/vectors';
+import { Vec3 } from './core/vectors';
 import { ProgramA } from './programs/programA';
 import { ProgramB } from './programs/programB';
+import { ProgramRender } from './programs/programRender';
 import { loadImage } from './utils/loadimg';
 
 //-----------------------------------------------------------------------------
@@ -23,11 +23,13 @@ import { loadImage } from './utils/loadimg';
 //   6. Продумать возможность аналитического вычисления нормалей к поверхности
 //   7. Правильно расположить небесный свод относительно планеты
 //   8. Поправить цвета материалов, структурировать работу с материалами
-//   9. Вынести расчет атмосферы в отдельный шейдер
+//   9. +Вынести расчет атмосферы в отдельный шейдер
 //  10. +Включить проверку глубины при отрисовке предварительного буфера
+//  11. Вычислять тени в отдельном шейдере
+//  12. Добавить отображение летающих объектов, управляемых AI
 
 //-----------------------------------------------------------------------------
-// Новый алгоритм
+// Новый алгоритм (НЕ РЕШЕН ВОПРОС ДИНАМИЧЕСКОЙ СЕТКИ)
 // 1. В первом шейдере создаем карту высот и нормалей в полярных координатах.
 //    Выполняем не в каждом кадре, только при больших смещениях.
 //    Можно использовать предыдущую карту для ускорения.
@@ -68,7 +70,7 @@ export default async function main() {
   //if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler);
   const atm = new Atmosphere();
-  const sky = new Sky();
+  const sky = new Sky(camera, atm);
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
@@ -91,15 +93,27 @@ export default async function main() {
     1536, 762,
     'shaders/b', 'vs.glsl', 'fs.glsl',
     (shader: Renderbufer) => {
-      programB.init(shader, grayNoiseImg, milkywayImg, constellationImg);
+      programB.init(shader, grayNoiseImg);
     },
     (time: number, timeDelta: number) => {
       programB.update(time, timeDelta);
     }
   );
 
+
+
   const programA = new ProgramA(e, shaderB, camera);
   const programB = new ProgramB(e, shaderA, camera, atm, sky, flare1, flare2);
+  const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky);
+
+  await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', (shader)=>{
+    programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg);
+  },
+  (time: number, timeDelta: number) => {
+    programRender.update(time, timeDelta);
+  }
+  );
+
 
   e.onUpdate = (time, timeDelta) => {
     camera.loopCalculation(time, timeDelta);
@@ -117,7 +131,8 @@ export default async function main() {
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
-      alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}`;
+      alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
+      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
 
       infoRefreshTime = time + 0.5;
     }
@@ -128,20 +143,7 @@ export default async function main() {
       localStorage.setItem('ziEliteData', dataString);
       positionStoreTime = time + 5.;
     }
-
   }
-
-  const onProgramRenderInit = (shader: Renderbufer) => {
-    e.setRenderedTexture(shader.program, shaderA.fbTexture, 'uTextureProgramA');
-    e.setRenderedTexture(shader.program, shaderB.fbTexture, 'uTextureProgramB');
-    const width = shaderA.width;
-    const height = shaderA.height;
-    const textureBResolution = e.gl.getUniformLocation(shader.program, 'uTextureBResolution');
-    e.gl.uniform2f(textureBResolution, width, height);
-    const texture1 = e.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
-  }
-  
-  await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', onProgramRenderInit);
 
   e.start();
   

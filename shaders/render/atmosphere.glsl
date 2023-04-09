@@ -237,22 +237,3 @@ float planetIntersection(vec3 ro, vec3 rd) {
   if(OT>0. || CT2>(uPlanetRadius*uPlanetRadius)) return 1.;
   return 0.;
 }
-
-/** 
-  * Функция определения мягкой тени от сферической поверхности планеты
-  *   ro - положение точки, для которой производится рассчет
-  *   rd - направление луча на солнце
-  * Возвращает значения от 0. до 1.
-  *   0. - если солнце полностью скрыто планетой
-  *   1. - если солнце полностью видно
-  */
-float softPlanetShadow(vec3 ro, vec3 rd) {
-  vec3 pos = ro - uPlanetCenter;
-  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
-
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
-  if(OT>0.) return 1.;
-  float d = (uPlanetRadius-CT)/OT;
-  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
-}
