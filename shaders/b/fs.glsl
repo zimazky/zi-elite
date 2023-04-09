@@ -2,57 +2,66 @@
 
 precision mediump float;
 
-// разрешение экрана
+/**
+ * Шейдер рендеринга ландшафта.
+ * Используется предварительная карта глубины, построенная на основании предыдущего кадра.
+ */
+
+/** Разрешение экрана */
 uniform vec2 uResolution;
 
-// текстуры
+/** Текстура с предварительными данными глубины на основе предыдущего кадра */
 uniform sampler2D uTextureProgramA;
+/** Разрешение текстуры */
 uniform vec2 uTextureAResolution;
 
-// положение камеры
+/** Положение камеры */
 uniform vec3 uCameraPosition;
-// вектор направления камеры
+/** Вектор направления камеры */
 uniform vec3 uCameraDirection;
 
-// цвет и интенсивность света фар: vec3(0.) - выключен
+/** Цвет и интенсивность света фар: vec3(0.) - выключен */
 uniform vec3 uHeadLight;
 
-// положение 1-ой сигнальной ракеты
+/** Положение 1-ой сигнальной ракеты */
 uniform vec3 uFlare1Position;
-// цвет и интенсивность света 1-ой сигнальной ракеты
+/** Цвет и интенсивность света 1-ой сигнальной ракеты */
 uniform vec3 uFlare1Light;
-// положение 2-ой сигнальной ракеты
+/** Положение 2-ой сигнальной ракеты */
 uniform vec3 uFlare2Position;
-// цвет и интенсивность света 2-ой сигнальной ракеты
+/** Цвет и интенсивность света 2-ой сигнальной ракеты */
 uniform vec3 uFlare2Light;
 
-// синус половины углового размера солнца
+/** Синус половины углового размера солнца */
 uniform float uSunDiscAngleSin;
-// направление на солнце
+/** Направление на солнце */
 uniform vec3 uSunDirection;
-// цвет и интенсивность света от солнца
+/** Цвет и интенсивность света от солнца */
 uniform vec3 uSunDiscColor;
-// цвет и интенсивность света неба
+/** Цвет и интенсивность света неба */
 uniform vec3 uSkyColor;
-// Радиус планеты
+/** Радиус планеты */
 uniform float uPlanetRadius;
-// Положение центра планеты
+/** Положение центра планеты */
 uniform vec3 uPlanetCenter;
 
-
-// x - режим экрана: 
-//   FRONT_VIEW - вид камеры,
-//   MAP_VIEW - вид карты,
-//   DEPTH_VIEW - вид карты глубины (режим отключен)
-// y - опции отображения карты: 
-//   MAP_ONLY - только карта,
-//   MAP_GRID - показывать сетку,
-//   MAP_HEIGHTS - показывать изолинии высот
+/**
+ * Режим отображения
+ * x - режим экрана: 
+ *   FRONT_VIEW - вид камеры,
+ *   MAP_VIEW - вид карты,
+ *   DEPTH_VIEW - вид карты глубины (режим отключен)
+ * y - опции отображения карты: 
+ *   MAP_ONLY - только карта,
+ *   MAP_GRID - показывать сетку,
+ *   MAP_HEIGHTS - показывать изолинии высот
+ */
 uniform vec2 uScreenMode;
-// масштаб карты
+/** Масштаб карты */
 uniform float uMapScale;
 
-in vec3 vRay;    // Луч в системе координат планеты
+/** Луч в системе координат планеты */
+in vec3 vRay;
 
 out vec4 fragColor;
 
@@ -115,7 +124,14 @@ float softPlanetShadow(vec3 ro, vec3 rd) {
 }
 
 
-/** Рейтрейсинг для случая плоской поверхности планеты */
+/** 
+ * Рейтрейсинг для случая плоской поверхности планеты
+ *   ro - положение камеры
+ *   rd - направление луча из камеры
+ *   tmin - начальное глубина рейтрейсинга
+ *   tmax - максимальная глубина рейтрейсинга
+ *   i - выходное значение количества циклов рейтрейсинга
+ */
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   float d = ro.y - MAX_TRN_ELEVATION;
@@ -131,8 +147,15 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   return t;
 }
 
-/** Рейтрейсинг для случая сферической поверхности планеты */
-float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax) {
+/** 
+ * Рейтрейсинг для случая сферической поверхности планеты 
+ *   ro - положение камеры
+ *   rd - направление луча из камеры
+ *   tmin - начальное глубина рейтрейсинга
+ *   tmax - максимальная глубина рейтрейсинга
+ *   i - выходное значение количества циклов рейтрейсинга
+ */
+float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   /*
   НЕОБХОДИМО ПЕРЕРАБОТАТЬ
@@ -158,28 +181,21 @@ vec3  lommel_seeliger(vec3 omega, float mu, float mu_0) {
  	return omega / max( 0.01, mu + mu_0 );
 }
 
-// omega - альбедо
-// omega_0 - альбедо одиночного рассеивания
-// mu - косинус угла между нормалью и направлением на камеру
-// mu0 - косинус угла между нормалью и направлением на источник света
+/** 
+ * Функция неламбертового диффузного рассеивания.
+ * Среднее законов Lambert и Lommel-Seeliger
+ *   omega - альбедо
+ *   omega_0 - альбедо одиночного рассеивания
+ *   mu - косинус угла между нормалью и направлением на камеру
+ *   mu0 - косинус угла между нормалью и направлением на источник света
+ */
 vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
-	// non-lambertian diffuse shading used for terrain land masses
-	// mix Lambert and Lommel-Seeliger based on single scattering albedo omega_0,
-
-	//return omega / max( 0.0001, mu + mu_0 );
-	// return omega;
-
-	/*
-	vec3 omega_0 = 4. * omega / ( 3. * omega + 1. );
-	return omega_0 * ( omega + .25 * ( 1. - omega ) / max( 0.0001, mu + mu_0 ) );
-	*/
 	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
 vec4 render(vec3 ro, vec3 rd, float t0)
 {
-  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   vec3 light1 = uSunDirection;
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
@@ -277,26 +293,22 @@ vec4 render(vec3 ro, vec3 rd, float t0)
 
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
-
-  vec3 pos = uCameraPosition;
   vec3 rd = normalize(vRay);
 
   vec2 ts = gl_FragCoord.xy/uResolution;
   vec4 bufA = texture(uTextureProgramA, ts);
 
   vec4 col = vec4(0.);
-  if(uScreenMode.x==MAP_VIEW) col = showMap(pos, uCameraDirection.xz, uv, int(uScreenMode.y));
+  if(uScreenMode.x==MAP_VIEW) col = showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y));
   else {
 
 #ifdef DEPTH_ERROR_VIEW
-    col = render(pos, rd, 1.);
+    col = render(uCameraPosition, rd, 1.);
 #else
-    col = render(pos, rd, bufA.w);
+    col = render(uCameraPosition, rd, bufA.w);
 #endif
 
   }
-
   fragColor = col;
 }
  
