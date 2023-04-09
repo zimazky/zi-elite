@@ -1,19 +1,34 @@
 #version 300 es
 
+/**
+ * Шейдер для формирования буфера с данными глубины на основании
+ * данных предыдущего кадра.
+ * vTextureBData.w - значение глубины из вершинного шейдера.
+ * Можно определять цвет из текстуры предыдущего кадра.
+ */
+
+/** Матрица проекции */
 uniform mat4 uProjectMatrix;
+/** Разрешение текстуры предыдущего кадра */
 uniform vec2 uTextureBResolution;
+/** Разрешение полигональной сетки моделирующей глубину кадра */
 uniform vec2 uNetResolution;
+/** Угол обзора камеры (по горизонтали) */
 uniform float uCameraViewAngle;
+/** Матрица трансформации предыдущего кадра */
 uniform mat3 uTransformMatrixPrev;
+/** Матрица трансформации текущего кадра */
 uniform mat3 uTransformMatrix;
+/** Смещение позиции камеры между кадрами */
 uniform vec3 uPositionDelta;
 
-
-// текстуры
+/** Текстура предыдущего кадра */
 uniform sampler2D uTextureProgramB;
 
+/** Положение узла полигональной сетки моделирующей глубину кадра */
 in vec3 aVertexPosition;
 
+/** Данные по узлу сетки, vTextureBData.w - глубина узла */
 out vec4 vTextureBData;
 
 void main() {
@@ -42,7 +57,6 @@ void main() {
   pos = pos*inverse(uTransformMatrixPrev);
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
-  //vTextureBData.w = buf.w==0. ? 0. : length(pos);
   vTextureBData.w = length(pos);
 
   // при движении назад по краям устанавливаем глубину 0
@@ -50,5 +64,4 @@ void main() {
   if(deltaPos.z > 0. && (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBData.w = 0.;
 
   gl_Position = uProjectMatrix*vec4(pos, 1);
-
 }

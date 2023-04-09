@@ -67,7 +67,7 @@ export class Sky {
         .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), this.sunDirection).t)
         .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, -oneDivSqrt2), this.sunDirection).t)
         .div(5.);
-      this.skyColor = sunIntensity.mulEl(skyDirScatter).mulMutable(3);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
+      this.skyColor = sunIntensity.mulEl(skyDirScatter).mulMutable(2);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
 
       this.skyRefreshTime = time + 0.5;
     }
