@@ -21,7 +21,7 @@ vec2 grid(vec2 x, float st) {
 const float INIT_MAP_SCALE = 5000.; //начальный масштаб карты в м на ширину карты
 // pos - положение камеры
 // camdir - направление камеры
-vec4 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode) {
+vec3 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode) {
   float mapScale = uMapScale;
   mapScale *= INIT_MAP_SCALE;
   vec2 p = pos.xz + vec2(1,-1)*mapScale*uv;
@@ -41,5 +41,5 @@ vec4 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode) {
   }
   // уровни высот, по 50м на уровень
   col *= (mode & MAP_HEIGHTS)!=0 ? smoothstep(0.,1., grid(h,50.)) : 1.;
-  return vec4(col,-1.);
+  return col;
 }
