@@ -12,8 +12,6 @@ uniform vec2 uResolution;
 
 /** Текстура с предварительными данными глубины на основе предыдущего кадра */
 uniform sampler2D uTextureProgramA;
-/** Разрешение текстуры */
-uniform vec2 uTextureAResolution;
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -155,48 +153,43 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   return t;
 }
 
-void calcGBuffer(vec3 ro, vec3 rd, float t0)
-{
-  vec3 col = vec3(0);
-  int raycastIterations = 0;
-  float t = 2.*MAX_TERRAIN_DISTANCE;
-  if(t0>MAX_TERRAIN_DISTANCE) {
-    gNormalDepth = vec4(-rd, t);
-  }
-  else {
-    t = raycast(ro, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
-    vec3 pos = ro + t*rd;
-    gNormalDepth = vec4(calcNormalH(pos, max(200.,t)), t);
-    col = terrain_color(pos, nor).rgb;
-	}
-
-  #ifdef RAYCAST_ITERATIONS_VIEW
-  // Для вывода числа итераций рейтрейсинга
-  col = vec3(raycastIterations)/300.;
-  #endif
-
-  gAlbedo = col;
-}
-
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
   vec3 rd = normalize(vRay);
 
-  vec2 ts = gl_FragCoord.xy/uResolution;
-  vec4 bufA = texture(uTextureProgramA, ts);
-
-  if(uScreenMode.x==MAP_VIEW) {
+  if(uScreenMode.x == MAP_VIEW) {
+    // Режим отображения карты
     gAlbedo = showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y));
     gNormalDepth = vec4(0,0,1,0);
   }
   else {
     #ifdef DEPTH_ERROR_VIEW
     // Режим для просмотра ошибки глубины между расчетным значением и предсказанием на основе предыдущего кадра
-    calcGBuffer(uCameraPosition, rd, 1.);
+    float t0 = 1.;
     #else
     // Нормальный режим, с испльзованием данных предыдущего кадра
-    calcGBuffer(uCameraPosition, rd, bufA.w);
+    float t0 = texture(uTextureProgramA, gl_FragCoord.xy/uResolution).w;
     #endif
+
+    vec3 col = vec3(0);
+    int raycastIterations = 0;
+    float t = 2.*MAX_TERRAIN_DISTANCE;
+    if(t0 > MAX_TERRAIN_DISTANCE) {
+      gNormalDepth = vec4(-rd, t);
+    }
+    else {
+      t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+      vec3 pos = uCameraPosition + t*rd;
+      gNormalDepth = vec4(calcNormalH(pos, max(200.,t)), t);
+      col = terrain_color(pos, nor).rgb;
+    }
+
+    #ifdef RAYCAST_ITERATIONS_VIEW
+    // Для вывода числа итераций рейтрейсинга
+    col = vec3(raycastIterations)/300.;
+    #endif
+
+    gAlbedo = col;
   }
 }
  

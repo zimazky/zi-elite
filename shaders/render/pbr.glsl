@@ -25,6 +25,69 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
 }
 
+/** 
+ * Расчет коэффициента Френеля согласно аппроксимации Френеля-Шлика
+ * Описывает коэффициент поверхностного отражения при разных углах
+ * F0 - степень отражения поверхности при нулевом угле
+ * cosTheta - косинус угла между зенитом и лучом падения света
+ */
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+  return F0 + (1. - F0) * pow(1. - cosTheta, 5.);
+}   
+
+/**
+ * Функция нормального распределения D модели BRDF Cook-Torrance
+ * (normal Distribution function, NDF)
+ * Модель Trowbridge-Reitz GGX
+ * Аппроксимирует количество микрограней поверхности, ориентированных по медианному вектору,
+ * основываясь на шероховатости поверхности
+ * N - нормаль к поверхности
+ * H - медианный вектор, лежащий посередине между направлением падающего света L и направлением наблюдателя V
+ * roughness - шероховатость поверхности
+ */
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+  float a = roughness*roughness;
+  float a2 = a*a;
+  float NdotH = max(dot(N, H), 0.);
+  float NdotH2 = NdotH*NdotH;
+  float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  denom = PI * denom * denom;
+  return a2 / denom;
+}
+
+/** 
+ * Функция геометрии G модели Cook-Torrance
+ * NdotV - косинус угла между нормалью и направлением на камеру
+ * roughness - шероховатость поверхности
+ */
+float GeometrySchlickGGX(float NdotV, float roughness) {
+  float r = roughness + 1.;
+  float k = (r*r) / 8.;
+  float denom = NdotV * (1. - k) + k;
+  return NdotV / denom;
+}
+
+/** 
+ * Функция геометрии G модели BRDF Cook-Torrance
+ * Модель Smith's Schlick-GGX
+ * Описывает свойство самозатенения микрограней. 
+ * Когда поверхность довольно шероховатая, одни микрограни поверхности могут перекрывать другие, 
+ * тем самым уменьшая количество света, отражаемого поверхностью.
+ * N - вектор нормали
+ * V - луч от камеры
+ * L - луч от источника света
+ * roughness - шероховатость поверхности
+ */
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+  float NdotV = max(dot(N, V), 0.);
+  float NdotL = max(dot(N, L), 0.);
+  float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+  float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+  return ggx1 * ggx2;
+}
+
+
 vec4 render(vec3 ro, vec3 rd, float t0)
 {
   vec3 light1 = uSunDirection;
