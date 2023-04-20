@@ -1,9 +1,11 @@
-import { Flare } from "src/core/flare";
+import { Flare } from "../core/flare";
+import { Vec3 } from "../core/vectors";
 import { Atmosphere } from "../core/atmosphere";
 import { Camera, FRONT_VIEW } from "../core/camera";
 import { SUN_DISC_ANGLE_SIN } from "../core/constants";
 import { Engine, Framebuffer, Renderbufer } from "../core/engine";
 import { Sky } from "../core/sky";
+import { mix } from "../core/mathutils";
 
 export class ProgramRender {
   engine: Engine;
@@ -17,6 +19,10 @@ export class ProgramRender {
 
 
   skyRefreshTime: number = 0.;
+
+  numSSAOSamples: number = 64;
+  SSAOSamples: Vec3[] = [];
+  SSAONoise: Vec3[] = [];
 
   // Shader uniforms
 
@@ -88,6 +94,25 @@ export class ProgramRender {
     this.sky = sky;
     this.flare1 = f1;
     this.flare2 = f2;
+
+    for(let i=0; i<this.numSSAOSamples; i++) {
+      let scale = i/this.numSSAOSamples;
+      scale = mix(0.1, 1., scale*scale);
+      this.SSAOSamples.push(new Vec3(
+        2.*Math.random()-1.,
+        2.*Math.random()-1.,
+        Math.random()
+      ).normalizeMutable().mulMutable(scale*Math.random()));
+    }
+
+    for(let i=0; i<16; i++) {
+      this.SSAONoise.push(new Vec3(
+        2.*Math.random()-1.,
+        2.*Math.random()-1.,
+        0.
+      ))
+    }
+
   }
 
   init(shader: Renderbufer, blueNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource) {
@@ -100,9 +125,12 @@ export class ProgramRender {
     const height = this.shaderB.height;
     const textureBResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureBResolution');
     this.engine.gl.uniform2f(textureBResolution, width, height);
-    const texture1 = this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
-    const texture2 = this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
-    const texture3 = this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
+    const SSAONoiseArray: number[] = [];
+    this.SSAONoise.forEach(e=>SSAONoiseArray.push(...e.getArray()));
+    this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 16, 16, new Float32Array(SSAONoiseArray));
+    this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
+    this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
+    this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
 
 
     this.uCameraPosition = this.engine.gl.getUniformLocation(shader.program, 'uCameraPosition');

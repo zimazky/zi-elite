@@ -202,6 +202,27 @@ export class Engine extends GLContext {
     return texture;
   }
 
+  /** Привязка текстуры без генерации данных MIPMAP */
+  setTextureWithArray16F(program: WebGLProgram, uname: string, 
+    width: number, height: number, array: Float32Array): WebGLTexture {
+    const texture = this.gl.createTexture();
+    const n = this.textures.length;
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, array);
+    
+    const textureLocation = this.gl.getUniformLocation(program, uname);
+    this.gl.uniform1i(textureLocation, n);
+    this.textures.push(texture);
+
+    return texture;
+  }
+
+
   /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
