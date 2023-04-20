@@ -18,26 +18,8 @@ uniform vec3 uCameraPosition;
 /** Вектор направления камеры */
 uniform vec3 uCameraDirection;
 
-/** Цвет и интенсивность света фар: vec3(0.) - выключен */
-uniform vec3 uHeadLight;
-
-/** Положение 1-ой сигнальной ракеты */
-uniform vec3 uFlare1Position;
-/** Цвет и интенсивность света 1-ой сигнальной ракеты */
-uniform vec3 uFlare1Light;
-/** Положение 2-ой сигнальной ракеты */
-uniform vec3 uFlare2Position;
-/** Цвет и интенсивность света 2-ой сигнальной ракеты */
-uniform vec3 uFlare2Light;
-
 /** Синус половины углового размера солнца */
 uniform float uSunDiscAngleSin;
-/** Направление на солнце */
-uniform vec3 uSunDirection;
-/** Цвет и интенсивность света от солнца */
-uniform vec3 uSunDiscColor;
-/** Цвет и интенсивность света неба */
-uniform vec3 uSkyColor;
 /** Радиус планеты */
 uniform float uPlanetRadius;
 /** Положение центра планеты */
@@ -64,7 +46,7 @@ in vec3 vRay;
 /** Буфер нормалей (xyz) и глубины (w) */
 layout (location = 0) out vec4 gNormalDepth;
 /** Буфер значений альбедо */
-layout (location = 1) out vec3 gAlbedo;
+layout (location = 1) out vec4 gAlbedo;
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -159,7 +141,7 @@ void main(void) {
 
   if(uScreenMode.x == MAP_VIEW) {
     // Режим отображения карты
-    gAlbedo = showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y));
+    gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y)), 1);
     gNormalDepth = vec4(0,0,1,0);
   }
   else {
@@ -179,9 +161,15 @@ void main(void) {
     }
     else {
       t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
-      vec3 pos = uCameraPosition + t*rd;
-      gNormalDepth = vec4(calcNormalH(pos, max(200.,t)), t);
-      col = terrain_color(pos, nor).rgb;
+      if(t > MAX_TERRAIN_DISTANCE) {
+        gNormalDepth = vec4(-rd, 2.*MAX_TERRAIN_DISTANCE);
+      }
+      else {
+        vec3 pos = uCameraPosition + t*rd;
+        vec3 nor = calcNormalH(pos, max(200.,t));
+        gNormalDepth = vec4(nor, t);
+        col = terrain_color(pos, nor).rgb;
+      }
     }
 
     #ifdef RAYCAST_ITERATIONS_VIEW
@@ -189,7 +177,7 @@ void main(void) {
     col = vec3(raycastIterations)/300.;
     #endif
 
-    gAlbedo = col;
+    gAlbedo = vec4(col, 1);
   }
 }
  

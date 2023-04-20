@@ -1,3 +1,4 @@
+import { Flare } from "src/core/flare";
 import { Atmosphere } from "../core/atmosphere";
 import { Camera, FRONT_VIEW } from "../core/camera";
 import { SUN_DISC_ANGLE_SIN } from "../core/constants";
@@ -11,6 +12,9 @@ export class ProgramRender {
   camera: Camera;
   atm: Atmosphere;
   sky: Sky;
+  flare1: Flare;
+  flare2: Flare;
+
 
   skyRefreshTime: number = 0.;
 
@@ -19,12 +23,16 @@ export class ProgramRender {
   /** Разрешение текстуры шейдера B */
   uTextureBResolution: WebGLUniformLocation;
 
+
   /** Направление на солнце */
   uSunDirection: WebGLUniformLocation;
   /** Синус углового размера солнца */
   uSunDiscAngleSin: WebGLUniformLocation;
   /** Цвет диска солнца */
   uSunDiscColor: WebGLUniformLocation;
+  /** Цвет неба для окружающего освещения */
+  uSkyColor: WebGLUniformLocation;
+  
   /** Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря */
   uBetaRayleigh: WebGLUniformLocation;
   /** Коэффициенты рассеивания Ми для трех частот спектра (rgb) на уровне моря */
@@ -56,21 +64,38 @@ export class ProgramRender {
   uSkyTransformMat: WebGLUniformLocation;
   /** Подсветка созвездий, 0. - не подсвечивать */
   uConstellationsColor: WebGLUniformLocation;
+
+  /** Свет фар */
+  uHeadLight: WebGLUniformLocation;
+
+  /** Положение 1-ой сигнальной ракеты */
+  uFlare1Position: WebGLUniformLocation;
+  /** Цвет и интенсивность свечения 1-ой сигнальной ракеты */
+  uFlare1Light: WebGLUniformLocation;
+  /** Положение 2-ой сигнальной ракеты */
+  uFlare2Position: WebGLUniformLocation;
+  /** Цвет и интенсивность свечения 2-ой сигнальной ракеты */
+  uFlare2Light: WebGLUniformLocation;
   
   
-  constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer, camera: Camera, atm: Atmosphere, sky: Sky) {
+  constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer, 
+    camera: Camera, atm: Atmosphere, sky: Sky, f1: Flare, f2: Flare) {
     this.engine = e;
     this.shaderA = bufferA;
     this.shaderB = bufferB;
     this.camera = camera;
     this.atm = atm;
     this.sky = sky;
+    this.flare1 = f1;
+    this.flare2 = f2;
   }
 
   init(shader: Renderbufer, blueNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource) {
     // привязка текстуры из шейдеров A и B
-    this.engine.setRenderedTexture(shader.program, this.shaderA.fbTexture, 'uTextureProgramA');
-    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTexture, 'uTextureProgramB');
+    this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureProgramA');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uNormalDepthProgramB');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uAlbedoProgramB');
+
     const width = this.shaderB.width;
     const height = this.shaderB.height;
     const textureBResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureBResolution');
@@ -85,6 +110,7 @@ export class ProgramRender {
     this.uTransformMat = this.engine.gl.getUniformLocation(shader.program, 'uTransformMat');
     this.uCameraInShadow = this.engine.gl.getUniformLocation(shader.program, 'uCameraInShadow');
 
+    this.uSkyColor = this.engine.gl.getUniformLocation(shader.program, 'uSkyColor');
     this.uSunDirection = this.engine.gl.getUniformLocation(shader.program, 'uSunDirection');
     this.uSunDiscColor = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscColor');
     this.uSunDiscAngleSin = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscAngleSin');
@@ -106,6 +132,13 @@ export class ProgramRender {
 
     this.uSkyTransformMat = this.engine.gl.getUniformLocation(shader.program, 'uSkyTransformMat');
     this.uConstellationsColor = this.engine.gl.getUniformLocation(shader.program, 'uConstellationsColor');
+
+    this.uHeadLight = this.engine.gl.getUniformLocation(shader.program, 'uHeadLight');
+    this.uFlare1Position = this.engine.gl.getUniformLocation(shader.program, 'uFlare1Position');
+    this.uFlare1Light = this.engine.gl.getUniformLocation(shader.program, 'uFlare1Light');
+    this.uFlare2Position = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Position');
+    this.uFlare2Light = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Light');
+
   }
 
   update(time: number, timeDelta: number) {
@@ -126,6 +159,21 @@ export class ProgramRender {
     this.engine.gl.uniform1f(this.uCameraInShadow, cameraInShadow);
 
     this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
+
+    this.engine.gl.uniform3f(this.uHeadLight, this.camera.headLights, this.camera.headLights, this.camera.headLights);
+
+    this.engine.gl.uniform3fv(this.uSunDirection, this.sky.sunDirection.getArray());
+    this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
+    this.engine.gl.uniform3fv(this.uSkyColor, this.sky.skyColor.getArray());
+
+    this.engine.gl.uniform3fv(this.uFlare1Position, this.flare1.position.getArray());
+    if(this.flare1.isVisible) this.engine.gl.uniform3fv(this.uFlare1Light, this.flare1.light.getArray());
+    else this.engine.gl.uniform3f(this.uFlare1Light, 0, 0, 0);
+
+    this.engine.gl.uniform3fv(this.uFlare2Position, this.flare2.position.getArray());
+    if(this.flare2.isVisible) this.engine.gl.uniform3fv(this.uFlare2Light, this.flare2.light.getArray());
+    else this.engine.gl.uniform3f(this.uFlare2Light, 0, 0, 0);
+
   }
 
 }
