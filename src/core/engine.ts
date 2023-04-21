@@ -213,7 +213,7 @@ export class Engine extends GLContext {
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, array);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB16F, width, height, 0, this.gl.RGB, this.gl.FLOAT, array);
     
     const textureLocation = this.gl.getUniformLocation(program, uname);
     this.gl.uniform1i(textureLocation, n);

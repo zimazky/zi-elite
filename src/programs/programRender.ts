@@ -20,7 +20,7 @@ export class ProgramRender {
 
   skyRefreshTime: number = 0.;
 
-  numSSAOSamples: number = 64;
+  numSSAOSamples: number = 32;
   SSAOSamples: Vec3[] = [];
   SSAONoise: Vec3[] = [];
 
@@ -82,6 +82,9 @@ export class ProgramRender {
   uFlare2Position: WebGLUniformLocation;
   /** Цвет и интенсивность свечения 2-ой сигнальной ракеты */
   uFlare2Light: WebGLUniformLocation;
+
+  /** Ядро выборки (набор векторов в пределах единичной полусферы) для тестирования затененности */
+  uSSAOSamples: WebGLUniformLocation;
   
   
   constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer, 
@@ -94,7 +97,7 @@ export class ProgramRender {
     this.sky = sky;
     this.flare1 = f1;
     this.flare2 = f2;
-
+    // Подготовка ядра выборки ()
     for(let i=0; i<this.numSSAOSamples; i++) {
       let scale = i/this.numSSAOSamples;
       scale = mix(0.1, 1., scale*scale);
@@ -102,9 +105,9 @@ export class ProgramRender {
         2.*Math.random()-1.,
         2.*Math.random()-1.,
         Math.random()
-      ).normalizeMutable().mulMutable(scale*Math.random()));
+      ).normalizeMutable().mulMutable(scale/*Math.random()*/));
     }
-
+    // Подготовка набора случайных векторов для случайных поворотов ядра выборки 
     for(let i=0; i<16; i++) {
       this.SSAONoise.push(new Vec3(
         2.*Math.random()-1.,
@@ -127,11 +130,15 @@ export class ProgramRender {
     this.engine.gl.uniform2f(textureBResolution, width, height);
     const SSAONoiseArray: number[] = [];
     this.SSAONoise.forEach(e=>SSAONoiseArray.push(...e.getArray()));
-    this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 16, 16, new Float32Array(SSAONoiseArray));
-    this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
-    this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
-    this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
+    this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 4, 4, new Float32Array(SSAONoiseArray));
+    //this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
+    //this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
+    //this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
 
+    this.uSSAOSamples = this.engine.gl.getUniformLocation(shader.program, 'uSSAOSamples');
+    const samples: number[] = [];
+    this.SSAOSamples.forEach(e=>samples.push(...e.getArray()));
+    this.engine.gl.uniform3fv(this.uSSAOSamples, samples);
 
     this.uCameraPosition = this.engine.gl.getUniformLocation(shader.program, 'uCameraPosition');
     this.uCameraViewAngle = this.engine.gl.getUniformLocation(shader.program, 'uCameraViewAngle');

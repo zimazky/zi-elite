@@ -4,6 +4,9 @@ precision mediump float;
 
 /** Разрешение экрана */
 uniform vec2 uResolution;
+uniform highp mat3 uTransformMat;
+
+
 /** 
  * Насколько камера попадает под солнце:
  * 1. - полностью на солнце, 0. - полностью в тени
@@ -39,9 +42,12 @@ uniform sampler2D uAlbedoProgramB;
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
 
+uniform sampler2D uTextureSSAONoise;
+
 /** Луч в системе координат планеты */
 in vec3 vRay;
 in vec3 vRaySky;
+in vec3 vRayScreen;
 
 out vec4 fragColor;
 
@@ -52,13 +58,21 @@ out vec4 fragColor;
 #include "common/constants.glsl"
 #endif
 
+// ----------------------------------------------------------------------------
+// Модуль определения функций расчета затенения окружающего освещения
+// ----------------------------------------------------------------------------
+#ifndef SSAO_MODULE
+#include "render1/ssao.glsl"
+#endif
+
 
 void main() {
-
-  float k = uResolution.x/uResolution.y > uTextureBResolution.x/uTextureBResolution.y
-    ? uTextureBResolution.x/uResolution.x
-    : uTextureBResolution.y/uResolution.y;
-  vec2 uv = vec2(0.5)+k/uTextureBResolution*(gl_FragCoord.xy-0.5*uResolution);
+  float aspect = uResolution.x/uResolution.y;
+  float aspectB = uTextureBResolution.x/uTextureBResolution.y;
+  vec2 k = aspect > aspectB
+    ? vec2(1, aspectB/aspect)// /uResolution.x // (1., 1./aspect)
+    : vec2(aspect/aspectB, 1);// /uResolution.y; // (aspect, 1.)
+  vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
   #ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
@@ -77,7 +91,23 @@ void main() {
   vec3 col = albedoB.rgb;
   float t = normalDepthB.w;
   vec3 rd = normalize(vRay);
-  //col = pow(col, vec3(1./2.2));
+  
+  vec2 noiseScale = uResolution/4.;
+  vec2 uv2 = gl_FragCoord.xy/4.;
+  vec3 rand = texture(uTextureSSAONoise, uv2).xyz;
+
+  vec3 posScreen = normalize(vRayScreen)*t;
+  posScreen.z = -posScreen.z;
+  float ssao = calcSSAO(posScreen, inverse(uTransformMat)*normalDepthB.xyz, rand, uNormalDepthProgramB);
+  //col = (uSSAOSamples[int(mod(0.1*gl_FragCoord.x,64.))]);
+  //col = vec3(ssao);
+  //col = posScreen/1000.;
+  //col = vec3(1);
+  col *= pow(ssao,1.5);
+  col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+
+  //col = posScreen/1000.;
+  col = pow(col, vec3(1./2.2));
 
   #endif
 
