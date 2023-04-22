@@ -18,6 +18,11 @@ uniform vec3 uSunDirection;
 uniform vec3 uSunDiscColor;
 /** Цвет и интенсивность света неба */
 uniform vec3 uSkyColor;
+/** Радиус планеты */
+uniform float uPlanetRadius;
+/** Положение центра планеты */
+uniform vec3 uPlanetCenter;
+
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -36,6 +41,8 @@ uniform sampler2D uTextureProgramA;
 uniform sampler2D uNormalDepthProgramB;
 /** Значения альбедо */
 uniform sampler2D uAlbedoProgramB;
+/** Положения фрагментов */
+uniform sampler2D uPositionProgramB;
 
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
@@ -73,6 +80,13 @@ out vec4 fragColor;
 #endif
 
 // ----------------------------------------------------------------------------
+// Модуль определения функций генерации ландшафта
+// ----------------------------------------------------------------------------
+#ifndef TERR_MODULE
+#include "common/terrain.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
 // Модуль определения функций расчета затенения окружающего освещения
 // ----------------------------------------------------------------------------
 #ifndef SSAO_MODULE
@@ -86,6 +100,121 @@ out vec4 fragColor;
 #include "common/postprocess.glsl"
 #endif
 
+
+
+/** 
+  * Функция определения мягкой тени от сферической поверхности планеты
+  *   ro - положение точки, для которой производится рассчет
+  *   rd - направление луча на солнце
+  * Возвращает значения от 0. до 1.
+  *   0. - если солнце полностью скрыто планетой
+  *   1. - если солнце полностью видно
+  */
+float softPlanetShadow(vec3 ro, vec3 rd) {
+  vec3 pos = ro - uPlanetCenter;
+  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
+
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
+  if(OT>0.) return 1.;
+  float d = (uPlanetRadius-CT)/OT;
+  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
+}
+
+/** 
+ * Функция неламбертового диффузного рассеивания.
+ * Среднее законов Lambert и Lommel-Seeliger
+ *   omega - альбедо
+ *   omega_0 - альбедо одиночного рассеивания
+ *   mu - косинус угла между нормалью и направлением на камеру
+ *   mu0 - косинус угла между нормалью и направлением на источник света
+ */
+vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
+	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
+	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
+}
+
+
+vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float ssao) {
+  vec3 light1 = uSunDirection;
+  // косинус угла между лучем и солнцем 
+  float sundot = clamp(dot(rd,light1),0.,1.);
+  vec3 col = vec3(0);
+  int shadowIterations = 0;
+  if(t>MAX_TERRAIN_DISTANCE) {
+    // небо
+  
+  }
+  else {
+    // mountains		
+    vec3 pos = ro + t*rd;
+    pos = frpos;
+    vec3 hal = normalize(light1-rd);
+        
+    // цвет
+    vec3 kd = albedo;
+
+    // ambient
+    float amb = clamp(0.5+0.5*nor.y, 0., 1.);
+	  float LdotN = dot(light1, nor);
+    float RdotN = clamp(-dot(rd, nor), 0., 1.);
+
+    // 1-ая световая ракета
+    vec3 fd0 = uFlarePositions[0]-pos;
+    float fdist0sqr = dot(fd0,fd0);
+    fd0 /= sqrt(fdist0sqr);
+    float F0dotN = clamp(dot(fd0, nor), 0., 1.);
+    // 2-ая световая ракета
+    vec3 fd1 = uFlarePositions[1]-pos;
+    float fdist1sqr = dot(fd1,fd1);
+    fd1 /= sqrt(fdist1sqr);
+    float F1dotN = clamp(dot(fd1, nor), 0., 1.);
+
+    float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
+    float shd = softPlanetShadow(pos, light1);
+    if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations);
+    float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
+    LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
+
+	  vec3 lunar = uSkyColor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
+      + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца
+      + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
+      + uFlareLights[0]*F0dotN*lunar_lambert(kd, RdotN, F0dotN)/(fdist0sqr)  // свет 1-ой сигнальной ракеты
+      + uFlareLights[1]*F1dotN*lunar_lambert(kd, RdotN, F1dotN)/(fdist1sqr);  // свет 2-ой сигнальной ракеты
+    col = lunar;//mix(lomm, lunar, LvsR);
+    
+    //////////////////
+	  // fog
+    //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
+    //col = mix(col, FOG_COLOR, fo );
+	}
+
+  // 1-ая световая ракета
+  vec3 fd = uFlarePositions[0] - ro;
+  float fdist2 = dot(fd, fd);
+  float fdist = sqrt(fdist2);
+  fd /= fdist;
+  float f = dot(fd, rd);
+  if(f>=0.999999 && fdist<t) {
+    col = uFlareLights[0];
+    t = fdist;
+  }
+  // 2-ая световая ракета
+  fd = uFlarePositions[1] - ro;
+  fdist2 = dot(fd, fd);
+  fdist = sqrt(fdist2);
+  fd /= fdist;
+  f = dot(fd, rd);
+  if(f>=0.999999 && fdist<t) {
+    col = uFlareLights[1];
+    t = fdist;
+  }
+  #ifdef SHADOWS_ITERATIONS_VIEW
+  col = vec3(shadowIterations)/200.;
+  #endif
+
+  return col;
+}
 
 void main() {
   float aspect = uResolution.x/uResolution.y;
@@ -144,8 +273,13 @@ void main() {
     col *= ssao*ssao;
   }
   else {
+    /*
     col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
     col *= ssao*ssao;
+    */
+    vec3 frpos = texture(uPositionProgramB, uv).xyz;
+    col = render(uCameraPosition, t, frpos, rd, normalDepthB.xyz, col, ssao);
+    //col = vec3(t/10000.);
   }
 
   //col = posScreen/1000.;

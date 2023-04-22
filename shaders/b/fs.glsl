@@ -47,6 +47,8 @@ in vec3 vRay;
 layout (location = 0) out vec4 gNormalDepth;
 /** Буфер значений альбедо */
 layout (location = 1) out vec4 gAlbedo;
+/** Буфер положения фрагмента (для тестирования) */
+layout (location = 2) out vec4 gPosition;
 
 // ----------------------------------------------------------------------------
 // Модуль определения констант
@@ -131,6 +133,7 @@ void main(void) {
     vec4 norDepth;
     gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
     gNormalDepth = norDepth;
+    gPosition = vec4(1);
   }
   else {
     #ifdef DEPTH_ERROR_VIEW
@@ -144,6 +147,7 @@ void main(void) {
     vec3 col = vec3(0);
     int raycastIterations = 0;
     float t = 2.*MAX_TERRAIN_DISTANCE;
+    vec3 pos = uCameraPosition + t*rd;
     if(t0 > MAX_TERRAIN_DISTANCE) {
       gNormalDepth = vec4(-rd, t);
     }
@@ -153,7 +157,7 @@ void main(void) {
         gNormalDepth = vec4(-rd, 2.*MAX_TERRAIN_DISTANCE);
       }
       else {
-        vec3 pos = uCameraPosition + t*rd;
+        pos = uCameraPosition + t*rd;
         vec3 nor = calcNormalH(pos, max(200.,t));
         gNormalDepth = vec4(nor, t);
         col = terrain_color(pos, nor).rgb;
@@ -164,7 +168,7 @@ void main(void) {
     // Для вывода числа итераций рейтрейсинга
     col = vec3(raycastIterations)/300.;
     #endif
-
+    gPosition = vec4(pos, 1);
     gAlbedo = vec4(col, 1);
   }
 }

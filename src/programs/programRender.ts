@@ -24,6 +24,8 @@ export class ProgramRender {
   SSAOSamples: Vec3[] = [];
   SSAONoise: Vec3[] = [];
 
+  numOfFlares = 2;
+
   // Shader uniforms
 
   /** Разрешение текстуры шейдера B */
@@ -74,14 +76,10 @@ export class ProgramRender {
   /** Свет фар */
   uHeadLight: WebGLUniformLocation;
 
-  /** Положение 1-ой сигнальной ракеты */
-  uFlare1Position: WebGLUniformLocation;
-  /** Цвет и интенсивность свечения 1-ой сигнальной ракеты */
-  uFlare1Light: WebGLUniformLocation;
-  /** Положение 2-ой сигнальной ракеты */
-  uFlare2Position: WebGLUniformLocation;
-  /** Цвет и интенсивность свечения 2-ой сигнальной ракеты */
-  uFlare2Light: WebGLUniformLocation;
+  /** Положение сигнальных ракет */
+  uFlarePositions: WebGLUniformLocation;
+  /** Цвет и интенсивность свечения сигнальных ракет */
+  uFlareLights: WebGLUniformLocation;
 
   /** Ядро выборки (набор векторов в пределах единичной полусферы) для тестирования затененности */
   uSSAOSamples: WebGLUniformLocation;
@@ -127,6 +125,7 @@ export class ProgramRender {
     this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureProgramA');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uNormalDepthProgramB');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uAlbedoProgramB');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[2], 'uPositionProgramB');
 
     const width = this.shaderB.width;
     const height = this.shaderB.height;
@@ -173,10 +172,8 @@ export class ProgramRender {
     this.uConstellationsColor = this.engine.gl.getUniformLocation(shader.program, 'uConstellationsColor');
 
     this.uHeadLight = this.engine.gl.getUniformLocation(shader.program, 'uHeadLight');
-    this.uFlare1Position = this.engine.gl.getUniformLocation(shader.program, 'uFlare1Position');
-    this.uFlare1Light = this.engine.gl.getUniformLocation(shader.program, 'uFlare1Light');
-    this.uFlare2Position = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Position');
-    this.uFlare2Light = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Light');
+    this.uFlarePositions = this.engine.gl.getUniformLocation(shader.program, 'uFlarePositions');
+    this.uFlareLights = this.engine.gl.getUniformLocation(shader.program, 'uFlareLights');
 
     this.uScreenMode = this.engine.gl.getUniformLocation(shader.program, 'uScreenMode');
     this.uMapScale = this.engine.gl.getUniformLocation(shader.program, 'uMapScale');
@@ -184,7 +181,7 @@ export class ProgramRender {
 
   update(time: number, timeDelta: number) {
 
-    this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
+    //this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
     this.engine.gl.uniform1f(this.uCameraViewAngle, this.camera.viewAngle);
     this.engine.gl.uniformMatrix3fv(this.uTransformMat, false, this.camera.transformMat.getArray());
 
@@ -196,7 +193,6 @@ export class ProgramRender {
       ? 0.
       : this.camera.inShadow(this.atm, this.camera.position, this.sky.sunDirection);
 
-    this.engine.gl.uniform3fv(this.uSunDirection, this.sky.sunDirection.getArray());
     this.engine.gl.uniform1f(this.uCameraInShadow, cameraInShadow);
 
     this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
@@ -207,16 +203,16 @@ export class ProgramRender {
     this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
     this.engine.gl.uniform3fv(this.uSkyColor, this.sky.skyColor.getArray());
 
-    this.engine.gl.uniform3fv(this.uFlare1Position, this.flare1.position.getArray());
-    if(this.flare1.isVisible) this.engine.gl.uniform3fv(this.uFlare1Light, this.flare1.light.getArray());
-    else this.engine.gl.uniform3f(this.uFlare1Light, 0, 0, 0);
-
-    this.engine.gl.uniform3fv(this.uFlare2Position, this.flare2.position.getArray());
-    if(this.flare2.isVisible) this.engine.gl.uniform3fv(this.uFlare2Light, this.flare2.light.getArray());
-    else this.engine.gl.uniform3f(this.uFlare2Light, 0, 0, 0);
+    const flarePos = [...this.flare1.position.getArray(), ...this.flare2.position.getArray()];
+    //this.engine.gl.uniform3fv(this.uFlarePositions, flarePos);
+    const flareLights = [this.flare1.isVisible ? this.flare1.light : Vec3.ZERO(), this.flare2.isVisible ? this.flare2.light : Vec3.ZERO()];
+    //this.engine.gl.uniform3fv(this.uFlareLights, flareLights.reduce((a,l)=>{return a.push(l.getArray()), a}, []));
 
     this.engine.gl.uniform2f(this.uScreenMode, this.camera.screenMode, this.camera.mapMode);
     this.engine.gl.uniform1f(this.uMapScale, this.camera.mapScale);
+
+    this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
+
   }
 
 }
