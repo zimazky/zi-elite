@@ -18,22 +18,20 @@ vec2 grid(vec2 x, float st) {
   return mix(a,1.-a,s);
 }
 
-const float INIT_MAP_SCALE = 5000.; //начальный масштаб карты в м на ширину карты
 // pos - положение камеры
 // camdir - направление камеры
-vec3 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode) {
-  float mapScale = uMapScale;
-  mapScale *= INIT_MAP_SCALE;
-  vec2 p = pos.xz + vec2(1,-1)*mapScale*uv;
+vec3 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
+  vec2 p = pos.xz + vec2(1,-1)*uMapScale*uv;
   float h = terrainM(p);
   vec3 nor = calcNormalM(vec3(p.x,h,p.y), 100.);
+  norDepth = vec4(nor, MAX_TRN_ELEVATION-h);
   vec4 albedo = terrain_color(vec3(p.x,h,p.y), nor);
-  vec3 col = vec3(0.5+0.5*dot(nor.xyz,normalize(vec3(-1,1,-1))))*albedo.rgb;
+  vec3 col = albedo.rgb;//vec3(0.5+0.5*dot(nor.xyz,normalize(vec3(-1,1,-1))))*albedo.rgb;
   // положение камеры
-  col *= smoothstep(.01,0.012,length(pos.xz-p)/mapScale);
+  col *= smoothstep(.01,0.012,length(pos.xz-p)/uMapScale);
   // направление камеры
   vec2 rp = pos.xz-p;
-  col *= dot(rp,camdir)<0. ? smoothstep(0.0,0.002,abs(camdir.x*rp.y-camdir.y*rp.x)/mapScale) : 1.;
+  col *= dot(rp,camdir)<0. ? smoothstep(0.0,0.002,abs(camdir.x*rp.y-camdir.y*rp.x)/uMapScale) : 1.;
   if((mode & MAP_GRID)!=0) {
     // координатная сетка, по 500м на линию
     vec2 gr = smoothstep(0.,0.06, grid(p,500.));

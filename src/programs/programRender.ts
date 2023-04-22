@@ -85,7 +85,11 @@ export class ProgramRender {
 
   /** Ядро выборки (набор векторов в пределах единичной полусферы) для тестирования затененности */
   uSSAOSamples: WebGLUniformLocation;
-  
+  /** Режим экрана */
+  uScreenMode: WebGLUniformLocation;
+  /** Масштаб карты */
+  uMapScale: WebGLUniformLocation;
+
   
   constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer, 
     camera: Camera, atm: Atmosphere, sky: Sky, f1: Flare, f2: Flare) {
@@ -174,6 +178,8 @@ export class ProgramRender {
     this.uFlare2Position = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Position');
     this.uFlare2Light = this.engine.gl.getUniformLocation(shader.program, 'uFlare2Light');
 
+    this.uScreenMode = this.engine.gl.getUniformLocation(shader.program, 'uScreenMode');
+    this.uMapScale = this.engine.gl.getUniformLocation(shader.program, 'uMapScale');
   }
 
   update(time: number, timeDelta: number) {
@@ -209,6 +215,8 @@ export class ProgramRender {
     if(this.flare2.isVisible) this.engine.gl.uniform3fv(this.uFlare2Light, this.flare2.light.getArray());
     else this.engine.gl.uniform3f(this.uFlare2Light, 0, 0, 0);
 
+    this.engine.gl.uniform2f(this.uScreenMode, this.camera.screenMode, this.camera.mapMode);
+    this.engine.gl.uniform1f(this.uMapScale, this.camera.mapScale);
   }
 
 }

@@ -4,8 +4,6 @@ precision mediump float;
 
 /** Разрешение экрана */
 uniform vec2 uResolution;
-uniform highp mat3 uTransformMat;
-
 
 /** 
  * Насколько камера попадает под солнце:
@@ -48,6 +46,22 @@ uniform sampler2D uTextureSSAONoise;
 in vec3 vRay;
 in vec3 vRaySky;
 in vec3 vRayScreen;
+in mat3 vInverseTransformMat;
+
+/**
+ * Режим отображения
+ * x - режим экрана: 
+ *   FRONT_VIEW - вид камеры,
+ *   MAP_VIEW - вид карты,
+ *   DEPTH_VIEW - вид карты глубины (режим отключен)
+ * y - опции отображения карты: 
+ *   MAP_ONLY - только карта,
+ *   MAP_GRID - показывать сетку,
+ *   MAP_HEIGHTS - показывать изолинии высот
+ */
+uniform vec2 uScreenMode;
+/** Масштаб карты */
+uniform float uMapScale;
 
 out vec4 fragColor;
 
@@ -63,6 +77,13 @@ out vec4 fragColor;
 // ----------------------------------------------------------------------------
 #ifndef SSAO_MODULE
 #include "render1/ssao.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
+// Модуль определения функций постобработки
+// ----------------------------------------------------------------------------
+#ifndef POSTPROC_MODULE
+#include "common/postprocess.glsl"
 #endif
 
 
@@ -91,22 +112,52 @@ void main() {
   vec3 col = albedoB.rgb;
   float t = normalDepthB.w;
   vec3 rd = normalize(vRay);
-  
-  vec2 noiseScale = uResolution/4.;
-  vec2 uv2 = gl_FragCoord.xy/4.;
-  vec3 rand = texture(uTextureSSAONoise, uv2).xyz;
 
-  vec3 posScreen = normalize(vRayScreen)*t;
-  posScreen.z = -posScreen.z;
-  float ssao = calcSSAO(posScreen, inverse(uTransformMat)*normalDepthB.xyz, rand, uNormalDepthProgramB);
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
+  vec3 rand = texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
+
+  vec3 posScreen;// normalize(vRayScreen)*t;
+  //posScreen.z = -posScreen.z;
+  vec3 normal;
+  float ssao;
+  if(uScreenMode.x == MAP_VIEW) {
+    vec2 uv1 = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
+    vec4 normalDepthB1 = texture(uNormalDepthProgramB, gl_FragCoord.xy/uResolution);
+    normal = normalDepthB1.xzy*vec3(1,-1,-1);
+    posScreen = vec3(uMapScale*uv1.x, -uMapScale*uv1.y, normalDepthB1.w);
+    //col = vec3(posScreen.z/5000.);
+    //col = 0.5*vec3(1) + 0.5*col;
+    //posScreen = normalize(vRayScreen)*(MAX_TRN_ELEVATION+t);
+    //posScreen.z = -posScreen.z;
+    //ssao = calcSSAO(posScreen, normal, rand, uNormalDepthProgramB, 300.);
+    ssao = calcSSAOOrtho(posScreen, normal, vec3(1,0,0), uNormalDepthProgramB, vec2(1./uMapScale), 300.);
+  }
+  else {
+    normal = vInverseTransformMat*normalDepthB.xyz;
+    normal.z = -normal.z;
+    posScreen = normalize(vRayScreen)*t;
+    posScreen.z = -posScreen.z;
+    ssao = calcSSAO(posScreen, normal, rand, uNormalDepthProgramB, 300.);
+  }
   //col = (uSSAOSamples[int(mod(0.1*gl_FragCoord.x,64.))]);
-  //col = vec3(ssao);
+  //col = vec3(ssao*ssao);
   //col = posScreen/1000.;
   //col = vec3(1);
-  col *= pow(ssao,1.5);
-  col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+  //col *= ssao;
+
+  if(uScreenMode.x == MAP_VIEW) {
+    //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    col *= ssao;
+  }
+  else {
+    col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    col *= ssao*ssao;
+  }
 
   //col = posScreen/1000.;
+
+  //col =  col*mat2sRGB; // Преобразование в sRGB
   col = pow(col, vec3(1./2.2));
 
   #endif

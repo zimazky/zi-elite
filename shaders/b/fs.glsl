@@ -49,19 +49,6 @@ layout (location = 0) out vec4 gNormalDepth;
 layout (location = 1) out vec4 gAlbedo;
 
 // ----------------------------------------------------------------------------
-// Constants
-// ----------------------------------------------------------------------------
-
-// View modes
-const float FRONT_VIEW = 0.;
-const float MAP_VIEW = 1.;
-const float DEPTH_VIEW = 2.;
-// Map modes
-const int MAP_ONLY = 0;
-const int MAP_GRID = 1;
-const int MAP_HEIGHTS = 2;
-
-// ----------------------------------------------------------------------------
 // Модуль определения констант
 // ----------------------------------------------------------------------------
 #ifndef CONST_MODULE
@@ -141,8 +128,9 @@ void main(void) {
 
   if(uScreenMode.x == MAP_VIEW) {
     // Режим отображения карты
-    gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y)), 1);
-    gNormalDepth = vec4(0,0,1,0);
+    vec4 norDepth;
+    gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
+    gNormalDepth = norDepth;
   }
   else {
     #ifdef DEPTH_ERROR_VIEW

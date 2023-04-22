@@ -26,7 +26,7 @@ vec3 noised(vec2 x) {
 const mat2 im2 = mat2(0.8,-0.6,0.6,0.8);
 const float W_SCALE = 3000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
-const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
+//const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
 const float GRASS_HEIGHT_MAX = 600.;
 const float SEA_LEVEL = 0.;
 
@@ -146,9 +146,9 @@ vec4 snowAlbedo = vec4(0.75, 0.80, 0.95, 1.);
 // определение цвета пикселя
 vec4 terrain_color(vec3 pos, vec3 nor) {
   // мелкий шум в текстуре
-  float r = texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
+  float r = 1.;//texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
   // мелкие и крупные пятна на скалах и траве
-  float r2 = 0.7 + sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
+  float r2 = 1.;//0.7 + sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
   // полосы на скалах
   vec4 albedo = r2*(r*0.25+0.75)*mix(darkRockAlbedo, lightRockAlbedo,
                  texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
