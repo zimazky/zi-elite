@@ -156,7 +156,7 @@ vec4 terrain_color(vec3 pos, vec3 nor) {
   // песок
   float sh = smoothstep(500.,600.,pos.y); // фактор высоты
   float sn = smoothstep(0.7, 0.9, nor.y); // фактор наклона поверхности
-  albedo = mix(albedo, sandAlbedo*(0.5+0.5*r), sn*sh);
+  albedo = mix(albedo, sandAlbedo/*(0.5+0.5*r)*/, sn*sh);
 
   // земля
   float dh = 1.-smoothstep(500.,650.,pos.y); // фактор высоты

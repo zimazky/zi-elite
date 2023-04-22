@@ -7,9 +7,9 @@ export class ProgramA {
   bufferInput: Framebuffer;
   camera: Camera;
   /** Число треугольников сетки в направлении X */
-  numX: number = 480;//240;
+  numX: number = 960;//480;//240;
   /** Число треугольников сетки в направлении Y */
-  numY: number = 240;//120;
+  numY: number = 480;//240;//120;
 
   // Shader uniforms
   uCameraViewAngle: WebGLUniformLocation;

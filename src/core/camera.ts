@@ -130,7 +130,7 @@ export class Camera {
     // замедление вращения без клавиш
     this.angularSpeed.subMutable(this.angularSpeed.mul(3.*timeDelta));
     // изменение ориентации (поворот кватерниона)
-    const rotDelta = this.angularSpeed.mul(0.5);
+    const rotDelta = this.angularSpeed.mul(20.*timeDelta);
     this.orientation = this.orientation.qmul(new Quaternion(0,0,Math.sin(rotDelta.z),Math.cos(rotDelta.z)));
     this.orientation = this.orientation.qmul(new Quaternion(Math.sin(rotDelta.x),0,0,Math.cos(rotDelta.x)));
     this.orientation = this.orientation.qmul(new Quaternion(0,Math.sin(rotDelta.y),0,Math.cos(rotDelta.y)));

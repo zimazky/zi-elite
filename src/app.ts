@@ -77,7 +77,8 @@ export default async function main() {
 
 
   const shaderA = await e.addFramebuffer(
-    1536, 762,
+    2195, 1131,
+    //1536, 762,
     //900, 450, 
     'shaders/a', 'vs.glsl', 'fs.glsl',
     (shader) => {
@@ -89,9 +90,10 @@ export default async function main() {
   );
 
   const shaderB = await e.addFramebuffer(
+    2195, 1131,
     //1400, 960,
     //900, 600, 
-    1536, 762,
+    //1536, 762,
     'shaders/b', 'vs.glsl', 'fs.glsl',
     (shader: Renderbufer) => {
       programB.init(shader, grayNoiseImg);
