@@ -115,23 +115,16 @@ void main() {
 
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
-  vec3 rand = texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
+  vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 
-  vec3 posScreen;// normalize(vRayScreen)*t;
-  //posScreen.z = -posScreen.z;
+  vec3 posScreen;
   vec3 normal;
   float ssao;
   if(uScreenMode.x == MAP_VIEW) {
-    vec2 uv1 = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
-    vec4 normalDepthB1 = texture(uNormalDepthProgramB, gl_FragCoord.xy/uResolution);
-    normal = normalDepthB1.xzy*vec3(1,-1,-1);
-    posScreen = vec3(uMapScale*uv1.x, -uMapScale*uv1.y, normalDepthB1.w);
-    //col = vec3(posScreen.z/5000.);
-    //col = 0.5*vec3(1) + 0.5*col;
-    //posScreen = normalize(vRayScreen)*(MAX_TRN_ELEVATION+t);
-    //posScreen.z = -posScreen.z;
-    //ssao = calcSSAO(posScreen, normal, rand, uNormalDepthProgramB, 300.);
-    ssao = calcSSAOOrtho(posScreen, normal, vec3(1,0,0), uNormalDepthProgramB, vec2(1./uMapScale), 300.);
+    normal = normalDepthB.xzy*vec3(1, 1, -1);
+    vec2 uv1 = uMapScale*vec2(1, 1./aspectB)*(gl_FragCoord.xy/uResolution-0.5);
+    posScreen = vec3(uv1.x, uv1.y, t);
+    ssao = calcSSAOOrtho(posScreen, normal, rand, uNormalDepthProgramB, 2.*vec2(1, aspectB)*k/uMapScale, 300.);
   }
   else {
     normal = vInverseTransformMat*normalDepthB.xyz;
@@ -147,8 +140,8 @@ void main() {
   //col *= ssao;
 
   if(uScreenMode.x == MAP_VIEW) {
-    //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
-    col *= ssao;
+    col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    col *= ssao*ssao;
   }
   else {
     col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);

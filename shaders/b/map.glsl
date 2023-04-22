@@ -23,7 +23,7 @@ vec2 grid(vec2 x, float st) {
 vec3 showMap(vec3 pos, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
   vec2 p = pos.xz + vec2(1,-1)*uMapScale*uv;
   float h = terrainM(p);
-  vec3 nor = calcNormalM(vec3(p.x,h,p.y), 100.);
+  vec3 nor = calcNormalH(vec3(p.x,h,p.y), 500.);
   norDepth = vec4(nor, MAX_TRN_ELEVATION-h);
   vec4 albedo = terrain_color(vec3(p.x,h,p.y), nor);
   vec3 col = albedo.rgb;//vec3(0.5+0.5*dot(nor.xyz,normalize(vec3(-1,1,-1))))*albedo.rgb;

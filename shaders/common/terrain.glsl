@@ -125,12 +125,18 @@ float fbm(vec2 p) {
 // ----------------------------------------------------------------------------
 
 // rgb - альбедо, a - зарезервировано
-vec4 grassAlbedo = 5.*vec4(0.042, 0.042, 0.015, 1.);
+//vec4 grassAlbedo = 5.*vec4(0.042, 0.042, 0.015, 1.); 
+vec4 grassAlbedo = vec4(pow(vec3(0.23529411765, 0.21568627451, 0.04313725490), vec3(2.2)), 1.);
+vec4 grassAlbedo2 = vec4(pow(vec3(0.3098, 0.2509, 0.1176), vec3(2.2)), 1.);
 //vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
-vec4 darkRockAlbedo = 5.*vec4(0.072, 0.045, 0.027, 1.);
-vec4 lightRockAlbedo = 5.*vec4(0.09, 0.081, 0.072, 1.);
-vec4 sandAlbedo = 5.*1.7*vec4(0.09, 0.081, 0.072, 1.);
-vec4 darkSandAlbedo = 5.*vec4(0.030, 0.022, 0.010, 1.);
+//vec4 darkRockAlbedo = 5.*vec4(0.072, 0.045, 0.027, 1.);
+//vec4 lightRockAlbedo = 5.*vec4(0.09, 0.081, 0.072, 1.);
+vec4 lightRockAlbedo = vec4(pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
+vec4 darkRockAlbedo = vec4(1.5*pow(vec3(0.3843, 0.2901, 0.2784), vec3(2.2)), 1.);
+//vec4 sandAlbedo = 5.*1.7*vec4(0.09, 0.081, 0.072, 1.);
+vec4 sandAlbedo = vec4(pow(vec3(0.59607843137, 0.50588235294, 0.49803921569), vec3(2.2)), 1.);
+
+vec4 darkSandAlbedo = vec4(0.2*pow(vec3(0.43137254902, 0.34117647059, 0.360784313737), vec3(2.2)), 1.);//5.*vec4(0.030, 0.022, 0.010, 1.);
 //vec4 snowAlbedo = 5.*vec4(0.1798, 0.1885, 0.203, 1.);
 
 //vec4 grassAlbedo = vec4(0.158, 0.158, 0.053, 1.);
@@ -145,13 +151,17 @@ vec4 snowAlbedo = vec4(0.75, 0.80, 0.95, 1.);
 
 // определение цвета пикселя
 vec4 terrain_color(vec3 pos, vec3 nor) {
+  float LvsR = 1.;//step(0.5, gl_FragCoord.x/uResolution.x);
+
   // мелкий шум в текстуре
-  float r = 1.;//texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
+  float r = texture(uTextureGrayNoise, 400.0*pos.xz/W_SCALE ).x;
+  r = mix(1., 0.5+0.5*r, LvsR);
   // мелкие и крупные пятна на скалах и траве
-  float r2 = 1.;//0.7 + sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
+  float r2 = sqrt(fbm(pos.xz*1.1)*fbm(pos.xz*0.5));
+  r2 = mix(1., r2, LvsR);
   // полосы на скалах
-  vec4 albedo = r2*(r*0.25+0.75)*mix(darkRockAlbedo, lightRockAlbedo,
-                 texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x);
+  vec4 albedo =(1.+0.*r2)*(r*0.25+1.)*mix(darkRockAlbedo, lightRockAlbedo,
+                 texture(uTextureGrayNoise, vec2(0.1*pos.x/W_SCALE,0.2*pos.y/H_SCALE)).x*r2);
 
   // песок
   float sh = smoothstep(500.,600.,pos.y); // фактор высоты
@@ -160,13 +170,13 @@ vec4 terrain_color(vec3 pos, vec3 nor) {
 
   // земля
   float dh = 1.-smoothstep(500.,650.,pos.y); // фактор высоты
-  float dn = smoothstep(0.5, 0.9, nor.y); // фактор наклона поверхности
+  float dn = smoothstep(0.5, 1., nor.y); // фактор наклона поверхности
   albedo = mix(albedo, r2*darkSandAlbedo*(0.5+0.5*r), dn*dh);
 
   // трава
-  float gh = 1.-smoothstep(500.,600.,pos.y); // фактор высоты
+  float gh = 1.-smoothstep(400.,600.,pos.y); // фактор высоты
   float gn = smoothstep(0.6, 1.0, nor.y); // фактор наклона поверхности
-  albedo = mix(albedo, r2*grassAlbedo*(0.25+0.75*r), smoothstep(0.3, 0.6, r2*gh*gn));
+  albedo = mix(albedo, (0.25+0.75*r)*mix(grassAlbedo,grassAlbedo2,r2), step(0.6, gh*gn));
   //albedo = mix(albedo, r2*grassAlbedo*(0.25+0.75*r), gh*gn);
   
   // снег на высоте от 800 м 

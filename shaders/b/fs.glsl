@@ -123,7 +123,7 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
 }
 
 void main(void) {
-  vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.y;
+  vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.x;
   vec3 rd = normalize(vRay);
 
   if(uScreenMode.x == MAP_VIEW) {
