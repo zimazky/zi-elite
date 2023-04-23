@@ -109,7 +109,7 @@ export default async function main() {
 
   await e.setRenderbuffer('shaders', 'render1/vs.glsl', 'render1/fs.glsl',
     (shader)=>{
-      programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg);
+      programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg, grayNoiseImg);
     },
     (time: number, timeDelta: number) => {
       programRender.update(time, timeDelta);

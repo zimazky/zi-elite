@@ -18,11 +18,6 @@ uniform vec3 uSunDirection;
 uniform vec3 uSunDiscColor;
 /** Цвет и интенсивность света неба */
 uniform vec3 uSkyColor;
-/** Радиус планеты */
-uniform float uPlanetRadius;
-/** Положение центра планеты */
-uniform vec3 uPlanetCenter;
-
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -94,6 +89,20 @@ out vec4 fragColor;
 #endif
 
 // ----------------------------------------------------------------------------
+// Модуль определения функций расчета атмосферного рассеивания
+// ----------------------------------------------------------------------------
+#ifndef ATM_MODULE
+#include "render/atmosphere.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
+// Модуль определения функции отображения ночного неба
+// ----------------------------------------------------------------------------
+#ifndef SKY_MODULE
+#include "render/sky.glsl"
+#endif
+
+// ----------------------------------------------------------------------------
 // Модуль определения функций постобработки
 // ----------------------------------------------------------------------------
 #ifndef POSTPROC_MODULE
@@ -110,6 +119,7 @@ out vec4 fragColor;
   *   0. - если солнце полностью скрыто планетой
   *   1. - если солнце полностью видно
   */
+  /*
 float softPlanetShadow(vec3 ro, vec3 rd) {
   vec3 pos = ro - uPlanetCenter;
   //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
@@ -120,6 +130,7 @@ float softPlanetShadow(vec3 ro, vec3 rd) {
   float d = (uPlanetRadius-CT)/OT;
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
 }
+*/
 
 /** 
  * Функция неламбертового диффузного рассеивания.
@@ -140,14 +151,24 @@ vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float 
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col = vec3(0);
+  vec3 pos = vec3(0);
   int shadowIterations = 0;
   if(t>MAX_TERRAIN_DISTANCE) {
-    // небо
-  
+    // небо из текстуры
+    col = 0.5*nightSky(normalize(vRaySky));
+    // диск солнца
+    float sunsin = sqrt(1.-sundot*sundot);
+    col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
+    // горизонт планеты
+    col *= planetIntersection(uCameraPosition, rd);
+    // атмосферное рассеивание
+    ResultScattering rs;
+    rs = scattering(uCameraPosition, rd, uSunDirection);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
   }
   else {
     // mountains		
-    vec3 pos = ro + t*rd;
+    //pos = ro + t*rd;
     pos = frpos;
     vec3 hal = normalize(light1-rd);
         
@@ -210,9 +231,11 @@ vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float 
     t = fdist;
   }
   #ifdef SHADOWS_ITERATIONS_VIEW
-  col = vec3(shadowIterations)/200.;
+  col = vec3(shadowIterations)/100.;
   #endif
 
+  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  //return mix(pos,frpos,LvsR)/10000.;
   return col;
 }
 

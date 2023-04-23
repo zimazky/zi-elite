@@ -120,12 +120,14 @@ export class ProgramRender {
 
   }
 
-  init(shader: Renderbufer, blueNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource) {
+  init(shader: Renderbufer, blueNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource, grayNoiseImg: TexImageSource) {
     // привязка текстуры из шейдеров A и B
     this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureProgramA');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uNormalDepthProgramB');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uAlbedoProgramB');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[2], 'uPositionProgramB');
+
+    this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
 
     const width = this.shaderB.width;
     const height = this.shaderB.height;
@@ -134,9 +136,9 @@ export class ProgramRender {
     const SSAONoiseArray: number[] = [];
     this.SSAONoise.forEach(e=>SSAONoiseArray.push(...e.getArray()));
     this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 4, 4, new Float32Array(SSAONoiseArray));
-    //this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
-    //this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
-    //this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
+    this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
+    this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
+    this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
 
     this.uSSAOSamples = this.engine.gl.getUniformLocation(shader.program, 'uSSAOSamples');
     const samples: number[] = [];
@@ -181,7 +183,7 @@ export class ProgramRender {
 
   update(time: number, timeDelta: number) {
 
-    //this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
+    this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
     this.engine.gl.uniform1f(this.uCameraViewAngle, this.camera.viewAngle);
     this.engine.gl.uniformMatrix3fv(this.uTransformMat, false, this.camera.transformMat.getArray());
 
@@ -204,14 +206,12 @@ export class ProgramRender {
     this.engine.gl.uniform3fv(this.uSkyColor, this.sky.skyColor.getArray());
 
     const flarePos = [...this.flare1.position.getArray(), ...this.flare2.position.getArray()];
-    //this.engine.gl.uniform3fv(this.uFlarePositions, flarePos);
+    this.engine.gl.uniform3fv(this.uFlarePositions, flarePos);
     const flareLights = [this.flare1.isVisible ? this.flare1.light : Vec3.ZERO(), this.flare2.isVisible ? this.flare2.light : Vec3.ZERO()];
-    //this.engine.gl.uniform3fv(this.uFlareLights, flareLights.reduce((a,l)=>{return a.push(l.getArray()), a}, []));
+    this.engine.gl.uniform3fv(this.uFlareLights, [...flareLights[0].getArray(), ...flareLights[1].getArray()]);
 
     this.engine.gl.uniform2f(this.uScreenMode, this.camera.screenMode, this.camera.mapMode);
     this.engine.gl.uniform1f(this.uMapScale, this.camera.mapScale);
-
-    this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
 
   }
 
