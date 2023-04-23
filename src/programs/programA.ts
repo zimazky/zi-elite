@@ -7,9 +7,9 @@ export class ProgramA {
   bufferInput: Framebuffer;
   camera: Camera;
   /** Число треугольников сетки в направлении X */
-  numX: number = 960;//480;//240;
+  numX: number;// = 960;//480;//240;
   /** Число треугольников сетки в направлении Y */
-  numY: number = 480;//240;//120;
+  numY: number; // = 480;//240;//120;
 
   // Shader uniforms
   uCameraViewAngle: WebGLUniformLocation;
@@ -22,6 +22,8 @@ export class ProgramA {
     this.engine = e;
     this.bufferInput = bInput;
     this.camera = c;
+    this.numX = Math.ceil(e.canvas.width/2.3);
+    this.numY = Math.ceil(e.canvas.height/2.3);
   }
 
   init(shader: Renderbufer) {

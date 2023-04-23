@@ -22,7 +22,7 @@ import { loadImage } from './utils/loadimg';
 //   5. +Продумать об использовании буфера предыдущего кадра для ускорения рендеринга нового
 //   6. Продумать возможность аналитического вычисления нормалей к поверхности
 //   7. Правильно расположить небесный свод относительно планеты
-//   8. Поправить цвета материалов, структурировать работу с материалами
+//   8. +Поправить цвета материалов, структурировать работу с материалами
 //   9. +Вынести расчет атмосферы в отдельный шейдер
 //  10. +Включить проверку глубины при отрисовке предварительного буфера
 //  11. Вычислять тени в отдельном шейдере
@@ -75,11 +75,12 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
+  // инициализируем и определяем размер холста по размеру дисплея для определения размера буферов
+  e.resizeCanvasToDisplaySize();
 
   const shaderA = await e.addFramebufferMRT(
-    2195, 1131, 1,
-    //1536, 762,
-    //900, 450, 
+    e.canvas.width, e.canvas.height, 1,
+    //2195, 1131, 1,
     'shaders', 'a/vs.glsl', 'a/fs.glsl',
     (shader) => {
       programA.init(shader);
@@ -90,10 +91,8 @@ export default async function main() {
   );
 
   const shaderB = await e.addFramebufferMRT(
-    2195, 1131, 2,
-    //1400, 960,
-    //900, 600, 
-    //1536, 762, 2,
+    e.canvas.width, e.canvas.height, 2,
+    //2195, 1131, 2,
     'shaders', 'b/vs.glsl', 'b/fs.glsl',
     (shader: Renderbufer) => {
       programB.init(shader, grayNoiseImg);
@@ -130,8 +129,13 @@ export default async function main() {
       const vkmph = v*3.6;
       const width = e.canvas.width.toFixed(0);
       const height = e.canvas.height.toFixed(0);
+      const widthB = shaderB.width.toFixed(0);
+      const heightB = shaderB.height.toFixed(0);
+      const nxA = programA.numX.toFixed(0);
+      const nyA = programA.numY.toFixed(0);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
+      shB: ${widthB}x${heightB} nA: ${nxA}x${nyA}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
       alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
       x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
