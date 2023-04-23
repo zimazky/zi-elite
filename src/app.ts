@@ -90,7 +90,7 @@ export default async function main() {
   );
 
   const shaderB = await e.addFramebufferMRT(
-    2195, 1131, 3,
+    2195, 1131, 2,
     //1400, 960,
     //900, 600, 
     //1536, 762, 2,

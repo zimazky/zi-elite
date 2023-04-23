@@ -125,7 +125,6 @@ export class ProgramRender {
     this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureProgramA');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uNormalDepthProgramB');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uAlbedoProgramB');
-    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[2], 'uPositionProgramB');
 
     this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
 

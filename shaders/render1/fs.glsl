@@ -36,8 +36,6 @@ uniform sampler2D uTextureProgramA;
 uniform sampler2D uNormalDepthProgramB;
 /** Значения альбедо */
 uniform sampler2D uAlbedoProgramB;
-/** Положения фрагментов */
-uniform sampler2D uPositionProgramB;
 
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
@@ -209,9 +207,6 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   col = vec3(shadowIterations)/100.;
   #endif
 
-  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
-  //return mix(pos,frpos,LvsR)/10000.;
-
   return col;
 }
 
@@ -274,9 +269,10 @@ void main() {
     //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
     //col = vec3(ssao*ssao);
 
-    //vec3 frpos = texture(uPositionProgramB, uv).xyz;
     col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
     
+    //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
     ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
 
@@ -284,8 +280,6 @@ void main() {
     float sundot = clamp(dot(rd, uSunDirection),0.,1.);
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
-
-    //col = vec3(t/10000.);
   }
   // экспозиция
   col *= 4.;

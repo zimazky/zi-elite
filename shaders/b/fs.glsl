@@ -47,8 +47,6 @@ in vec3 vRay;
 layout (location = 0) out vec4 gNormalDepth;
 /** Буфер значений альбедо */
 layout (location = 1) out vec4 gAlbedo;
-/** Буфер положения фрагмента (для тестирования) */
-layout (location = 2) out vec4 gPosition;
 
 // ----------------------------------------------------------------------------
 // Модуль определения констант
@@ -133,7 +131,6 @@ void main(void) {
     vec4 norDepth;
     gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
     gNormalDepth = norDepth;
-    gPosition = vec4(1);
   }
   else {
     #ifdef DEPTH_ERROR_VIEW
@@ -168,7 +165,6 @@ void main(void) {
     // Для вывода числа итераций рейтрейсинга
     col = vec3(raycastIterations)/300.;
     #endif
-    gPosition = vec4(pos, 1);
     gAlbedo = vec4(col, 1);
   }
 }
