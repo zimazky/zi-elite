@@ -181,7 +181,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
   float mu = dot(rd, ld);
   float phaseRayleigh = 0.75 * (1. + mu*mu) * ONE_DIV4PI;
     
-  float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
+  float stepSize = rayLen/float(PRIMARY_STEPS/2); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
   vec3 nextpos = start + step; // следующая точка
   vec3 pos = start + 0.5*step; // смещение на половину шага для более точного интегрирования по серединам отрезков
@@ -192,7 +192,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
 
   vec2 fDensity = stepSize*exp(-(length(start)-uPlanetRadius)/uScaleHeight);
 
-  for (int i=0; i<PRIMARY_STEPS; i++, nextpos += step, pos += step) {
+  for (int i=0; i<PRIMARY_STEPS/2; i++, nextpos += step, pos += step) {
     // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
     vec2 density = stepSize*exp(-(length(nextpos)-uPlanetRadius)/uScaleHeight);
     optDepth += 0.5*(density + fDensity);
@@ -236,4 +236,23 @@ float planetIntersection(vec3 ro, vec3 rd) {
   float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
   if(OT>0. || CT2>(uPlanetRadius*uPlanetRadius)) return 1.;
   return 0.;
+}
+
+/** 
+  * Функция определения мягкой тени от сферической поверхности планеты
+  *   ro - положение точки, для которой производится рассчет
+  *   rd - направление луча на солнце
+  * Возвращает значения от 0. до 1.
+  *   0. - если солнце полностью скрыто планетой
+  *   1. - если солнце полностью видно
+  */
+float softPlanetShadow(vec3 ro, vec3 rd) {
+  vec3 pos = ro - uPlanetCenter;
+  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
+
+  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
+  if(OT>0.) return 1.;
+  float d = (uPlanetRadius-CT)/OT;
+  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
 }

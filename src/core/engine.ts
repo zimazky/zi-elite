@@ -46,7 +46,7 @@ export type Framebuffer = Renderbufer & {
   /** Фреймбуфер */
   framebuffer: WebGLFramebuffer;
   /** Текстура фреймбуфера */
-  fbTexture: WebGLTexture;
+  fbTextures: WebGLTexture[];
 }
 
 export class Engine extends GLContext {
@@ -54,8 +54,8 @@ export class Engine extends GLContext {
   startTime: number;
   /** Текущее время */
   currentTime: number;
-  /** Количество текстур */
-  textureCount: number = 0;
+  /** Массив активных текстур */
+  textures: WebGLTexture[] = [];
 
   /** Список фреймбуферов со собственными программами */
   framebuffers: Framebuffer[] = [];
@@ -69,6 +69,7 @@ export class Engine extends GLContext {
   }
 
   /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
+/*
   async addFramebuffer(width: number, height: number, baseUrl: string, vsUrl: string, fsUrl: string, 
     onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Promise<Framebuffer> {
 
@@ -81,6 +82,27 @@ export class Engine extends GLContext {
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
     this.framebuffers.push({
       width, height, program, framebuffer, fbTexture,
+      vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false, clearColor: null,
+      resolutionLocation, timeLocation,
+      onProgramInit: onInit,
+      onProgramLoop: onLoop});
+    return this.framebuffers[this.framebuffers.length-1];
+  }
+*/
+
+  /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
+  async addFramebufferMRT(width: number, height: number, numMRT: number, baseUrl: string, vsUrl: string, fsUrl: string, 
+    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Promise<Framebuffer> {
+
+    const vsSource = preprocess(baseUrl,vsUrl);
+    const fsSource = preprocess(baseUrl,fsUrl);
+    const program = this.createProgram(await vsSource, await fsSource);
+    const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, numMRT);
+    this.gl.useProgram(program);
+    const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
+    const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+    this.framebuffers.push({
+      width, height, program, framebuffer, fbTextures,
       vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false, clearColor: null,
       resolutionLocation, timeLocation,
       onProgramInit: onInit,
@@ -133,14 +155,21 @@ export class Engine extends GLContext {
     this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW);
   }
 
+  /** 
+   * Установка, привязка к программе и активация отрендеренной текстуры в общем массиве текстур.
+   * Если текстура уже была добавлена в массив, то используется существующая.
+   */
   setRenderedTexture(program: WebGLProgram, texture: WebGLTexture, name: string) {
     const textureLocation = this.gl.getUniformLocation(program, name);
-    this.gl.useProgram(program);
-    const n = this.textureCount;
-    this.gl.uniform1i(textureLocation, n);
-    this.gl.activeTexture(this.gl.TEXTURE0 + n);
+    let ti = this.textures.findIndex(t=>t==texture);
+    //this.gl.useProgram(program);
+    if(ti === -1) {
+      ti = this.textures.length;
+      this.textures.push(texture);
+    }
+    this.gl.uniform1i(textureLocation, ti);
+    this.gl.activeTexture(this.gl.TEXTURE0 + ti);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    this.textureCount++;
   }
 
   resizeCanvasToDisplaySize(): void {
@@ -157,7 +186,7 @@ export class Engine extends GLContext {
   /** Привязка текстуры без генерации данных MIPMAP */
   setTexture(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
-    const n = this.textureCount;
+    const n = this.textures.length;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -168,15 +197,36 @@ export class Engine extends GLContext {
     
     const textureLocation = this.gl.getUniformLocation(program, uname);
     this.gl.uniform1i(textureLocation, n);
-    this.textureCount++;
+    this.textures.push(texture);
 
     return texture;
   }
 
+  /** Привязка текстуры без генерации данных MIPMAP */
+  setTextureWithArray16F(program: WebGLProgram, uname: string, 
+    width: number, height: number, array: Float32Array): WebGLTexture {
+    const texture = this.gl.createTexture();
+    const n = this.textures.length;
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGB16F, width, height, 0, this.gl.RGB, this.gl.FLOAT, array);
+    
+    const textureLocation = this.gl.getUniformLocation(program, uname);
+    this.gl.uniform1i(textureLocation, n);
+    this.textures.push(texture);
+
+    return texture;
+  }
+
+
   /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
-    const n = this.textureCount;
+    const n = this.textures.length;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -189,7 +239,7 @@ export class Engine extends GLContext {
 
     const textureLocation = this.gl.getUniformLocation(program, uname);
     this.gl.uniform1i(textureLocation, n);
-    this.textureCount++;
+    this.textures.push(texture);
 
     return texture;
   }
@@ -230,6 +280,10 @@ export class Engine extends GLContext {
     // Шейдер A, рендеринг в текстуру
     this.framebuffers.forEach(e => {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, e.framebuffer);
+      if(e.fbTextures.length > 1) {
+        // Для множественных целевых текстур (MRT)
+        this.gl.drawBuffers(e.fbTextures.map((_,i)=>this.gl.COLOR_ATTACHMENT0+i));
+      }
       this.gl.useProgram(e.program);
       if(e.clearColor !== null) {
         this.gl.clearColor(e.clearColor.x, e.clearColor.y, e.clearColor.z, e.clearColor.w);

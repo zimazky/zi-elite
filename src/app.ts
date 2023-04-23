@@ -76,11 +76,11 @@ export default async function main() {
   const flare2 = new Flare(camera);
 
 
-  const shaderA = await e.addFramebuffer(
-    2195, 1131,
+  const shaderA = await e.addFramebufferMRT(
+    2195, 1131, 1,
     //1536, 762,
     //900, 450, 
-    'shaders/a', 'vs.glsl', 'fs.glsl',
+    'shaders', 'a/vs.glsl', 'a/fs.glsl',
     (shader) => {
       programA.init(shader);
     },
@@ -89,12 +89,12 @@ export default async function main() {
     }
   );
 
-  const shaderB = await e.addFramebuffer(
-    2195, 1131,
+  const shaderB = await e.addFramebufferMRT(
+    2195, 1131, 3,
     //1400, 960,
     //900, 600, 
-    //1536, 762,
-    'shaders/b', 'vs.glsl', 'fs.glsl',
+    //1536, 762, 2,
+    'shaders', 'b/vs.glsl', 'b/fs.glsl',
     (shader: Renderbufer) => {
       programB.init(shader, grayNoiseImg);
     },
@@ -103,18 +103,17 @@ export default async function main() {
     }
   );
 
-
-
   const programA = new ProgramA(e, shaderB, camera);
-  const programB = new ProgramB(e, shaderA, camera, atm, sky, flare1, flare2);
-  const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky);
+  const programB = new ProgramB(e, shaderA, camera, atm);
+  const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky, flare1, flare2);
 
-  await e.setRenderbuffer('shaders/render', 'vs.glsl', 'fs.glsl', (shader)=>{
-    programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg);
-  },
-  (time: number, timeDelta: number) => {
-    programRender.update(time, timeDelta);
-  }
+  await e.setRenderbuffer('shaders', 'render1/vs.glsl', 'render1/fs.glsl',
+    (shader)=>{
+      programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg, grayNoiseImg);
+    },
+    (time: number, timeDelta: number) => {
+      programRender.update(time, timeDelta);
+    }
   );
 
 

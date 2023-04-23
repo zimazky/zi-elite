@@ -72,7 +72,7 @@ export class Camera {
     this.tSampler = t;
     this.screenMode = 0;
     this.mapMode = 0;
-    this.mapScale = 1.;
+    this.mapScale = 5000.;
   }
 
   inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {
