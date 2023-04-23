@@ -49,6 +49,8 @@ in vec3 vRay;
 in vec3 vRaySky;
 in vec3 vRayScreen;
 in mat3 vInverseTransformMat;
+in float vAspect;
+in float vAspectB;
 
 /**
  * Режим отображения
@@ -108,29 +110,6 @@ out vec4 fragColor;
 #ifndef POSTPROC_MODULE
 #include "common/postprocess.glsl"
 #endif
-
-
-
-/** 
-  * Функция определения мягкой тени от сферической поверхности планеты
-  *   ro - положение точки, для которой производится рассчет
-  *   rd - направление луча на солнце
-  * Возвращает значения от 0. до 1.
-  *   0. - если солнце полностью скрыто планетой
-  *   1. - если солнце полностью видно
-  */
-  /*
-float softPlanetShadow(vec3 ro, vec3 rd) {
-  vec3 pos = ro - uPlanetCenter;
-  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
-
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
-  if(OT>0.) return 1.;
-  float d = (uPlanetRadius-CT)/OT;
-  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
-}
-*/
 
 /** 
  * Функция неламбертового диффузного рассеивания.
@@ -237,11 +216,9 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
 }
 
 void main() {
-  float aspect = uResolution.x/uResolution.y;
-  float aspectB = uTextureBResolution.x/uTextureBResolution.y;
-  vec2 k = aspect > aspectB
-    ? vec2(1, aspectB/aspect)// /uResolution.x // (1., 1./aspect)
-    : vec2(aspect/aspectB, 1);// /uResolution.y; // (aspect, 1.)
+  vec2 k = vAspect > vAspectB
+    ? vec2(1, vAspectB/vAspect)
+    : vec2(vAspect/vAspectB, 1);
   vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
   #ifdef DEPTH_ERROR_VIEW
@@ -271,9 +248,9 @@ void main() {
   float ssao;
   if(uScreenMode.x == MAP_VIEW) {
     normal = normalDepthB.xzy*vec3(1, 1, -1);
-    vec2 uv1 = uMapScale*vec2(1, 1./aspectB)*(gl_FragCoord.xy/uResolution-0.5);
+    vec2 uv1 = uMapScale*vec2(1, 1./vAspectB)*(gl_FragCoord.xy/uResolution-0.5);
     posScreen = vec3(uv1.x, uv1.y, t);
-    ssao = calcSSAOOrtho(posScreen, normal, rand, uNormalDepthProgramB, 2.*vec2(1, aspectB)*k/uMapScale, 300.);
+    ssao = calcSSAOOrtho(posScreen, normal, rand, uNormalDepthProgramB, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
   }
   else {
     normal = vInverseTransformMat*normalDepthB.xyz;
@@ -296,7 +273,6 @@ void main() {
     
     //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
     //col = vec3(ssao*ssao);
-    
 
     //vec3 frpos = texture(uPositionProgramB, uv).xyz;
     col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
@@ -309,18 +285,15 @@ void main() {
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
-    // экспозиция
-    col *= 4.;
-    // тональная компрессия Рейнхарда
-    col = col / (col + vec3(1.0));
     //col = vec3(t/10000.);
-    
   }
+  // экспозиция
+  col *= 4.;
+  // тональная компрессия Рейнхарда
+  col = col / (col + vec3(1.0));
 
   //col = posScreen/1000.;
 
-  //col =  col*mat2sRGB; // Преобразование в sRGB
-  //col = pow(col, vec3(1./2.2));
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
   #endif

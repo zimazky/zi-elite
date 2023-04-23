@@ -11,6 +11,8 @@
 uniform mediump float uCameraViewAngle;
 uniform vec3 uSSAOSamples[SSAO_KERNEL_SIZE];
 
+in float vFocus;
+
 /**
  * Функция определения затенения окружающего освещения для случая перспективной проекции
  *   pos - положение фрагмента в видовых координатах (координаты xy 0,0 соответствуют центру экрана, z - напрвлена за экран )
@@ -23,45 +25,29 @@ float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float S
   vec3 bitangent = cross(normal, tangent);
   // матрица преобразования в видовую систему координат
   mat3 TBN = mat3(tangent, bitangent, normal);
-  // фокусное расстояние проекции
-  float f = 1./tan(0.5*uCameraViewAngle);
-  float aspect = uResolution.x/uResolution.y;
-  float aspectB = uTextureBResolution.x/uTextureBResolution.y;
 
-  vec2 k = aspect > aspectB ? vec2(1, aspectB) : vec2(aspect/aspectB, aspectB);
+  vec2 k = vec2(1, vAspectB);
   float radius = SSAO_RADIUS;//min(SSAO_RADIUS, 10.*pos.z);
 
   float occlusion = 0.;
   for(int i=0; i<SSAO_KERNEL_SIZE; i++) {
     vec3 s = TBN * uSSAOSamples[i];
     s = pos + radius * s;
-    //s = pos + SSAO_RADIUS * s;
 
-/*
-    vec4 offset = vec4(sample, 1.);
-    offset = projection * offset; // переход из видовой в экранную систему координат
-    offset.xyz /= offset.w;
-    offset.xyz = offset.xyz * 0.5 + 0.5; // преобразование к интервалу [0., 1.]
-*/
-    vec2 t = f/(f+s.z)*k;
+    vec2 t = vFocus/(vFocus+s.z)*k;
     vec2 ts = t*s.xy;
     vec2 offset = vec2(0.5)+0.5*ts;
 
     float sampleDepth = s.z*texture(depthTexture, offset).w/length(s);
     if(abs(ts.x)>1. || abs(ts.y)>1.) {
-      //vec2 sts = min(sign(ts),ts); 
-      //sampleDepth += (normal.x*(sts.x/t.x-s.x)+normal.y*(sts.y/t.y-s.y))/normal.z;
       sampleDepth = MAX_TERRAIN_DISTANCE;
     }
     
-    //occlusion += sampleDepth >= sample.z + SSAOBias ? 1. : 0.;
-
     float rangeCheck = smoothstep(0., 1., radius/abs(pos.z - sampleDepth));
     occlusion += (sampleDepth >= (s.z + SSAO_BIAS) ? 0. : 1.) * rangeCheck;    
   }
 
   return 1. - occlusion/float(SSAO_KERNEL_SIZE);
-
 }
 
 
