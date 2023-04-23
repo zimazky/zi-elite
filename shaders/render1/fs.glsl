@@ -92,14 +92,14 @@ out vec4 fragColor;
 // Модуль определения функций расчета атмосферного рассеивания
 // ----------------------------------------------------------------------------
 #ifndef ATM_MODULE
-#include "render/atmosphere.glsl"
+#include "render1/atmosphere.glsl"
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функции отображения ночного неба
 // ----------------------------------------------------------------------------
 #ifndef SKY_MODULE
-#include "render/sky.glsl"
+#include "render1/sky.glsl"
 #endif
 
 // ----------------------------------------------------------------------------
@@ -301,14 +301,28 @@ void main() {
     col *= ssao*ssao;
     */
     vec3 frpos = texture(uPositionProgramB, uv).xyz;
-    col = render(uCameraPosition, t, frpos, rd, normalDepthB.xyz, col, ssao);
+    col = render(uCameraPosition, t, frpos, rd, normalDepthB.xyz, col, ssao*ssao);
+    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+    col = rs.t*LIGHT_INTENSITY + rs.i*col;
+
+    // косинус угла между лучем и солнцем 
+    float sundot = clamp(dot(rd, uSunDirection),0.,1.);
+    // засвечивание солнцем
+    col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
+
+
+    col *= 4.;
+    // тональная компрессия Рейнхарда
+    col = col / (col + vec3(1.0));
     //col = vec3(t/10000.);
   }
 
   //col = posScreen/1000.;
 
   //col =  col*mat2sRGB; // Преобразование в sRGB
-  col = pow(col, vec3(1./2.2));
+  //col = pow(col, vec3(1./2.2));
+  col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+
 
   #endif
 

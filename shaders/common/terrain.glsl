@@ -126,17 +126,17 @@ float fbm(vec2 p) {
 
 // rgb - альбедо, a - зарезервировано
 //vec4 grassAlbedo = 5.*vec4(0.042, 0.042, 0.015, 1.); 
-vec4 grassAlbedo = vec4(2.*0.7*pow(vec3(0.23529411765, 0.21568627451, 0.14313725490), vec3(2.2)), 1.);
-vec4 grassAlbedo2 = vec4(2.*0.7*pow(vec3(0.2498, 0.2509, 0.1176), vec3(2.2)), 1.);
+vec4 grassAlbedo = vec4(pow(vec3(0.23529411765, 0.21568627451, 0.14313725490), vec3(2.2)), 1.);
+vec4 grassAlbedo2 = vec4(pow(vec3(0.2498, 0.2509, 0.1176), vec3(2.2)), 1.);
 //vec4 grassAlbedo = vec4(0.27, 0.21, 0.09, 1.);
 //vec4 darkRockAlbedo = 5.*vec4(0.072, 0.045, 0.027, 1.);
 //vec4 lightRockAlbedo = 5.*vec4(0.09, 0.081, 0.072, 1.);
-vec4 lightRockAlbedo = vec4(2.*0.3*pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
-vec4 darkRockAlbedo = vec4(2.*0.6*pow(vec3(0.3843, 0.2901, 0.2784), vec3(2.2)), 1.);
+vec4 lightRockAlbedo = vec4(0.6*pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
+vec4 darkRockAlbedo = vec4(0.8*pow(vec3(0.3843, 0.2901, 0.2784), vec3(2.2)), 1.);
 //vec4 sandAlbedo = 5.*1.7*vec4(0.09, 0.081, 0.072, 1.);
-vec4 sandAlbedo = vec4(2.*0.5*pow(vec3(0.59607843137, 0.50588235294, 0.49803921569), vec3(2.2)), 1.);
+vec4 sandAlbedo = vec4(pow(vec3(0.59607843137, 0.50588235294, 0.49803921569), vec3(2.2)), 1.);
 
-vec4 darkSandAlbedo = vec4(2.*0.2*pow(vec3(0.43137254902, 0.34117647059, 0.360784313737), vec3(2.2)), 1.);//5.*vec4(0.030, 0.022, 0.010, 1.);
+vec4 darkSandAlbedo = vec4(0.4*pow(vec3(0.43137254902, 0.34117647059, 0.360784313737), vec3(2.2)), 1.);//5.*vec4(0.030, 0.022, 0.010, 1.);
 //vec4 snowAlbedo = 5.*vec4(0.1798, 0.1885, 0.203, 1.);
 
 //vec4 grassAlbedo = vec4(0.158, 0.158, 0.053, 1.);
