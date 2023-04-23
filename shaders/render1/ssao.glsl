@@ -28,7 +28,7 @@ float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float S
   float aspect = uResolution.x/uResolution.y;
   float aspectB = uTextureBResolution.x/uTextureBResolution.y;
 
-  vec2 k = aspect > aspectB ? vec2(1, aspectB) : vec2(aspect/aspectB, aspect);
+  vec2 k = aspect > aspectB ? vec2(1, aspectB) : vec2(aspect/aspectB, aspectB);
   float radius = SSAO_RADIUS;//min(SSAO_RADIUS, 10.*pos.z);
 
   float occlusion = 0.;

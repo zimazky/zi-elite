@@ -21,11 +21,14 @@ void main() {
   float aspect = uResolution.x/uResolution.y;
   float aspectB = uTextureBResolution.x/uTextureBResolution.y;
   vec2 k = aspect > aspectB 
-    ? vec2(1, aspectB/aspect)
-    : vec2(aspect/aspectB, 1);
+    ? vec2(1, 1./aspect)
+    : vec2(1, 1./aspectB);
 
-  vRayScreen = vec3(aVertexPosition.xy*uResolution*t/uResolution.x, -1.);
-  vRay = uTransformMat*vRayScreen;
+  //vRayScreen = vec3(aVertexPosition.xy*uResolution*t/uResolution.x, -1.);
+  //vRay = uTransformMat*vRayScreen;
+  vRayScreen = vec3(aVertexPosition.xy*k*t, -1.);
+  vRay = uTransformMat * vec3(aVertexPosition.xy*k*t, -1.);
+
   vRaySky = vRay*uSkyTransformMat;
   vInverseTransformMat = inverse(uTransformMat);
 }

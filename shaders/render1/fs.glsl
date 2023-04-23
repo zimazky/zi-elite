@@ -146,8 +146,7 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 }
 
 
-vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float ssao) {
-  vec3 light1 = uSunDirection;
+vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 light1) {
   // косинус угла между лучем и солнцем 
   float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col = vec3(0);
@@ -167,11 +166,8 @@ vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float 
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
   }
   else {
-    // mountains		
-    //pos = ro + t*rd;
-    pos = frpos;
+    pos = ro + t*rd;
     vec3 hal = normalize(light1-rd);
-        
     // цвет
     vec3 kd = albedo;
 
@@ -236,6 +232,7 @@ vec3 render(vec3 ro, float t, vec3 frpos, vec3 rd, vec3 nor, vec3 albedo, float 
 
   //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   //return mix(pos,frpos,LvsR)/10000.;
+
   return col;
 }
 
@@ -296,12 +293,14 @@ void main() {
     col *= ssao*ssao;
   }
   else {
-    /*
-    col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
-    col *= ssao*ssao;
-    */
-    vec3 frpos = texture(uPositionProgramB, uv).xyz;
-    col = render(uCameraPosition, t, frpos, rd, normalDepthB.xyz, col, ssao*ssao);
+    
+    //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    //col = vec3(ssao*ssao);
+    
+
+    //vec3 frpos = texture(uPositionProgramB, uv).xyz;
+    col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
+    
     ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
 
@@ -310,11 +309,12 @@ void main() {
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
-
+    // экспозиция
     col *= 4.;
     // тональная компрессия Рейнхарда
     col = col / (col + vec3(1.0));
     //col = vec3(t/10000.);
+    
   }
 
   //col = posScreen/1000.;
@@ -322,7 +322,6 @@ void main() {
   //col =  col*mat2sRGB; // Преобразование в sRGB
   //col = pow(col, vec3(1./2.2));
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-
 
   #endif
 
