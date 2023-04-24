@@ -271,8 +271,20 @@ void main() {
 
     col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
     
-    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
-    col = rs.t*LIGHT_INTENSITY + rs.i*col;
+    //ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+    //col = rs.t*LIGHT_INTENSITY + rs.i*col;
+
+    float exposure = 2.;
+    
+    /*
+    // экспозиция
+    col *= exposure;
+    // тональная компрессия Рейнхарда
+    col = col / (col + vec3(1));
+    */
+
+    // тональная компрессия с экспозицией
+    col = vec3(1.) - exp(-col * exposure);
 
     // косинус угла между лучем и солнцем 
     float sundot = clamp(dot(rd, uSunDirection),0.,1.);
@@ -280,19 +292,6 @@ void main() {
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
 
   }
-
-  float exposure = 4.;
-
-  /*
-  // экспозиция
-  col *= exposure;
-  // тональная компрессия Рейнхарда
-  col = col / (col + vec3(1));
-  */
-
-
-  // тональная компрессия с экспозицией
-  col = vec3(1.) - exp(-col * exposure);
 
   //col = posScreen/1000.;
 

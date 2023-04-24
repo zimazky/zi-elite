@@ -69,7 +69,7 @@ export class Sky {
         .div(5.);
       this.skyColor = sunIntensity.mulEl(skyDirScatter);//.mulMutable(2);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
 
-      this.skyRefreshTime = time + 0.5;
+      this.skyRefreshTime = time + 0.05;
     }
 
   }
