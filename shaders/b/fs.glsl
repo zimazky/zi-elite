@@ -138,7 +138,7 @@ void main(void) {
     float t0 = 1.;
     #else
     // Нормальный режим, с испльзованием данных предыдущего кадра
-    float t0 = texture(uTextureProgramA, gl_FragCoord.xy/uResolution).w;
+    float t0 = texture(uTextureProgramA, gl_FragCoord.xy/uResolution).r;
     #endif
 
     vec3 col = vec3(0);

@@ -71,21 +71,39 @@ export class GLContext {
    * Функция создания фреймбуффера с множественными целевыми текстурами 
    * @param width - ширина в пикселях
    * @param height - высота в пикселях
-   * @param num - число текстур (multiple render targets)
+   * @param formats - форматы текстур (multiple render targets)
    * @returns [фреймбуфер, массив созданных текстур]
    */
-  createFramebufferMRT(width: number, height: number, num: number): [WebGLFramebuffer, WebGLTexture[]] {
+  createFramebufferMRT(width: number, height: number, formats: number[]): [WebGLFramebuffer, WebGLTexture[]] {
+    const num = formats.length;
     // Создаем и привязываем framebuffer
     const framebuffer = this.gl.createFramebuffer();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     // Создание текстур
     const textures: WebGLTexture[] = [];
     for(let i=0; i<num; i++) {
+      let f1: number;
+      let f2: number;
+      switch(formats[i]) {
+        case this.gl.R8: f1 = this.gl.RED; f2 = this.gl.UNSIGNED_BYTE; break;
+        case this.gl.RG8: f1 = this.gl.RG; f2 = this.gl.UNSIGNED_BYTE; break;
+        case this.gl.RGB: f1 = this.gl.RGB; f2 = this.gl.UNSIGNED_BYTE; break;
+        case this.gl.RGBA: f1 = this.gl.RGBA; f2 = this.gl.UNSIGNED_BYTE; break;
+        case this.gl.R16F: f1 = this.gl.RED; f2 = this.gl.FLOAT; break;
+        case this.gl.RG16F: f1 = this.gl.RG; f2 = this.gl.FLOAT; break;
+        case this.gl.RGB16F: f1 = this.gl.RGB; f2 = this.gl.FLOAT; break;
+        case this.gl.RGBA16F: f1 = this.gl.RGBA; f2 = this.gl.FLOAT; break;
+        case this.gl.R32F: f1 = this.gl.RED; f2 = this.gl.FLOAT; break;
+        case this.gl.RG32F: f1 = this.gl.RG; f2 = this.gl.FLOAT; break;
+        case this.gl.RGB32F: f1 = this.gl.RGB; f2 = this.gl.FLOAT; break;
+        case this.gl.RGBA32F: f1 = this.gl.RGBA; f2 = this.gl.FLOAT; break;
+        default: throw new Error('Не поддерживается формат текстуры ' + formats[i])
+      } 
       const texture = this.gl.createTexture();
       textures.push(texture);
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
       // Определение формата текстуры
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
+      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, formats[i], width, height, 0, f1, f2, null);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);

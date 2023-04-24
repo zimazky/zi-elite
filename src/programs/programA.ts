@@ -22,8 +22,8 @@ export class ProgramA {
     this.engine = e;
     this.bufferInput = bInput;
     this.camera = c;
-    this.numX = Math.ceil(e.canvas.width/2.3);
-    this.numY = Math.ceil(e.canvas.height/2.3);
+    this.numX = Math.ceil(e.canvas.width/2.);
+    this.numY = Math.ceil(e.canvas.height/2.);
   }
 
   init(shader: Renderbufer) {

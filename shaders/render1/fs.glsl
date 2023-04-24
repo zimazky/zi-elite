@@ -218,7 +218,7 @@ void main() {
 
   #ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
-  float depthA = texture(uTextureProgramA, uv).w;
+  float depthA = texture(uTextureProgramA, uv).r;
   #endif
 
   vec4 albedoB = texture(uAlbedoProgramB, uv);

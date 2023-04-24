@@ -90,14 +90,17 @@ export class Engine extends GLContext {
   }
 */
 
-  /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
-  async addFramebufferMRT(width: number, height: number, numMRT: number, baseUrl: string, vsUrl: string, fsUrl: string, 
+  /** 
+   * Добавление промежуточного фреймбуфера с собственной шейдерной программой 
+   * с множественными целевыми текстурами
+   */
+  async addFramebufferMRT(width: number, height: number, formatsMRT: number[], baseUrl: string, vsUrl: string, fsUrl: string, 
     onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Promise<Framebuffer> {
 
     const vsSource = preprocess(baseUrl,vsUrl);
     const fsSource = preprocess(baseUrl,fsUrl);
     const program = this.createProgram(await vsSource, await fsSource);
-    const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, numMRT);
+    const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, formatsMRT);
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');

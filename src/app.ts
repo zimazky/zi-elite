@@ -10,6 +10,7 @@ import { TerrainSampler } from './core/terrain';
 import { Vec3 } from './core/vectors';
 import { ProgramA } from './programs/programA';
 import { ProgramB } from './programs/programB';
+import { ProgramC } from './programs/programC';
 import { ProgramRender } from './programs/programRender';
 import { loadImage } from './utils/loadimg';
 
@@ -79,7 +80,7 @@ export default async function main() {
   e.resizeCanvasToDisplaySize();
 
   const shaderA = await e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, 1,
+    e.canvas.width, e.canvas.height, [e.gl.R16F],
     //2195, 1131, 1,
     'shaders', 'a/vs.glsl', 'a/fs.glsl',
     (shader) => {
@@ -91,7 +92,7 @@ export default async function main() {
   );
 
   const shaderB = await e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, 2,
+    e.canvas.width, e.canvas.height, [e.gl.RGBA16F, e.gl.RGBA16F],
     //2195, 1131, 2,
     'shaders', 'b/vs.glsl', 'b/fs.glsl',
     (shader: Renderbufer) => {
@@ -101,9 +102,35 @@ export default async function main() {
       programB.update(time, timeDelta);
     }
   );
+/*
+  const shaderC = await e.addFramebufferMRT(
+    10000, 10000, [e.gl.R16F],
+    'shaders', 'c/vs.glsl', 'c/fs.glsl',
+    (shader: Renderbufer) => {
+      programC.init(shader);
+    },
+    (time: number, timeDelta: number) => {
+      programC.update(time, timeDelta);
+    }
+  );
 
+  const shaderD = await e.addFramebufferMRT(
+    10000, 10000, [e.gl.RG16F],
+    'shaders', 'd/vs.glsl', 'd/fs.glsl',
+    (shader: Renderbufer) => {
+      programD.init(shader);
+    },
+    (time: number, timeDelta: number) => {
+      programD.update(time, timeDelta);
+    }
+  );
+*/
   const programA = new ProgramA(e, shaderB, camera);
   const programB = new ProgramB(e, shaderA, camera, atm);
+/*
+  const programC = new ProgramC(e, camera, shaderD);
+  const programD = new ProgramC(e, camera, shaderC);
+*/
   const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky, flare1, flare2);
 
   await e.setRenderbuffer('shaders', 'render1/vs.glsl', 'render1/fs.glsl',
@@ -114,7 +141,6 @@ export default async function main() {
       programRender.update(time, timeDelta);
     }
   );
-
 
   e.onUpdate = (time, timeDelta) => {
     camera.loopCalculation(time, timeDelta);
