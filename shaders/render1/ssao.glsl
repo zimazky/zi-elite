@@ -19,7 +19,7 @@ in float vFocus;
  *   normal - нормаль фрагмента в глобальных координатах
  *   rand - случайный вектор в глобальных координатах
  */
-float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float SSAO_RADIUS) {
+float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float radius) {
 
   vec3 tangent = normalize(rand - normal * dot(rand, normal));
   vec3 bitangent = cross(normal, tangent);
@@ -27,7 +27,12 @@ float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float S
   mat3 TBN = mat3(tangent, bitangent, normal);
 
   vec2 k = vec2(1, vAspectB);
-  float radius = SSAO_RADIUS;//min(SSAO_RADIUS, 10.*pos.z);
+
+  // проверка на размер спроецированной полусферы выборки
+  // строго должен быть больше пикселя для включения алгоритма
+  // эксперименты показали, что алгоритм заметен при maxScreenRadius>10
+  float maxScreenRadius = vFocus/(vFocus+pos.z)*radius*uTextureBResolution.x;
+  if(maxScreenRadius <= 10.) return 1.;
 
   float occlusion = 0.;
   for(int i=0; i<SSAO_KERNEL_SIZE; i++) {

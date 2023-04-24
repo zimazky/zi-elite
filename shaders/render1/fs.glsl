@@ -278,9 +278,10 @@ void main() {
     float sundot = clamp(dot(rd, uSunDirection),0.,1.);
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
+
   }
 
-  float exposure = 2.;
+  float exposure = 4.;
 
   /*
   // экспозиция
@@ -289,13 +290,14 @@ void main() {
   col = col / (col + vec3(1));
   */
 
+
   // тональная компрессия с экспозицией
   col = vec3(1.) - exp(-col * exposure);
 
   //col = posScreen/1000.;
 
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
-
+  
   #endif
 
   fragColor = vec4(col, 1.);
