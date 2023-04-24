@@ -11,6 +11,7 @@ import { Vec3 } from './core/vectors';
 import { ProgramA } from './programs/programA';
 import { ProgramB } from './programs/programB';
 import { ProgramC } from './programs/programC';
+import { ProgramD } from './programs/programD';
 import { ProgramRender } from './programs/programRender';
 import { loadImage } from './utils/loadimg';
 
@@ -102,12 +103,12 @@ export default async function main() {
       programB.update(time, timeDelta);
     }
   );
-/*
+
   const shaderC = await e.addFramebufferMRT(
     10000, 10000, [e.gl.R16F],
     'shaders', 'c/vs.glsl', 'c/fs.glsl',
     (shader: Renderbufer) => {
-      programC.init(shader);
+      programC.init(shader, grayNoiseImg);
     },
     (time: number, timeDelta: number) => {
       programC.update(time, timeDelta);
@@ -124,14 +125,14 @@ export default async function main() {
       programD.update(time, timeDelta);
     }
   );
-*/
+
   const programA = new ProgramA(e, shaderB, camera);
   const programB = new ProgramB(e, shaderA, camera, atm);
-/*
+
   const programC = new ProgramC(e, camera, shaderD);
-  const programD = new ProgramC(e, camera, shaderC);
-*/
-  const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky, flare1, flare2);
+  const programD = new ProgramD(e, camera, shaderC);
+
+  const programRender = new ProgramRender(e, shaderA, shaderB, shaderC, shaderD, camera, atm, sky, flare1, flare2);
 
   await e.setRenderbuffer('shaders', 'render1/vs.glsl', 'render1/fs.glsl',
     (shader)=>{

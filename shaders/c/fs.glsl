@@ -47,9 +47,9 @@ const float uSunDiscAngleSin = 0.;
 
 void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
-  vec2 uv0 = uv - 0.5*uMapPositionDelta/uScale;
+  vec2 uv0 = uv + 0.5*uMapPositionDelta/uScale;
 
-  if(uv0.x < 0. || uv0.x > 1. || uv0.y < 0. || uv0.y > 1.) oHeight = 0.;//terrainM(vCoordinates);
+  if(uv0.x < 0. || uv0.x > 1. || uv0.y < 0. || uv0.y > 1.) oHeight = terrainM(vCoordinates);
   else oHeight = texture(uTextureProgramD, uv0).r;
 }
  

@@ -15,5 +15,5 @@ out vec2 vCoordinates;
 
 void main() {
   gl_Position = vec4(aVertexPosition, 1);
-  vCoordinates = aVertexPosition.xy*uScale;
+  vCoordinates = uMapPosition+aVertexPosition.xy*uScale;
 }

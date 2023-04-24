@@ -36,8 +36,11 @@ uniform sampler2D uTextureProgramA;
 uniform sampler2D uNormalDepthProgramB;
 /** Значения альбедо */
 uniform sampler2D uAlbedoProgramB;
-
 uniform vec2 uTextureBResolution;
+
+uniform sampler2D uTextureProgramC;
+uniform vec2 uTextureCResolution;
+
 uniform sampler2D uTextureBlueNoise;
 
 uniform sampler2D uTextureSSAONoise;
@@ -261,8 +264,12 @@ void main() {
   //col *= ssao;
 
   if(uScreenMode.x == MAP_VIEW) {
+    /*
     col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
     col *= ssao*ssao;
+    */
+    vec2 uv1 = gl_FragCoord.xy/uResolution;
+    col = vec3(texture(uTextureProgramC, uv1).r/1800.);
   }
   else {
     
