@@ -165,8 +165,11 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
     float F1dotN = clamp(dot(fd1, nor), 0., 1.);
 
     float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
-    float shd = softPlanetShadow(pos, light1);
-    if(LdotN>-xmin && shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations);
+    float shd = 0.;
+    if(LdotN>-xmin) {
+      shd = softPlanetShadow(pos, light1);
+      if(shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations);
+    }
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
@@ -271,8 +274,17 @@ void main() {
 
     col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
     
-    //ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
-    //col = rs.t*LIGHT_INTENSITY + rs.i*col;
+    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+    // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
+    // alpha - угол направления на солнце к зениту
+    // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)
+    float tanAlpha = sqrt(1. - uSunDirection.z*uSunDirection.z) / max(0.01, uSunDirection.z);
+    float shDist = max(MAX_TRN_ELEVATION*(tanAlpha-1.),0.);
+    shDist = clamp(shDist, MAX_TRN_ELEVATION, 5000.);
+    float scatDist = max(0., t-shDist); // примерная средняя дистанция на которой происходит рассеивание
+    //scatDist = mix(scatDist, t, uCameraInShadow*shd);
+
+    col = scatDist/t * rs.t*LIGHT_INTENSITY + rs.i*col; // добавлен коэффициент учитывающий луч в тени
 
     float exposure = 2.;
     
