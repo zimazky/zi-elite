@@ -4,6 +4,8 @@
 //#define DEPTH_ERROR_VIEW
 //#define RAYCAST_ITERATIONS_VIEW
 //#define SHADOWS_ITERATIONS_VIEW
+//#define SHADOW_DISTANCE_VIEW
+
 
 // Максимальная дальность отображения ландшафта
 const float MAX_TERRAIN_DISTANCE = 30000.;

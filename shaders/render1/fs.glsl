@@ -129,6 +129,7 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   vec3 col = vec3(0);
   vec3 pos = vec3(0);
   int shadowIterations = 0;
+  float shadowDistance = 0.;
   if(t>MAX_TERRAIN_DISTANCE) {
     // небо из текстуры
     col = 0.5*nightSky(normalize(vRaySky));
@@ -168,7 +169,8 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
     float shd = 0.;
     if(LdotN>-xmin) {
       shd = softPlanetShadow(pos, light1);
-      if(shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations);
+      if(shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations, shadowDistance);
+      if(shd>=1.) shadowDistance = 2.*MAX_TERRAIN_DISTANCE;
     }
     float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
     LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
@@ -208,6 +210,10 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   }
   #ifdef SHADOWS_ITERATIONS_VIEW
   col = vec3(shadowIterations)/100.;
+  #endif
+
+  #ifdef SHADOW_DISTANCE_VIEW
+  col = shadowDistance==0. ? vec3(1,0,0) : shadowDistance>MAX_TERRAIN_DISTANCE ? vec3(0,0,1) : vec3(shadowDistance)/3000.;
   #endif
 
   return col;
@@ -273,6 +279,7 @@ void main() {
     //col = vec3(ssao*ssao);
 
     col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
+#ifndef SHADOW_DISTANCE_VIEW
     
     ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
     // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
@@ -302,6 +309,8 @@ void main() {
     float sundot = clamp(dot(rd, uSunDirection),0.,1.);
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
+
+#endif
 
   }
 

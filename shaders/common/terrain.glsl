@@ -93,12 +93,12 @@ vec3 calcNormalM(vec3 pos, float t) {
 }
 
 // функция определения затененности
-float softShadow(vec3 ro, vec3 rd, float dis, out int i) {
+float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
   float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
 
   float res = 1.;
-  float t = 0.01*dis;
+  t = 0.01*dis;
   for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
     if(p.y>MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
