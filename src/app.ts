@@ -134,11 +134,13 @@ export default async function main() {
       const nxA = programA.numX.toFixed(0);
       const nyA = programA.numY.toFixed(0);
 
+
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       shB: ${widthB}x${heightB} nA: ${nxA}x${nyA}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
       alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
-      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}`;
+      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}
+      sun: ${sky.sunDiscColor.x.toFixed(2)} ${sky.sunDiscColor.y.toFixed(2)} ${sky.sunDiscColor.z.toFixed(2)}`;
 
       infoRefreshTime = time + 0.5;
     }
