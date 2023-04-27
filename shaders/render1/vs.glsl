@@ -33,5 +33,5 @@ void main() {
   vRayScreen = vec3(aVertexPosition.xy*k*t, -1.);
   vRay = uTransformMat * vRayScreen;
   vRaySky = vRay*uSkyTransformMat;
-  vInverseTransformMat = inverse(uTransformMat);
+  vInverseTransformMat = transpose(uTransformMat);
 }

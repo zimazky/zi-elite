@@ -23,6 +23,8 @@ export class ProgramA {
     this.bufferInput = bInput;
     this.camera = c;
     this.numX = Math.ceil(e.canvas.width/2.3);
+    // должно быть четным числом
+    this.numX = this.numX%2 === 0 ? this.numX : this.numX-1;
     this.numY = Math.ceil(e.canvas.height/2.3);
   }
 
@@ -51,10 +53,10 @@ export class ProgramA {
     for(let j=0; j<this.numY+1; j++) {
       for(let i=0; i<this.numX+1; i++) {
         vertices.push(-1. + i*2./this.numX);
-        vertices.push(1. - j*2./this.numY);
+        vertices.push(-1. + j*2./this.numY);
       }
     }
-
+/*
     // формирование индексов вершин для отрисовки методом TRIANGLE_STRIP
     const indices: number[] = [];
     for(let j=0; j<this.numY; j++) {
@@ -71,12 +73,46 @@ export class ProgramA {
         indices.push(i + (j+1)*(this.numX+1));
       }
     }
+*/
+    // формирование индексов вершин для отрисовки методом TRIANGLE с учетом использования кэша post-TnL
+    // формируем полосами треугольников по cacheSize вершин в полосе
+    // снизу вверх (нижние треугольники обычно ближе)
+    const cacheSize = 32; // должно быть четным числом, чтобы можно было сформировать первичные вырожденные треугольники
+    const indices: number[] = [];
+    for(let stripe=0; stripe<this.numX+1; stripe+=cacheSize) {
+      // формирование вырожденных треугольников для заполнения кэша
+      for(let i=stripe; i-stripe<cacheSize && i<this.numX; i+=2) {
+        indices.push(i   );
+        indices.push(i+1 );
+        indices.push(i+2 );
+      }
+      // формирование полосы шириной cacheSize снизу вверх
+      //   
+      //    4 - 5 - 6  
+      //    | \ | \ |  
+      //    1 - 2 - 3  
+      //
+      //    1,2,4  2,5,4  2,3,5  3,6,5
+
+      for(let j=0; j<this.numY; j++) {
+        for(let i=stripe; i-stripe<cacheSize && i<this.numX; i++) {
+          indices.push(i   + j*(this.numX+1));      //1
+          indices.push(i+1 + j*(this.numX+1));      //2
+          indices.push(i   + (j+1)*(this.numX+1));  //4
+
+          indices.push(i+1 + j*(this.numX+1));      //2
+          indices.push(i+1 + (j+1)*(this.numX+1));  //5
+          indices.push(i   + (j+1)*(this.numX+1));  //4
+        }
+      }
+    }
 
     // привязка массива вершин
     this.engine.setVertexArray(shader, 'aVertexPosition', vertices, indices, 2);
     shader.clearColor = new Vec4(0, 0, 0, 0);
 
     shader.isDepthTest = true;
+    shader.drawMode = this.engine.gl.TRIANGLES;
   }
 
   update() {

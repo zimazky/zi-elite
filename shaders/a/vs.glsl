@@ -54,7 +54,7 @@ void main() {
   vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
   vec3 pos = rd*buf.w;
 
-  pos = pos*inverse(uTransformMatrixPrev);
+  pos = pos*transpose(uTransformMatrixPrev);
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
   vTextureBData.w = length(pos);

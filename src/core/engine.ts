@@ -32,6 +32,9 @@ export type Renderbufer = {
   isDepthTest: boolean;
   /** Цвет очистки буфера перед отрисовкой, null если очистка не нужна */
   clearColor: Vec4;
+  /** Тип элементов отрисовки, по умолчанию gl.TRIANGLE_STRIP */
+  drawMode: number;
+
   /** (uResolution) Разрешение */
   resolutionLocation: WebGLUniformLocation;
   /** (uTime) Время */
@@ -104,6 +107,7 @@ export class Engine extends GLContext {
     this.framebuffers.push({
       width, height, program, framebuffer, fbTextures,
       vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false, clearColor: null,
+      drawMode: this.gl.TRIANGLE_STRIP,
       resolutionLocation, timeLocation,
       onProgramInit: onInit,
       onProgramLoop: onLoop});
@@ -120,7 +124,9 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
-    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false,  clearColor: null,
+    this.renderbufer = {program, vertexArray: null, numOfVertices: 4, 
+      isElementDraw: false, isDepthTest: false,  clearColor: null,
+      drawMode: this.gl.TRIANGLE_STRIP,
       resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
@@ -304,8 +310,8 @@ export class Engine extends GLContext {
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);
       this.gl.viewport(0, 0, e.width, e.height);
-      if(e.isElementDraw) this.gl.drawElements(this.gl.TRIANGLE_STRIP, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
-      else this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, e.numOfVertices);
+      if(e.isElementDraw) this.gl.drawElements(e.drawMode, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
+      else this.gl.drawArrays(e.drawMode, 0, e.numOfVertices);
       //console.log(e.numOfVertices);
       e.onProgramLoop(time, timeDelta);
     });
@@ -320,8 +326,8 @@ export class Engine extends GLContext {
     this.gl.uniform2f(this.renderbufer.timeLocation, time, timeDelta);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     if(this.renderbufer.isElementDraw) 
-      this.gl.drawElements(this.gl.TRIANGLE_STRIP, this.renderbufer.numOfVertices, this.gl.UNSIGNED_INT, 0);
-    else this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.renderbufer.numOfVertices);
+      this.gl.drawElements(this.renderbufer.drawMode, this.renderbufer.numOfVertices, this.gl.UNSIGNED_INT, 0);
+    else this.gl.drawArrays(this.renderbufer.drawMode, 0, this.renderbufer.numOfVertices);
     this.renderbufer.onProgramLoop(time, timeDelta);
 
     requestAnimationFrame(this.loop.bind(this));
