@@ -16,6 +16,10 @@ uniform float uSunDiscAngleSin;
 uniform vec3 uSunDirection;
 /** Цвет и интенсивность света от солнца */
 uniform vec3 uSunDiscColor;
+/** Направление на луну */
+uniform vec3 uMoonDirection;
+/** Цвет и интенсивность света от луны */
+uniform vec3 uMoonDiscColor;
 /** Цвет и интенсивность света неба */
 uniform vec3 uSkyColor;
 
@@ -123,91 +127,61 @@ vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
 }
 
 
-vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 light1) {
+vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 light1, vec3 light2) {
   // косинус угла между лучем и солнцем 
-  float sundot = clamp(dot(rd,light1),0.,1.);
   vec3 col = vec3(0);
   vec3 pos = vec3(0);
   int shadowIterations = 0;
   float shadowDistance = 0.;
-  if(t>MAX_TERRAIN_DISTANCE) {
-    // небо из текстуры
-    col = 0.5*nightSky(normalize(vRaySky));
-    // диск солнца
-    float sunsin = sqrt(1.-sundot*sundot);
-    col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
-    // горизонт планеты
-    col *= planetIntersection(uCameraPosition, rd);
-    // атмосферное рассеивание
-    ResultScattering rs;
-    rs = scattering(uCameraPosition, rd, uSunDirection);
-    col = rs.t*LIGHT_INTENSITY + rs.i*col;
+  pos = ro + t*rd;
+  // цвет
+  vec3 kd = albedo;
+  // ambient
+  float amb = clamp(0.5+0.5*nor.y, 0., 1.);
+  vec3 light = light1;
+  vec3 lightcolor = uSunDiscColor;
+  if(light1.y < 0.) {
+    light = light2;
+    lightcolor = uMoonDiscColor;
   }
-  else {
-    pos = ro + t*rd;
-    vec3 hal = normalize(light1-rd);
-    // цвет
-    vec3 kd = albedo;
+  //vec3 hal = normalize(light-rd);
 
-    // ambient
-    float amb = clamp(0.5+0.5*nor.y, 0., 1.);
-	  float LdotN = dot(light1, nor);
-    float RdotN = clamp(-dot(rd, nor), 0., 1.);
-
-    // 1-ая световая ракета
-    vec3 fd0 = uFlarePositions[0]-pos;
-    float fdist0sqr = dot(fd0,fd0);
-    fd0 /= sqrt(fdist0sqr);
-    float F0dotN = clamp(dot(fd0, nor), 0., 1.);
-    // 2-ая световая ракета
-    vec3 fd1 = uFlarePositions[1]-pos;
-    float fdist1sqr = dot(fd1,fd1);
-    fd1 /= sqrt(fdist1sqr);
-    float F1dotN = clamp(dot(fd1, nor), 0., 1.);
-
-    float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
-    float shd = 0.;
-    if(LdotN>-xmin) {
-      shd = softPlanetShadow(pos, light1);
-      if(shd>0.001) shd *= softShadow(pos, light1, t, shadowIterations, shadowDistance);
-      if(shd>=1.) shadowDistance = 2.*MAX_TERRAIN_DISTANCE;
-    }
-    float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
-    LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
-
-	  vec3 lunar = uSkyColor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
-      + uSunDiscColor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца
-      + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
-      + uFlareLights[0]*F0dotN*lunar_lambert(kd, RdotN, F0dotN)/(fdist0sqr)  // свет 1-ой сигнальной ракеты
-      + uFlareLights[1]*F1dotN*lunar_lambert(kd, RdotN, F1dotN)/(fdist1sqr);  // свет 2-ой сигнальной ракеты
-    col = lunar;//mix(lomm, lunar, LvsR);
-    
-    //////////////////
-	  // fog
-    //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
-    //col = mix(col, FOG_COLOR, fo );
-	}
+  float LdotN = dot(light, nor);
+  float RdotN = clamp(-dot(rd, nor), 0., 1.);
 
   // 1-ая световая ракета
-  vec3 fd = uFlarePositions[0] - ro;
-  float fdist2 = dot(fd, fd);
-  float fdist = sqrt(fdist2);
-  fd /= fdist;
-  float f = dot(fd, rd);
-  if(f>=0.999999 && fdist<t) {
-    col = uFlareLights[0];
-    t = fdist;
-  }
+  vec3 fd0 = uFlarePositions[0]-pos;
+  float fdist0sqr = dot(fd0,fd0);
+  fd0 /= sqrt(fdist0sqr);
+  float F0dotN = clamp(dot(fd0, nor), 0., 1.);
   // 2-ая световая ракета
-  fd = uFlarePositions[1] - ro;
-  fdist2 = dot(fd, fd);
-  fdist = sqrt(fdist2);
-  fd /= fdist;
-  f = dot(fd, rd);
-  if(f>=0.999999 && fdist<t) {
-    col = uFlareLights[1];
-    t = fdist;
+  vec3 fd1 = uFlarePositions[1]-pos;
+  float fdist1sqr = dot(fd1,fd1);
+  fd1 /= sqrt(fdist1sqr);
+  float F1dotN = clamp(dot(fd1, nor), 0., 1.);
+
+  float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
+  float shd = 0.;
+  if(LdotN>-xmin) {
+    shd = softPlanetShadow(pos, light);
+    if(shd>0.001) shd *= softShadow(pos, light, t, shadowIterations, shadowDistance);
+    if(shd>=1.) shadowDistance = 2.*MAX_TERRAIN_DISTANCE;
   }
+  float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
+  LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
+
+  vec3 lunar = uSkyColor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
+    + lightcolor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца или луны
+    + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
+    + uFlareLights[0]*F0dotN*lunar_lambert(kd, RdotN, F0dotN)/(fdist0sqr)  // свет 1-ой сигнальной ракеты
+    + uFlareLights[1]*F1dotN*lunar_lambert(kd, RdotN, F1dotN)/(fdist1sqr);  // свет 2-ой сигнальной ракеты
+  col = lunar;//mix(lomm, lunar, LvsR);
+  
+  //////////////////
+  // fog
+  //float fo = 1.0-exp(-pow(0.00009*t,1.5) );
+  //col = mix(col, FOG_COLOR, fo );
+
   #ifdef SHADOWS_ITERATIONS_VIEW
   col = vec3(shadowIterations)/100.;
   #endif
@@ -225,26 +199,31 @@ void main() {
     : vec2(vAspect/vAspectB, 1);
   vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
-  #ifdef DEPTH_ERROR_VIEW
+#ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
   float depthA = texture(uTextureProgramA, uv).w;
-  #endif
+#endif
 
   vec4 albedoB = texture(uAlbedoProgramB, uv);
   vec4 normalDepthB = texture(uNormalDepthProgramB, uv);
 
-  #ifdef DEPTH_ERROR_VIEW
+#ifdef DEPTH_ERROR_VIEW
   float derr = normalDepthB.w-depthA;
   vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
   col = pow(col, vec3(1./2.2));
 
-  #else
+#else
   vec3 col = albedoB.rgb;
   float t = normalDepthB.w;
   vec3 rd = normalize(vRay);
 
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
+
+#ifdef TEST_VIEW
+  col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, 1., uSunDirection, uMoonDirection);
+#else
+ 	float noise = texelFetch(uTextureBlueNoise, ivec2(gl_FragCoord.xy) & (1024-1), 0).x;
   vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 
   vec3 posScreen;
@@ -278,47 +257,75 @@ void main() {
     //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
     //col = vec3(ssao*ssao);
 
-    col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection);
-#ifndef SHADOW_DISTANCE_VIEW
-    
-    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
-    // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
-    // alpha - угол направления на солнце к зениту
-    // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)
-    float tanAlpha = sqrt(1. - uSunDirection.z*uSunDirection.z) / max(0.01, uSunDirection.z);
-    float shDist = max(MAX_TRN_ELEVATION*(tanAlpha-1.),0.);
-    shDist = clamp(shDist, MAX_TRN_ELEVATION, 5000.);
-    float scatDist = max(0., t-shDist); // примерная средняя дистанция на которой происходит рассеивание
-    //scatDist = mix(scatDist, t, uCameraInShadow*shd);
+    // косинус угла между лучем и солнцем 
+    float sundot = clamp(dot(rd,uSunDirection),0.,1.);
+    float moondot = clamp(dot(rd,uMoonDirection),0.,1.);
+    if(t>MAX_TERRAIN_DISTANCE) {
+      // небо из текстуры
+      col = 0.5*nightSky(normalize(vRaySky));
+      // диск солнца
+      float sunsin = sqrt(1.-sundot*sundot);
+      col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
+      // диск луны
+      float moonsin = 1. - smoothstep(uSunDiscAngleSin-0.001,uSunDiscAngleSin+0.001,sqrt(1.-moondot*moondot));
+      col += moonsin;
+      // горизонт планеты
+      col *= planetIntersection(uCameraPosition, rd);
+      // атмосферное рассеивание
+      ResultScattering rs;
+      rs = scattering(uCameraPosition, rd, uSunDirection, noise);
+      col = rs.t*LIGHT_INTENSITY + rs.i*col;
+    }
+    else {
+      col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection, uMoonDirection);
+      ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+      // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
+      // alpha - угол направления на солнце к зениту
+      // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)
+      float tanAlpha = sqrt(1. - uSunDirection.z*uSunDirection.z) / max(0.01, uSunDirection.z);
+      float shDist = max(MAX_TRN_ELEVATION*(tanAlpha-1.),0.);
+      shDist = clamp(shDist, MAX_TRN_ELEVATION, 5000.);
+      float scatDist = max(0., t-shDist); // примерная средняя дистанция на которой происходит рассеивание
+      //scatDist = mix(scatDist, t, uCameraInShadow*shd);
 
-    col = scatDist/t * rs.t*LIGHT_INTENSITY + rs.i*col; // добавлен коэффициент учитывающий луч в тени
+      col = scatDist/t * rs.t*LIGHT_INTENSITY + rs.i*col; // добавлен коэффициент учитывающий луч в тени
+    }
+
+    // 1-ая световая ракета
+    vec3 fd = uFlarePositions[0] - uCameraPosition;
+    float fdist2 = dot(fd, fd);
+    float fdist = sqrt(fdist2);
+    fd /= fdist;
+    float f = dot(fd, rd);
+    if(f>=0.999999 && fdist<t) {
+      col = uFlareLights[0];
+      t = fdist;
+    }
+    // 2-ая световая ракета
+    fd = uFlarePositions[1] - uCameraPosition;
+    fdist2 = dot(fd, fd);
+    fdist = sqrt(fdist2);
+    fd /= fdist;
+    f = dot(fd, rd);
+    if(f>=0.999999 && fdist<t) {
+      col = uFlareLights[1];
+      t = fdist;
+    }
 
     float exposure = 2.;
-    
-    /*
-    // экспозиция
-    col *= exposure;
-    // тональная компрессия Рейнхарда
-    col = col / (col + vec3(1));
-    */
-
     // тональная компрессия с экспозицией
     col = vec3(1.) - exp(-col * exposure);
-
-    // косинус угла между лучем и солнцем 
-    float sundot = clamp(dot(rd, uSunDirection),0.,1.);
     // засвечивание солнцем
     col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
-
+  }
 #endif
 
-  }
-
   //col = posScreen/1000.;
+  //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
-  col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+  col = pow(col, vec3(1./2.2));
   
-  #endif
+#endif
 
   fragColor = vec4(col, 1.);
 }

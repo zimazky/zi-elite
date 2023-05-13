@@ -18,6 +18,8 @@ export class Sky {
   period = 1200.;
   /** вектор направления на солнце (на момент t=0) */
   sunDir = new Vec3(0., -Math.sin(skyAngle), -Math.cos(skyAngle));
+  /** вектор направления на луну (на момент t=0) */
+  moonDir = new Vec3(0., Math.sin(skyAngle), Math.cos(skyAngle));
   /** поворот небесного свода за счет суточного вращения */
   orientation: Quaternion = Quaternion.Identity();
   /** матрица поворота для передачи вершинному шейдеру */
@@ -26,6 +28,8 @@ export class Sky {
   isShowConstellations: boolean = false;
   /** направление на солнце на данный момент */
   sunDirection: Vec3 = this.sunDir.copy();
+  /** направление на луну на данный момент */
+  moonDirection: Vec3 = this.moonDir.copy();
 
   camera: Camera;
   atm: Atmosphere;
@@ -33,6 +37,7 @@ export class Sky {
   skyRefreshTime: number = 0.;
 
   sunDiscColor: Vec3 = Vec3.ZERO();
+  moonDiskColor: Vec3 = new Vec3(0.005,0.005,0.01);
   skyColor: Vec3 = Vec3.ZERO();
 
   constructor(camera: Camera, atm: Atmosphere) {
@@ -44,6 +49,7 @@ export class Sky {
     this.orientation = Quaternion.byAngle(this.axis, -2.*Math.PI*(0.205+time/this.period));
     this.transformMat = this.orientation.qmul(this.quat).mat3();
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
+    this.moonDirection = this.orientation.rotate(this.moonDir).normalize();
 
     // отображение созвездий
     if(isKeyPress(KEY_C)>0) this.isShowConstellations = !this.isShowConstellations;

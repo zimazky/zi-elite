@@ -32,12 +32,16 @@ export class ProgramRender {
   uTextureBResolution: WebGLUniformLocation;
 
 
-  /** Направление на солнце */
-  uSunDirection: WebGLUniformLocation;
   /** Синус углового размера солнца */
   uSunDiscAngleSin: WebGLUniformLocation;
+  /** Направление на солнце */
+  uSunDirection: WebGLUniformLocation;
   /** Цвет диска солнца */
   uSunDiscColor: WebGLUniformLocation;
+  /** Направление на луну */
+  uMoonDirection: WebGLUniformLocation;
+  /** Цвет диска луны */
+  uMoonDiscColor: WebGLUniformLocation;
   /** Цвет неба для окружающего освещения */
   uSkyColor: WebGLUniformLocation;
   
@@ -152,6 +156,8 @@ export class ProgramRender {
     this.uSkyColor = this.engine.gl.getUniformLocation(shader.program, 'uSkyColor');
     this.uSunDirection = this.engine.gl.getUniformLocation(shader.program, 'uSunDirection');
     this.uSunDiscColor = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscColor');
+    this.uMoonDirection = this.engine.gl.getUniformLocation(shader.program, 'uMoonDirection');
+    this.uMoonDiscColor = this.engine.gl.getUniformLocation(shader.program, 'uMoonDiscColor');
     this.uSunDiscAngleSin = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscAngleSin');
     this.engine.gl.uniform1f(this.uSunDiscAngleSin, SUN_DISC_ANGLE_SIN);
     this.uBetaRayleigh = this.engine.gl.getUniformLocation(shader.program, 'uBetaRayleigh');
@@ -202,6 +208,8 @@ export class ProgramRender {
 
     this.engine.gl.uniform3fv(this.uSunDirection, this.sky.sunDirection.getArray());
     this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
+    this.engine.gl.uniform3fv(this.uMoonDirection, this.sky.moonDirection.getArray());
+    this.engine.gl.uniform3fv(this.uMoonDiscColor, this.sky.moonDiskColor.getArray());
     this.engine.gl.uniform3fv(this.uSkyColor, this.sky.skyColor.getArray());
 
     const flarePos = [...this.flare1.position.getArray(), ...this.flare2.position.getArray()];

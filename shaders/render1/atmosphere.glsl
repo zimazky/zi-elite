@@ -68,8 +68,9 @@ struct ResultScattering {
  *   ro - положение камеры
  *   rd - направление луча камеры
  *   ld - направление на источник света
+ *   noise - случайное число в диапазоне 0...1 для смещения начальной точки чтобы избежать полос на сильных градиентах
  */
-ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld) {
+ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
   // Положение относительно центра планеты
   vec3 start = ro - uPlanetCenter;
 
@@ -117,7 +118,7 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld) {
   float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
   vec3 nextpos = start + step; // следующая точка
-  vec3 pos = start + 0.5*step; // смещение на половину шага для более точного интегрирования по серединам отрезков
+  vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
 
   // оптическая глубина x - Релея, y - Ми, z - озон
   vec2 optDepth = vec2(0.);
@@ -234,9 +235,12 @@ float planetIntersection(vec3 ro, vec3 rd) {
   //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
   
   float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT2 = dot(pos, pos) - OT*OT; // минимальное расстоянии от луча до центра планеты
-  if(OT>0. || CT2>(uPlanetRadius*uPlanetRadius)) return 1.;
-  return 0.;
+  if(OT > 0.) return 1.;
+  float CT2 = dot(pos, pos)-OT*OT; // минимальное расстоянии от луча до центра планеты
+  float R2 = uPlanetRadius*uPlanetRadius;
+  return step(R2,CT2);
+  //if(OT>0. || CT2>(uPlanetRadius*uPlanetRadius)) return 1.;
+  //return 0.;
 }
 
 /** 

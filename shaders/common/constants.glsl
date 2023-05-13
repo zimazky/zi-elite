@@ -2,7 +2,6 @@
 
 // Просмотр ошибки карты глубины буфера A
 //#define DEPTH_ERROR_VIEW
-//#define RAYCAST_ITERATIONS_VIEW
 //#define SHADOWS_ITERATIONS_VIEW
 //#define SHADOW_DISTANCE_VIEW
 
@@ -25,3 +24,20 @@ const float DEPTH_VIEW = 2.;
 const int MAP_ONLY = 0;
 const int MAP_GRID = 1;
 const int MAP_HEIGHTS = 2;
+
+
+#ifdef DEPTH_ERROR_VIEW
+#define TEST_VIEW
+#endif
+
+#ifdef RAYCAST_ITERATIONS_VIEW
+#define TEST_VIEW
+#endif
+
+#ifdef SHADOWS_ITERATIONS_VIEW
+#define TEST_VIEW
+#endif
+
+#ifdef SHADOW_DISTANCE_VIEW
+#define TEST_VIEW
+#endif
