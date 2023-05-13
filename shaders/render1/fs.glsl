@@ -37,10 +37,12 @@ uniform vec3 uFlareLights[2];
 
 /** Текстура программы A */
 uniform sampler2D uTextureProgramA;
-/** Нормали и глубина */
+/** Нормали и глубина программы B */
 uniform sampler2D uNormalDepthProgramB;
-/** Значения альбедо */
+/** Значения альбедо программы B */
 uniform sampler2D uAlbedoProgramB;
+/** Нормали и глубина программы C */
+uniform sampler2D uNormalDepthProgramC;
 
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
@@ -208,22 +210,29 @@ void main() {
   vec4 albedoB = texture(uAlbedoProgramB, uv);
   vec4 normalDepthB = texture(uNormalDepthProgramB, uv);
 
+  vec4 normalDepthC = texture(uNormalDepthProgramC, uv);
+
 #ifdef DEPTH_ERROR_VIEW
   float derr = normalDepthB.w-depthA;
   vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
   col = pow(col, vec3(1./2.2));
-
 #else
+
   vec3 col = albedoB.rgb;
+  //vec3 normal = normalDepthB.xyz;
   float t = normalDepthB.w;
+  if(normalDepthC.w < t) {
+    col = normalDepthC.xyz;//vec3(0.5);
+    t = normalDepthC.w;
+    //normal = normalDepthC.xyz;
+  }
   vec3 rd = normalize(vRay);
-
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
-
 
 #ifdef TEST_VIEW
   col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, 1., uSunDirection, uMoonDirection);
 #else
+
  	float noise = texture(uTextureBlueNoise, gl_FragCoord.xy/1024.).x;
   vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 

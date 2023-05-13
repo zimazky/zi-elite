@@ -138,7 +138,7 @@ export class ProgramA {
     this.engine.setVertexArray(shader, 'aVertexPosition', vertices, indices, 2);
     shader.clearColor = new Vec4(0, 0, 0, 0);
 
-    shader.isDepthTest = false;// true;
+    shader.isDepthTest = true;
     shader.drawMode = this.engine.gl.TRIANGLES;
   }
 

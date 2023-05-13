@@ -17,8 +17,12 @@ import vshaderA from '../shaders/a/vs.glsl';
 import fshaderA from '../shaders/a/fs.glsl';
 import vshaderB from '../shaders/b/vs.glsl';
 import fshaderB from '../shaders/b/fs.glsl';
+import vshaderC from '../shaders/c/vs.glsl';
+import fshaderC from '../shaders/c/fs.glsl';
 import vshaderR from '../shaders/render1/vs.glsl';
 import fshaderR from '../shaders/render1/fs.glsl';
+import { ObjDoc } from './core/loadobj';
+import { ProgramC } from './programs/programC';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -82,9 +86,13 @@ export default async function main() {
   const flare1 = new Flare(camera);
   const flare2 = new Flare(camera);
 
+  const o = new ObjDoc();
+  await o.init('models/cobra3.obj');
+
   // инициализируем и определяем размер холста по размеру дисплея для определения размера буферов
   e.resizeCanvasToDisplaySize();
 
+  // Шейдер оценки глубины по предыдущему кадру
   const shaderA = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, 1,
     //2195, 1131, 1,
@@ -97,6 +105,7 @@ export default async function main() {
     }
   );
 
+  // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, 2,
     //2195, 1131, 2,
@@ -109,9 +118,23 @@ export default async function main() {
     }
   );
 
+  
+  // Шейдер отрисовки полигональных объектов
+  const shaderC = e.addFramebufferMRT(
+    e.canvas.width, e.canvas.height, 1,
+    vshaderC, fshaderC,
+    (shader: Renderbufer) => {
+      programC.init(shader, o);
+    },
+    (time: number, timeDelta: number) => {
+      programC.update(time, timeDelta);
+    }
+  )
+
   const programA = new ProgramA(e, shaderB, camera);
   const programB = new ProgramB(e, shaderA, camera, atm);
-  const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky, flare1, flare2);
+  const programC = new ProgramC(e, camera);
+  const programRender = new ProgramRender(e, shaderA, shaderB, shaderC, camera, atm, sky, flare1, flare2);
 
   e.setRenderbuffer(vshaderR, fshaderR,
     (shader)=>{

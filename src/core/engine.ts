@@ -136,6 +136,7 @@ export class Engine extends GLContext {
    * @param buffer - фреймбуфер
    * @param name - наименование атрибута массива вершин в шейдере
    * @param vertices - массив с координатами вершин
+   * @param indices - массив с индексами вершин
    * @param pointSize - размер элемента вершинных координат, по умолчанию 2 (x, y)
    */
   setVertexArray(buffer: Renderbufer, name: string, vertices: number[], indices: number[], pointSize: number = 2) {
@@ -156,6 +157,41 @@ export class Engine extends GLContext {
     this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW);
   }
 
+  /**
+   * Создание и инициализация массива вершин и нормалей для фреймбуфера
+   * @param buffer - фреймбуфер
+   * @param name - наименование атрибута массива вершин в шейдере
+   * @param vertices - массив с координатами вершин
+   * @param indices - массив с индексами вершин
+   * @param pointSize - размер элемента вершинных координат, по умолчанию 2 (x, y)
+   */
+  setVertexNormalArray(buffer: Renderbufer, nameVertices: string, vertices: number[], nameNormals: string, normals: number[], indices: number[], pointSize: number = 2) {
+    buffer.vertexArray = this.gl.createVertexArray();
+    buffer.numOfVertices = vertices.length/pointSize;
+    this.gl.bindVertexArray(buffer.vertexArray);
+
+    const positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+    const attributeLocation = this.gl.getAttribLocation(buffer.program, nameVertices);
+    this.gl.enableVertexAttribArray(attributeLocation);
+    this.gl.vertexAttribPointer(attributeLocation, pointSize, this.gl.FLOAT, false, 0, 0);
+
+    const normalBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(normals), this.gl.STATIC_DRAW);
+    const normalsAttributeLocation = this.gl.getAttribLocation(buffer.program, nameNormals);
+    this.gl.enableVertexAttribArray(normalsAttributeLocation);
+    this.gl.vertexAttribPointer(normalsAttributeLocation, 3, this.gl.FLOAT, false, 0, 0);
+
+    if(indices === null) return;
+    buffer.isElementDraw = true;
+    buffer.numOfVertices = indices.length;
+    const indexBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW);
+  }
+  
   /** 
    * Установка, привязка к программе и активация отрендеренной текстуры в общем массиве текстур.
    * Если текстура уже была добавлена в массив, то используется существующая.
