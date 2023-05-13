@@ -1,5 +1,4 @@
 import { GLContext } from "./glcontext";
-import { preprocess } from "./shader";
 import { Vec4 } from "./vectors";
 
 
@@ -94,12 +93,10 @@ export class Engine extends GLContext {
 */
 
   /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
-  async addFramebufferMRT(width: number, height: number, numMRT: number, baseUrl: string, vsUrl: string, fsUrl: string, 
-    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Promise<Framebuffer> {
+  addFramebufferMRT(width: number, height: number, numMRT: number, vsSource: string, fsSource: string, 
+    onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Framebuffer {
 
-    const vsSource = preprocess(baseUrl,vsUrl);
-    const fsSource = preprocess(baseUrl,fsUrl);
-    const program = this.createProgram(await vsSource, await fsSource);
+    const program = this.createProgram(vsSource, fsSource);
     const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, numMRT);
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
@@ -115,12 +112,10 @@ export class Engine extends GLContext {
   }
 
   /** Настройка финального рендербуфера */
-  async setRenderbuffer(baseUrl: string, vsUrl: string, fsUrl: string, 
+  setRenderbuffer(vsSource: string, fsSource: string, 
     onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}) {
 
-    const vsSource = preprocess(baseUrl,vsUrl);
-    const fsSource = preprocess(baseUrl,fsUrl);
-    const program = this.createProgram(await vsSource, await fsSource);
+    const program = this.createProgram(vsSource, fsSource);
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');

@@ -4,6 +4,7 @@ precision mediump float;
 
 /** Разрешение экрана */
 uniform vec2 uResolution;
+uniform vec2 uTime;
 
 /** 
  * Насколько камера попадает под солнце:
@@ -75,42 +76,42 @@ out vec4 fragColor;
 // Модуль определения констант
 // ----------------------------------------------------------------------------
 #ifndef CONST_MODULE
-#include "common/constants.glsl"
+#include "../common/constants.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "common/terrain.glsl"
+#include "../common/terrain.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций расчета затенения окружающего освещения
 // ----------------------------------------------------------------------------
 #ifndef SSAO_MODULE
-#include "render1/ssao.glsl"
+#include "./ssao.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций расчета атмосферного рассеивания
 // ----------------------------------------------------------------------------
 #ifndef ATM_MODULE
-#include "render1/atmosphere.glsl"
+#include "./atmosphere.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функции отображения ночного неба
 // ----------------------------------------------------------------------------
 #ifndef SKY_MODULE
-#include "render1/sky.glsl"
+#include "./sky.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций постобработки
 // ----------------------------------------------------------------------------
 #ifndef POSTPROC_MODULE
-#include "common/postprocess.glsl"
+#include "../common/postprocess.glsl";
 #endif
 
 /** 
@@ -223,7 +224,7 @@ void main() {
 #ifdef TEST_VIEW
   col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, 1., uSunDirection, uMoonDirection);
 #else
- 	float noise = texelFetch(uTextureBlueNoise, ivec2(gl_FragCoord.xy) & (1024-1), 0).x;
+ 	float noise = texture(uTextureBlueNoise, gl_FragCoord.xy/1024.).x;
   vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 
   vec3 posScreen;
@@ -273,7 +274,7 @@ void main() {
       col *= planetIntersection(uCameraPosition, rd);
       // атмосферное рассеивание
       ResultScattering rs;
-      rs = scattering(uCameraPosition, rd, uSunDirection, noise);
+      rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.3,0.7,noise));
       col = rs.t*LIGHT_INTENSITY + rs.i*col;
     }
     else {
@@ -321,9 +322,9 @@ void main() {
 #endif
 
   //col = posScreen/1000.;
-  //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+  col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
-  col = pow(col, vec3(1./2.2));
+  //col = pow(col, vec3(1./2.2));
   
 #endif
 

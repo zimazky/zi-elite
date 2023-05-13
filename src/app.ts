@@ -13,6 +13,13 @@ import { ProgramB } from './programs/programB';
 import { ProgramRender } from './programs/programRender';
 import { loadImage } from './utils/loadimg';
 
+import vshaderA from '../shaders/a/vs.glsl';
+import fshaderA from '../shaders/a/fs.glsl';
+import vshaderB from '../shaders/b/vs.glsl';
+import fshaderB from '../shaders/b/fs.glsl';
+import vshaderR from '../shaders/render1/vs.glsl';
+import fshaderR from '../shaders/render1/fs.glsl';
+
 //-----------------------------------------------------------------------------
 // TODO: 
 //   1. Облака
@@ -78,10 +85,10 @@ export default async function main() {
   // инициализируем и определяем размер холста по размеру дисплея для определения размера буферов
   e.resizeCanvasToDisplaySize();
 
-  const shaderA = await e.addFramebufferMRT(
+  const shaderA = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, 1,
     //2195, 1131, 1,
-    'shaders', 'a/vs.glsl', 'a/fs.glsl',
+    vshaderA, fshaderA,
     (shader) => {
       programA.init(shader);
     },
@@ -90,10 +97,10 @@ export default async function main() {
     }
   );
 
-  const shaderB = await e.addFramebufferMRT(
+  const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, 2,
     //2195, 1131, 2,
-    'shaders', 'b/vs.glsl', 'b/fs.glsl',
+    vshaderB, fshaderB,
     (shader: Renderbufer) => {
       programB.init(shader, grayNoiseImg);
     },
@@ -106,7 +113,7 @@ export default async function main() {
   const programB = new ProgramB(e, shaderA, camera, atm);
   const programRender = new ProgramRender(e, shaderA, shaderB, camera, atm, sky, flare1, flare2);
 
-  await e.setRenderbuffer('shaders', 'render1/vs.glsl', 'render1/fs.glsl',
+  e.setRenderbuffer(vshaderR, fshaderR,
     (shader)=>{
       programRender.init(shader, blueNoiseImg, milkywayImg, constellationImg, grayNoiseImg);
     },

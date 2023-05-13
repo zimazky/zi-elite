@@ -17,6 +17,10 @@ module.exports = {
         test: /\.tsx?$/,
         exclude: '/node_modules/',
         loader: 'ts-loader',
+      },
+      {
+        test: /\.glsl$/,
+        loader: 'ts-shader-loader'
       }
     ]
   },
