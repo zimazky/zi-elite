@@ -54,6 +54,7 @@ import { ProgramC } from './programs/programC';
 export default async function main() {
 
   const divInfo = document.getElementById('info');
+  const loaderIndicator = document.getElementById('loader_indicator');
   const e = new Engine('glcanvas');
   let infoRefreshTime = 0;
   let positionStoreTime = 0;
@@ -183,7 +184,7 @@ export default async function main() {
       positionStoreTime = time + 5.;
     }
   }
-
+  loaderIndicator.style.display = 'none';
   e.start();
   
 }
