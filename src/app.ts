@@ -13,14 +13,15 @@ import { ProgramB } from './programs/programB';
 import { ProgramRender } from './programs/programRender';
 import { loadImage } from './utils/loadimg';
 
-import vshaderA from '../shaders/a/vs.glsl';
-import fshaderA from '../shaders/a/fs.glsl';
-import vshaderB from '../shaders/b/vs.glsl';
-import fshaderB from '../shaders/b/fs.glsl';
-import vshaderC from '../shaders/c/vs.glsl';
-import fshaderC from '../shaders/c/fs.glsl';
-import vshaderR from '../shaders/render1/vs.glsl';
-import fshaderR from '../shaders/render1/fs.glsl';
+import vshaderA from './shaders/a/vs.glsl';
+import fshaderA from './shaders/a/fs.glsl';
+import vshaderB from './shaders/b/vs.glsl';
+import fshaderB from './shaders/b/fs.glsl';
+import vshaderC from './shaders/c/vs.glsl';
+import fshaderC from './shaders/c/fs.glsl';
+import vshaderR from './shaders/render1/vs.glsl';
+import fshaderR from './shaders/render1/fs.glsl';
+
 import { ObjDoc } from './core/loadobj';
 import { ProgramC } from './programs/programC';
 
