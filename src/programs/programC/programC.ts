@@ -1,7 +1,7 @@
-import { Camera } from "../core/camera";
+import { Camera } from "../../core/camera";
 import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
-import { ObjDoc } from "../core/loadobj";
-import { Mat4, Vec4 } from "../core/vectors";
+import { ObjDoc } from "../../core/loadobj";
+import { Mat4, Vec4 } from "../../core/vectors";
 
 
 /**

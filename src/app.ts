@@ -23,7 +23,7 @@ import vshaderR from './shaders/render1/vs.glsl';
 import fshaderR from './shaders/render1/fs.glsl';
 
 import { ObjDoc } from './core/loadobj';
-import { ProgramC } from './programs/programC';
+import { ProgramC } from './programs/programC/programC';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -120,7 +120,7 @@ export default async function main() {
     }
   );
 
-  
+/*
   // Шейдер отрисовки полигональных объектов
   const shaderC = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, 1,
@@ -132,11 +132,11 @@ export default async function main() {
       programC.update(time, timeDelta);
     }
   )
-
+*/
   const programA = new ProgramA(e, shaderB, camera);
   const programB = new ProgramB(e, shaderA, camera, atm);
-  const programC = new ProgramC(e, camera);
-  const programRender = new ProgramRender(e, shaderA, shaderB, shaderC, camera, atm, sky, flare1, flare2);
+//  const programC = new ProgramC(e, camera);
+  const programRender = new ProgramRender(e, shaderA, shaderB/*, shaderC*/, camera, atm, sky, flare1, flare2);
 
   e.setRenderbuffer(vshaderR, fshaderR,
     (shader)=>{

@@ -47,7 +47,7 @@ export class ObjDoc {
           normalIds.push(parseInt(f3)-1);
       }
     })
-    console.log(this.vertexIds, normalsT, normalIds);
+    //console.log(this.vertexIds, normalsT, normalIds);
     normalIds.forEach(i=>{
       this.normals.push(normalsT[i*3]);
       this.normals.push(normalsT[i*3+1]);

@@ -94,12 +94,12 @@ export class ProgramRender {
   uMapScale: WebGLUniformLocation;
 
   
-  constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer, bufferC: Framebuffer,
+  constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer,// bufferC: Framebuffer,
     camera: Camera, atm: Atmosphere, sky: Sky, f1: Flare, f2: Flare) {
     this.engine = e;
     this.shaderA = bufferA;
     this.shaderB = bufferB;
-    this.shaderC = bufferC;
+    //this.shaderC = bufferC;
     this.camera = camera;
     this.atm = atm;
     this.sky = sky;
@@ -131,7 +131,7 @@ export class ProgramRender {
     this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureProgramA');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uNormalDepthProgramB');
     this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uAlbedoProgramB');
-    this.engine.setRenderedTexture(shader.program, this.shaderC.fbTextures[0], 'uNormalDepthProgramC');
+    //this.engine.setRenderedTexture(shader.program, this.shaderC.fbTextures[0], 'uNormalDepthProgramC');
 
     this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
 
