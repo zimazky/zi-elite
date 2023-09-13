@@ -18,6 +18,7 @@ vec2 grid(vec2 x, float st) {
   return mix(a,1.-a,s);
 }
 
+/*
 // lla - сферические координаты камеры
 // camdir - направление камеры
 vec3 showMap(vec3 lla, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
@@ -42,3 +43,4 @@ vec3 showMap(vec3 lla, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
   col *= (mode & MAP_HEIGHTS)!=0 ? smoothstep(0.,1., grid(h,50.)) : 1.;
   return col;
 }
+*/

@@ -119,6 +119,7 @@ vec3 lonLatAlt(vec3 p) {
  *   tmax - максимальная глубина рейтрейсинга
  *   i - выходное значение количества циклов рейтрейсинга
  */
+ /*
 float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   // НАЙТИ ТОЧКУ ПЕРЕСЕЧЕНИЯ
@@ -135,6 +136,33 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   }
   return t;
 }
+*/
+
+/** 
+ * Рейкастинг для случая кубосферы поверхности планеты 
+ *   ro - положение камеры
+ *   rd - направление луча из камеры
+ *   tmin - начальное глубина рейтрейсинга
+ *   tmax - максимальная глубина рейтрейсинга
+ *   i - выходное значение количества циклов рейтрейсинга
+ */
+float raycastCubeSphere(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
+  float t = tmin;
+  // НАЙТИ ТОЧКУ ПЕРЕСЕЧЕНИЯ
+  //float d = ro.y - MAX_TRN_ELEVATION;
+  //if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
+  for(int i=0; i<300; i++) {
+    vec3 pos = ro + t*rd;
+    vec3 r = pos - uPlanetCenter;
+    float alt = length(r) - uPlanetRadius;
+    //if(lla.z>roAlt && lla.z>MAX_TRN_ELEVATION) return tmax + 1.;
+    float h = alt - terrainOnCubeSphere(r);
+    if( abs(h)<(0.003*t) || t>tmax ) break; // двоятся детали при большем значении
+    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+  }
+  return t;
+}
+
 
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.x;
@@ -143,7 +171,7 @@ void main(void) {
   if(uScreenMode.x == MAP_VIEW) {
     // Режим отображения карты
     vec4 norDepth;
-    gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
+    //gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
     gNormalDepth = norDepth;
   }
   else {
@@ -163,7 +191,7 @@ void main(void) {
       gNormalDepth = vec4(-rd, t);
     }
     else {
-      t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+      t = raycastCubeSphere(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
       if(t > MAX_TERRAIN_DISTANCE) {
         gNormalDepth = vec4(-rd, 2.*MAX_TERRAIN_DISTANCE);
       }

@@ -51,6 +51,7 @@ float terrainM(vec2 x) {
 float terrainS(vec2 x) {
    return H_SCALE*pyramid(x/W_SCALE);
 }
+/*
 
 // Высота на сфере в зависимости от сферических координат 
 // s.x - долгота
@@ -59,12 +60,6 @@ float terrainOnSphere(vec2 s) {
   return H_SCALE*pyramid(s*360./PI);
 }
 
-// Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-//float terrainOnCubeSphere(vec3 r) {
-//  return H_SCALE*pyramid(r*360./PI);
-//}
-
-
 // Вычисление нормали в точке, заданной сферическими координатами
 vec3 calcNormalOnSphere(vec3 lla, float t) {
   vec2 eps = vec2(0.0000001, 0.0);
@@ -72,6 +67,112 @@ vec3 calcNormalOnSphere(vec3 lla, float t) {
     terrainOnSphere(lla.xy-eps.xy) - terrainOnSphere(lla.xy+eps.xy),
     2.0*eps.x,
     terrainOnSphere(lla.xy-eps.yx) - terrainOnSphere(lla.xy+eps.yx)
+  ));
+}
+*/
+
+// Проекция на кубосферу
+// x - координата x на грани куба 
+// y - координата y на грани куба
+// z - номер грани:
+//   0 - x+  
+//   1 - x-
+//   2 - y+
+//   3 - y-
+//   4 - z+
+//   5 - z-
+vec3 projectionOnCube(vec3 r) {
+  // Размер куба на который проецируется вектор для позиционирования на кубосфере 
+  float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
+  vec3 absR = abs(r);
+  if(absR.x > absR.y) {
+    if(absR.x > absR.z) {
+      vec3 s = r - r*(r.x-cubeRad)/r.x;
+      // x+
+      if(r.x > 0.) return vec3(s.y, s.z, 0);
+      // x-
+      else return vec3(s.y, s.z, 1);
+    }
+    else {
+      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      // z+
+      if(r.z > 0.) return vec3(s.x, s.y, 4);
+      // z-
+      else return vec3(s.x, s.y, 5);
+    }
+  }
+  else {
+    if(absR.y > absR.z) {
+      vec3 s = r - r*(r.y-cubeRad)/r.y;
+      // y+
+      if(r.y > 0.) return vec3(s.x, s.z, 2);
+      // y-
+      else return vec3(s.x, s.z, 3);
+    }
+    else {
+      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      // z+
+      if(r.z > 0.) return vec3(s.x, s.y, 4);
+      // z-
+      else return vec3(s.x, s.y, 5);
+    }
+  }
+}
+
+float pyramidOnCubeSphere(vec3 r, float size) {
+  // Размер куба на который проецируется вектор для позиционирования на кубосфере 
+  float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
+  vec3 absR = abs(r);
+  vec2 f;
+  if(absR.x > absR.y) {
+    if(absR.x > absR.z) {
+      vec3 s = r - r*(r.x-cubeRad)/r.x;
+      // x+
+      if(r.x > 0.) f = vec2(s.y, s.z);
+      // x-
+      else f = vec2(s.y, s.z);
+    }
+    else {
+      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      // z+
+      if(r.z > 0.) f = vec2(s.x, s.y);
+      // z-
+      else f = vec2(s.x, s.y);
+    }
+  }
+  else {
+    if(absR.y > absR.z) {
+      vec3 s = r - r*(r.y-cubeRad)/r.y;
+      // y+
+      if(r.y > 0.) f = vec2(s.x, s.z);
+      // y-
+      else f = vec2(s.x, s.z);
+    }
+    else {
+      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      // z+
+      if(r.z > 0.) f = vec2(s.x, s.y);
+      // z-
+      else f = vec2(s.x, s.y);
+    }
+  }
+ 
+  f = vec2(1) - abs(2.*fract(f/size)-vec2(1));
+  return min(f.x, f.y);
+}
+
+
+// Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
+float terrainOnCubeSphere(vec3 r) {
+  return H_SCALE * pyramidOnCubeSphere(r, W_SCALE);
+}
+
+vec3 calcNormalOnCubeSphere(vec3 r, float t) {
+  vec2 eps = vec2(0.001*t, 0.0);
+  return normalize(vec3(
+    terrainOnCubeSphere(r-eps.xyy) - terrainOnCubeSphere(r+eps.xyy),
+    terrainOnCubeSphere(r-eps.yxy) - terrainOnCubeSphere(r+eps.yxy),
+    terrainOnCubeSphere(r-eps.yyx) - terrainOnCubeSphere(r+eps.yyx)
   ));
 }
 
