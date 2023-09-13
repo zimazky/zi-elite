@@ -23,6 +23,13 @@ vec3 noised(vec2 x) {
                du*(u.yx*(a-b-c+d) + vec2(b,c) - a));
 }
 
+// 0     0.5     0
+// -1    0     1
+float pyramid(vec2 x) {
+  vec2 f = vec2(1) - abs(2.*fract(x)-vec2(1));
+  return min(f.x,f.y);
+}
+
 const mat2 im2 = mat2(0.8,-0.6,0.6,0.8);
 const float W_SCALE = 3000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
@@ -30,6 +37,19 @@ const float H_SCALE = 1100.; // масштаб по высоте
 const float GRASS_HEIGHT_MAX = 600.;
 const float SEA_LEVEL = 0.;
 
+float terrainH(vec2 x) {
+  return H_SCALE*pyramid(x/W_SCALE);
+}
+
+float terrainM(vec2 x) {
+   return H_SCALE*pyramid(x/W_SCALE);
+}
+
+float terrainS(vec2 x) {
+   return H_SCALE*pyramid(x/W_SCALE);
+}
+
+/*
 // Генерация высоты с эррозией без производных упрощенная
 float terrainH(vec2 x) {
   vec2  p = x/W_SCALE;
@@ -73,6 +93,7 @@ float terrainS(vec2 x) {
   }
   return max(H_SCALE*a,SEA_LEVEL);
 }
+*/
 
 vec3 calcNormalH(vec3 pos, float t) {
   vec2 eps = vec2(0.001*t, 0.0);
@@ -149,6 +170,12 @@ vec4 darkSandAlbedo = vec4(0.4*pow(vec3(0.43137254902, 0.34117647059, 0.36078431
 //vec4 snowAlbedo = vec4(0.750, 0.940, 1.00, 1.);
 vec4 snowAlbedo = vec4(0.75, 0.80, 0.85, 1.);
 
+vec4 terrain_color(vec3 pos, vec3 nor) {
+  return lightRockAlbedo;
+}
+
+/*
+
 // определение цвета пикселя
 vec4 terrain_color(vec3 pos, vec3 nor) {
   float LvsR = 1.;//step(0.5, gl_FragCoord.x/uResolution.x);
@@ -189,3 +216,5 @@ vec4 terrain_color(vec3 pos, vec3 nor) {
   albedo = mix(albedo, snowAlbedo, smoothstep(0.1, 0.9, s));
   return vec4(albedo.rgb, 1.);
 }
+
+*/

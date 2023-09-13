@@ -16,6 +16,11 @@ const W_SCALE = 3000.; // масштаб по горизонтали
 const H_SCALE = 1100.; // масштаб по высоте
 const MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота ландшафта для вычисления теней
 
+function pyramid(x: Vec2) {
+  const f = Vec2.ONE().subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE()));
+  return Math.min(f.x,f.y);
+}
+
 export class TerrainSampler {
   private _noiseSampler: NoiseSampler;
 
@@ -23,7 +28,20 @@ export class TerrainSampler {
     this._noiseSampler = noiseSampler;
   }
 
+    
+  terrainH(x: Vec2) {
+    return H_SCALE*pyramid(x.div(W_SCALE));
+  }
+  terrainM(x: Vec2) {
+    return H_SCALE*pyramid(x.div(W_SCALE));
+  }
+  terrainS(x: Vec2) {
+    return H_SCALE*pyramid(x.div(W_SCALE));
+  }
+
+
   /** Генерация высоты с эррозией с высокой детализацией без аналитических производных */
+  /*
   terrainH(v: Vec2): number {
     let p = v.div(W_SCALE);
     let a = 0.;
@@ -38,7 +56,9 @@ export class TerrainSampler {
     }
     return H_SCALE*a;
   }
+  */
   /** Генерация высоты с эррозией со средней детализацией без аналитических производных */
+  /*
   terrainM(v: Vec2): number {
     let p = v.div(W_SCALE);
     let a = 0.;
@@ -53,7 +73,9 @@ export class TerrainSampler {
     }
     return H_SCALE*a;
   }
+  */
   /** Генерация высоты с эррозией с низкой детализацией без аналитических производных */
+  /*
   terrainS(v: Vec2): number {
     let p = v.div(W_SCALE);
     let a = 0.;
@@ -68,7 +90,7 @@ export class TerrainSampler {
     }
     return H_SCALE*a;
   }
-
+*/
   calcNormalM(pos: Vec3, t: number): Vec3 {
     const eps = new Vec2(0.001*t, 0.0);
     return new Vec3(
