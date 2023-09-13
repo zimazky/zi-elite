@@ -23,13 +23,13 @@ type ResultScattering = {
 export class Atmosphere {
 
   /** Радиус планеты */
-  planetRadius: number = 6371e3;
+  planetRadius: number = 200000; // 6371e3;
   /** Квадрат радиуса планеты */
   planetRadius2: number;
   /** Положение центра планеты */
   planetCenter: Vec3 = new Vec3(0., -this.planetRadius, 0.);
   /** Радиус атмосферы */
-  radius: number = 6471e3;
+  radius: number = 300000; // 6471e3;
   /** Квадрат радиуса атмосферы */
   radius2: number;
   /** Коэффициент преломления воздуха */

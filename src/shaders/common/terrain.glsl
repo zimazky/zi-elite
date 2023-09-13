@@ -28,6 +28,11 @@ float pyramid(vec2 x) {
   return min(f.x,f.y);
 }
 
+float pyramid3d(vec3 x) {
+  vec3 f = abs(2.*fract(x)-vec3(1));
+  return max(max(f.x,f.y),f.z);
+}
+
 const mat2 im2 = mat2(0.8,-0.6,0.6,0.8);
 const float W_SCALE = 3000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
@@ -45,6 +50,29 @@ float terrainM(vec2 x) {
 
 float terrainS(vec2 x) {
    return H_SCALE*pyramid(x/W_SCALE);
+}
+
+// Высота на сфере в зависимости от сферических координат 
+// s.x - долгота
+// s.y - широта
+float terrainOnSphere(vec2 s) {
+  return H_SCALE*pyramid(s*360./PI);
+}
+
+// Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
+//float terrainOnCubeSphere(vec3 r) {
+//  return H_SCALE*pyramid(r*360./PI);
+//}
+
+
+// Вычисление нормали в точке, заданной сферическими координатами
+vec3 calcNormalOnSphere(vec3 lla, float t) {
+  vec2 eps = vec2(0.0000001, 0.0);
+  return normalize(vec3(
+    terrainOnSphere(lla.xy-eps.xy) - terrainOnSphere(lla.xy+eps.xy),
+    2.0*eps.x,
+    terrainOnSphere(lla.xy-eps.yx) - terrainOnSphere(lla.xy+eps.yx)
+  ));
 }
 
 /*
@@ -91,7 +119,6 @@ float terrainS(vec2 x) {
   }
   return max(H_SCALE*a,SEA_LEVEL);
 }
-*/
 
 vec3 calcNormalH(vec3 pos, float t) {
   vec2 eps = vec2(0.001*t, 0.0);
@@ -110,6 +137,7 @@ vec3 calcNormalM(vec3 pos, float t) {
     terrainM(pos.xz-eps.yx) - terrainM(pos.xz+eps.yx)
   ));
 }
+*/
 
 // функция определения затененности
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
