@@ -17,7 +17,7 @@ const H_SCALE = 1100.; // масштаб по высоте
 const MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота ландшафта для вычисления теней
 
 function pyramid(x: Vec2) {
-  const f = Vec2.ONE().subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE()));
+  const f = Vec2.ONE().subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE()).abs());
   return Math.min(f.x,f.y);
 }
 

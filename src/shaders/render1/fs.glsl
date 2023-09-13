@@ -260,7 +260,7 @@ void main() {
 
   if(uScreenMode.x == MAP_VIEW) {
     col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
-    col *= ssao*ssao;
+    col *= ssao; //*ssao;
   }
   else {
     

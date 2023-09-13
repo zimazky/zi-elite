@@ -23,8 +23,6 @@ vec3 noised(vec2 x) {
                du*(u.yx*(a-b-c+d) + vec2(b,c) - a));
 }
 
-// 0     0.5     0
-// -1    0     1
 float pyramid(vec2 x) {
   vec2 f = vec2(1) - abs(2.*fract(x)-vec2(1));
   return min(f.x,f.y);
