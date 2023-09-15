@@ -50,7 +50,7 @@ export class Atmosphere {
     );
     */
   betaRayleigh: Vec3 = new Vec3(5.5e-6, 13.0e-6, 22.4e-6);
-  betaMie: Vec3 = Vec3.ONE().mulMutable(2e-7); // Коэффициенты рассеивания Ми, не зависят от частоты света  на уровне моря
+  betaMie: Vec3 = Vec3.ONE.mulMutable(2e-7); // Коэффициенты рассеивания Ми, не зависят от частоты света  на уровне моря
   g: number = 0.996;
   /** Коэффициент деполяризации воздуха */
   p: number = 0.035;
@@ -126,12 +126,12 @@ export class Atmosphere {
     let r2 = start.dot(start); // квадрат расстояния до центра планеты
     let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
     const CT2 = r2 - OT*OT;    // квадрат минимального расстояния от луча до центра планеты
-    if(CT2 >= this.radius2) return { t:Vec3.ZERO(), i:Vec3.ONE() }; // луч проходит выше атмосферы
+    if(CT2 >= this.radius2) return { t:Vec3.ZERO, i:Vec3.ONE }; // луч проходит выше атмосферы
     const AT = Math.sqrt(this.radius2-CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
     let rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
     if(r2 > this.radius2) {
       // выше атмосферы
-      if(OT < 0.) return { t:Vec3.ZERO(), i:Vec3.ONE() }; // направление от планеты
+      if(OT < 0.) return { t:Vec3.ZERO, i:Vec3.ONE }; // направление от планеты
       // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
       start.addMutable(rd.mul(OT - AT));
       r2 = this.radius2;
@@ -168,8 +168,8 @@ export class Atmosphere {
     // оптическая глубина
     let optRayleigh = 0.;
     let optMie = 0.;
-    const totalRayleigh = Vec3.ZERO();
-    const totalMie = Vec3.ZERO();
+    const totalRayleigh = Vec3.ZERO;
+    const totalMie = Vec3.ZERO;
     let fDensityRayleigh = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightRayleigh);
     let fDensityMie = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightMie);
 
@@ -239,12 +239,12 @@ export class Atmosphere {
     let r2 = start.dot(start); // квадрат расстояния до центра планеты
     let OT = -start.dot(rd);   // расстояния вдоль луча до точки минимального расстояния до центра планеты
     const CT2 = r2 - OT*OT;    // квадрат минимального расстояния от луча до центра планеты
-    if(CT2 >= this.radius2) return Vec3.ZERO(); // луч проходит выше атмосферы
+    if(CT2 >= this.radius2) return Vec3.ZERO; // луч проходит выше атмосферы
     const AT = Math.sqrt(this.radius2-CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
     let rayLen = 2.*AT; // длина луча до выхода из атмосферы или до касания с планетой, сначала считаем равной длине в сфере атмосферы
     if(r2 > this.radius2) {
       // выше атмосферы
-      if(OT < 0.) return Vec3.ZERO(); // направление от планеты
+      if(OT < 0.) return Vec3.ZERO; // направление от планеты
       // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
       start.addMutable(rd.mul(OT - AT));
       r2 = this.radius2;
@@ -279,8 +279,8 @@ export class Atmosphere {
     // оптическая глубина
     let optRayleigh = 0.;
     let optMie = 0.;
-    const totalRayleigh = Vec3.ZERO();
-    const totalMie = Vec3.ZERO();
+    const totalRayleigh = Vec3.ZERO;
+    const totalMie = Vec3.ZERO;
     let fDensityRayleigh = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightRayleigh);
     let fDensityMie = stepSize*Math.exp(-(start.length()-this.planetRadius)/this.heightMie);
 

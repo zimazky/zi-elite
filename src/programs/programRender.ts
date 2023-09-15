@@ -218,7 +218,7 @@ export class ProgramRender {
 
     const flarePos = [...this.flare1.position.getArray(), ...this.flare2.position.getArray()];
     this.engine.gl.uniform3fv(this.uFlarePositions, flarePos);
-    const flareLights = [this.flare1.isVisible ? this.flare1.light : Vec3.ZERO(), this.flare2.isVisible ? this.flare2.light : Vec3.ZERO()];
+    const flareLights = [this.flare1.isVisible ? this.flare1.light : Vec3.ZERO, this.flare2.isVisible ? this.flare2.light : Vec3.ZERO];
     this.engine.gl.uniform3fv(this.uFlareLights, [...flareLights[0].getArray(), ...flareLights[1].getArray()]);
 
     this.engine.gl.uniform2f(this.uScreenMode, this.camera.screenMode, this.camera.mapMode);

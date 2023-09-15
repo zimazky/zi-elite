@@ -11,7 +11,7 @@ const skyAngle = Math.PI*0.12; // угол наклона оси вращени�
 
 export class Sky {
   /** поворот небесного свода (плоскости млечного пути) относительно системы координат планеты (на момент t=0) */
-  quat: Quaternion = Quaternion.fromAxisAngle(Vec3.I(), 0.5*Math.PI);
+  quat: Quaternion = Quaternion.fromAxisAngle(Vec3.I, 0.5*Math.PI);
   /** ось вращения небесной сферы */
   axis: Vec3 = new Vec3(0., Math.cos(skyAngle), -Math.sin(skyAngle));
   /** период полного поворота небесной сферы в секундах */
@@ -21,9 +21,9 @@ export class Sky {
   /** вектор направления на луну (на момент t=0) */
   moonDir = new Vec3(0., Math.sin(skyAngle), Math.cos(skyAngle));
   /** поворот небесного свода за счет суточного вращения */
-  orientation: Quaternion = Quaternion.Identity();
+  orientation: Quaternion = Quaternion.ID;
   /** матрица поворота для передачи вершинному шейдеру */
-  transformMat: Mat3 = Mat3.ID();
+  transformMat: Mat3 = Mat3.ID;
   /** флаг отображения созвездий */
   isShowConstellations: boolean = false;
   /** направление на солнце на данный момент */
@@ -36,9 +36,9 @@ export class Sky {
 
   skyRefreshTime: number = 0.;
 
-  sunDiscColor: Vec3 = Vec3.ZERO();
+  sunDiscColor: Vec3 = Vec3.ZERO;
   moonDiskColor: Vec3 = new Vec3(0.005,0.005,0.01);
-  skyColor: Vec3 = Vec3.ZERO();
+  skyColor: Vec3 = Vec3.ZERO;
 
   constructor(camera: Camera, atm: Atmosphere) {
     this.camera = camera;
@@ -67,7 +67,7 @@ export class Sky {
       const oneDivSqrt2 = 1./Math.sqrt(2.);
       // светимость неба по 5-ти точкам
       const skyDirScatter = 
-        this.atm.scattering(pos, Vec3.J(), this.sunDirection).t
+        this.atm.scattering(pos, Vec3.J, this.sunDirection).t
         .add(this.atm.scattering(pos, new Vec3(oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
         .add(this.atm.scattering(pos, new Vec3(-oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
         .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), this.sunDirection).t)

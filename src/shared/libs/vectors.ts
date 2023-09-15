@@ -121,19 +121,19 @@ export class Vec4 implements IVectors<Vec4> {
   // Статические методы
 
   /** Получить нулевой вектор */
-  static ZERO = () => new Vec4(0., 0., 0., 0.);
+  static get ZERO() { return new Vec4(0., 0., 0., 0.) };
   /** Получить единичный вектор */
-  static ONE = () => new Vec4(1., 1., 1., 1.);
+  static get ONE() { return new Vec4(1., 1., 1., 1.) };
   /** Получить i-вектор */
-  static I = () => new Vec4(1., 0., 0., 0.);
+  static get I() { return new Vec4(1., 0., 0., 0.) };
   /** Получить j-вектор */
-  static J = () => new Vec4(0., 1., 0., 0.);
+  static get J() { return new Vec4(0., 1., 0., 0.) };
   /** Получить k-вектор */
-  static K = () => new Vec4(0., 0., 1., 0.);
+  static get K() { return new Vec4(0., 0., 1., 0.) };
   /** Получить l-вектор */
-  static L = () => new Vec4(0., 0., 0., 1.);
+  static get L() { return new Vec4(0., 0., 0., 1.) };
   /** Получить вектор со случайными элкментами в диапазоне 0...1 */
-  static RAND = () => new Vec4(Math.random(), Math.random(), Math.random(), Math.random());
+  static get RAND() { return new Vec4(Math.random(), Math.random(), Math.random(), Math.random()) };
   /** Получить вектор из массива чисел */
   static fromArray([x, y, z, w]: [number, number, number, number] | Float32Array): Vec4 { return new Vec4(x, y, z, w); }
 
@@ -327,11 +327,11 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
   // Статические методы
 
   /** Получить Identity матрицу */
-  static ID = () => new Mat4(Vec4.I(), Vec4.J(), Vec4.K(), Vec4.L());
+  static get ID() { return new Mat4(Vec4.I, Vec4.J, Vec4.K, Vec4.L) };
   /** Получить нулевую матрицу */
-  static ZERO = () => new Mat4(Vec4.ZERO(), Vec4.ZERO(), Vec4.ZERO(), Vec4.ZERO());
+  static get ZERO() { return new Mat4(Vec4.ZERO, Vec4.ZERO, Vec4.ZERO, Vec4.ZERO) };
   /** Получить матрицу со случайными элементами */
-  static RAND = () => new Mat4(Vec4.RAND(), Vec4.RAND(), Vec4.RAND(), Vec4.RAND());
+  static get RAND() { return new Mat4(Vec4.RAND, Vec4.RAND, Vec4.RAND, Vec4.RAND) };
 
   /** Получить матрицу из массива чисел */
   static fromArray([
@@ -805,17 +805,17 @@ export class Vec3 implements IVectors<Vec3> {
   // Статические методы
 
   /** Получить нулевой вектор */
-  static ZERO = () => new Vec3(0.,0.,0.);
+  static get ZERO() { return new Vec3(0.,0.,0.) };
   /** Получить единичный вектор */
-  static ONE = () => new Vec3(1.,1.,1.);
+  static get ONE() { return new Vec3(1.,1.,1.) };
   /** Получить i-вектор */
-  static I = () => new Vec3(1.,0.,0.);
+  static get I() { return new Vec3(1.,0.,0.) };
   /** Получить j-вектор */
-  static J = () => new Vec3(0.,1.,0.);
+  static get J() { return new Vec3(0.,1.,0.) };
   /** Получить k-вектор */
-  static K = () => new Vec3(0.,0.,1.);
+  static get K() { return new Vec3(0.,0.,1.) };
   /** Получить вектор со случайными элементами в диапазоне 0...1 */
-  static RAND = () => new Vec3(Math.random(),Math.random(),Math.random());
+  static get RAND() { return new Vec3(Math.random(),Math.random(),Math.random()) };
   /** Получить вектор из массива чисел */
   static fromArray([x, y, z]: [number, number, number] | Float32Array): Vec3 { return new Vec3(x, y, z); }
 
@@ -938,13 +938,13 @@ export class Vec3 implements IVectors<Vec3> {
 
   safeNormalize(): Vec3 { 
     const d = Math.sqrt(this.dot(this));
-    if(d<Number.MIN_VALUE) return Vec3.ZERO();
+    if(d<Number.MIN_VALUE) return Vec3.ZERO;
     return this.div(d); 
   }
 
   colorNormalize(): Vec3 {
     const max = Math.max(this.x, this.y, this.z);
-    if(max<Number.MIN_VALUE) return Vec3.ZERO();
+    if(max<Number.MIN_VALUE) return Vec3.ZERO;
     return this.div(max);
   }
 
@@ -998,9 +998,9 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
   // Статические методы
 
   /** Получить Identity матрицу */
-  static ID = () => new Mat3(Vec3.I(), Vec3.J(), Vec3.K());
+  static get ID() { return new Mat3(Vec3.I, Vec3.J, Vec3.K) };
   /** Получить нулевую матрицу */
-  static ZERO = () => new Mat3(Vec3.ZERO(), Vec3.ZERO(), Vec3.ZERO());
+  static get ZERO() { return new Mat3(Vec3.ZERO, Vec3.ZERO, Vec3.ZERO) };
 
   /** Получить матрицу из массива чисел */
   static fromArray([
@@ -1210,15 +1210,15 @@ export class Vec2 implements IVectors<Vec2> {
   // Статические методы
 
   /** Получить нулевой вектор */
-  static ZERO = () => new Vec2(0.,0.);
+  static get ZERO() { return new Vec2(0., 0.) };
   /** Получить единичный вектор */
-  static ONE = () => new Vec2(1.,1.);
+  static get ONE() { return new Vec2(1., 1.) };
   /** Получить i-вектор */
-  static I = () => new Vec2(1.,0.);
+  static get I() { return new Vec2(1., 0.) };
   /** Получить j-вектор */
-  static J = () => new Vec2(0.,1.);
+  static get J() { return new Vec2(0.,1.) };
   /** Получить вектор со случайными элементами в диапазоне 0...1 */
-  static RAND = () => new Vec2(Math.random(),Math.random());
+  static get RAND() { return new Vec2(Math.random(), Math.random()) };
   /** Получить вектор из набора чисел */
   static fromValues(x: number, y: number): Vec2 { return new Vec2(x, y); }
   /** Получить вектор из массива чисел */
@@ -1330,9 +1330,9 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
   // Статические методы
 
   /** Получить Identity матрицу */
-  static ID = () => new Mat2(Vec2.I(), Vec2.J());
+  static get ID() { return new Mat2(Vec2.I, Vec2.J) };
   /** Получить нулевую матрицу */
-  static ZERO = () => new Mat2(Vec2.ZERO(), Vec2.ZERO());
+  static get ZERO() { return new Mat2(Vec2.ZERO, Vec2.ZERO) };
 
   /** Получить матрицу из массива чисел */
   static fromArray([a00, a01, a10, a11]: [number, number, number, number] | Float32Array): Mat2 { 
@@ -1437,9 +1437,9 @@ export class Quaternion extends Vec4 {
   // Статические методы
 
   /** Кватернион не меняющий ориентацию */
-  static Identity = () => new Quaternion(0.,0.,0.,1.);
+  static get ID() { return new Quaternion(0.,0.,0.,1.) };
   /** Получить случайный кватернион */
-  static random(): Quaternion {
+  static get QRAND() {
     var u1 = Math.random();
     var u2 = Math.random();
     var u3 = Math.random();
@@ -1577,7 +1577,7 @@ export class Quaternion extends Vec4 {
     const rad = Math.acos(this.w) * 2.;
     const s = Math.sin(0.5 * rad);
     if (s > EPSILON) return new Vec3(this.x / s, this.y / s, this.z / s);
-    return Vec3.I();
+    return Vec3.I;
   }
   /** Получить угол между текущим и заданным кватернионами */
   getAngleDelta(q: Quaternion): number {

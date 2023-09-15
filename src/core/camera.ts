@@ -53,11 +53,11 @@ export class Camera {
   /* Направление камеры */
   direction: Vec3 = new Vec3(0., 0., -1.);
   /** Матрица вращения камеры для передачи вершинному шейдеру. Используется для определения направления лучей */
-  transformMat: Mat3 = Mat3.ID();
+  transformMat: Mat3 = Mat3.ID;
   /** Матрица вращения камеры предыдущего кадра */
-  transformMatPrev: Mat3 = Mat3.ID();
+  transformMatPrev: Mat3 = Mat3.ID;
   /** Изменение положения камеры относительно предыдущего кадра */
-  positionDelta: Vec3 = Vec3.ZERO();
+  positionDelta: Vec3 = Vec3.ZERO;
   /** Яркость фар, 0. - выключены */
   headLights: number = 0;
 
@@ -70,8 +70,8 @@ export class Camera {
   constructor(position: Vec3, quaternion: Quaternion, t: TerrainSampler, planet: Planet) {
     this._planet = planet;
     this.position = position.copy();
-    this.velocity = Vec3.ZERO();
-    this.angularSpeed = Vec3.ZERO();
+    this.velocity = Vec3.ZERO;
+    this.angularSpeed = Vec3.ZERO;
     this.orientation = quaternion;
     this.viewAngle = 80.*Math.PI/180.;
     this.tSampler = t;
@@ -107,7 +107,7 @@ export class Camera {
     // гравитация
     this.velocity.y -= GRAVITATION*timeDelta;
     // экстренная остановка
-    if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO();
+    if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO;
 
     // перемещение
     this.positionDelta = this.position.copy();

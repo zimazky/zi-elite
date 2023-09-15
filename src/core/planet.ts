@@ -32,7 +32,7 @@ export class Planet {
   /** Положение центра планеты относительно системы координат камеры */
   center: Vec3 = new Vec3(0., -this.radius, 0.);
   /** кватернион, определяющий текущую ориентацию планеты при суточном вращении */
-  orientation: Quaternion = Quaternion.Identity();
+  orientation: Quaternion = Quaternion.ID;
 
   constructor() {
     this.axis = new Vec3(0., Math.sin(this.obliquity), Math.cos(this.obliquity));

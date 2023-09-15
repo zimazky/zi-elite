@@ -1,4 +1,4 @@
-import { Mat3, Vec3, Vec4 } from "./vectors";
+import { Mat3, Vec3, Vec4 } from "./vectors_old";
 
 export class Quaternion extends Vec4 {
 

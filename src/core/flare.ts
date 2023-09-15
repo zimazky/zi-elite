@@ -17,7 +17,7 @@ export class Flare {
   /** Положение ракеты */
   position: Vec3;
   /** Скорость ракеты */
-  velocity: Vec3 = Vec3.ZERO();
+  velocity: Vec3 = Vec3.ZERO;
   /** Начальная скорость при запуске, м/с */
   initialSpeed = 100;
   /** Направление начального импульса */
@@ -63,7 +63,7 @@ export class Flare {
       // запуск ракеты, если предыдущая уже погасла
       this.isVisible = true;
       this.n = 0;
-      this.position = this.camera.position.add(this.camera.orientation.rotate(Vec3.I()));
+      this.position = this.camera.position.add(this.camera.orientation.rotate(Vec3.I));
       this.velocity = this.camera.velocity.add(this.camera.orientation.rotate(this.initialDirection).mul(this.initialSpeed));
     }
   }
