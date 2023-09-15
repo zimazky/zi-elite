@@ -2,6 +2,7 @@ import { Vec2, Vec3 } from "./vectors";
 import { isKeyPress, isKeyDown } from "./keyboard";
 import { Camera } from "./camera";
 import { rad } from "./mathutils";
+import { Planet } from "./planet";
 
 const KEY_F = 70;
 
@@ -10,6 +11,8 @@ const KEY_F = 70;
  * Используем один и тот же объект для повторного запуска ракеты
  */
 export class Flare {
+  private _planet: Planet;
+
   /** Положение ракеты */
   position: Vec3;
   /** Скорость ракеты */
@@ -29,8 +32,9 @@ export class Flare {
   /** Число столкновений с поверхностью */
   n: number = 0;
 
-  constructor(cam: Camera, light: Vec3 = new Vec3(100,100,100)) {
+  constructor(cam: Camera, planet: Planet, light: Vec3 = new Vec3(100,100,100)) {
     this.camera = cam;
+    this._planet = planet;
     this.position = this.camera.position.copy();
     this.light = light
   }
@@ -40,15 +44,16 @@ export class Flare {
       this.position.addMutable(this.velocity.mul(timeDelta));
       this.velocity.addMutable(new Vec3(0., -this.g*timeDelta, 0.));
       // если упала на поверхность, то погасла
-      const height = this.camera.tSampler.terrainM(new Vec2(this.position.x, this.position.z));
-      const dy = this.position.y - height;
+      const lla = this._planet.lonLatAlt(this.position);
+      const height = this.camera.tSampler.terrainOnSphere(new Vec2(lla.x, lla.y));
+      const dy = lla.z - height;
       if(dy < 0) {
         if(++this.n > 0) {
           this.isVisible = false;
           return;
         }
         this.position.y -= dy;
-        const norm = this.camera.tSampler.calcNormalM(this.position, 200);
+        const norm = this.camera.tSampler.calcNormal(this.position, 200);
         this.velocity.addMutable(norm.mul(-1.1*norm.dot(this.velocity))).mulMutable(0.6);
       }
       return;

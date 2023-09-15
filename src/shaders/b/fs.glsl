@@ -20,10 +20,6 @@ uniform vec3 uCameraDirection;
 
 /** Синус половины углового размера солнца */
 uniform float uSunDiscAngleSin;
-/** Радиус планеты */
-uniform float uPlanetRadius;
-/** Положение центра планеты */
-uniform vec3 uPlanetCenter;
 
 /**
  * Режим отображения
@@ -81,6 +77,7 @@ layout (location = 1) out vec4 gAlbedo;
  *   tmax - максимальная глубина рейтрейсинга
  *   i - выходное значение количества циклов рейтрейсинга
  */
+ /*
 float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   float d = ro.y - MAX_TRN_ELEVATION;
@@ -95,7 +92,9 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   }
   return t;
 }
+*/
 
+/*
 // Перевод декартовых координат точки в сферические координаты относительно центра планеты
 // Начало декартовых координат совпадает с точкой 0,0,0 на сфере
 // Ось x 
@@ -109,6 +108,24 @@ vec3 lonLatAlt(vec3 p) {
   float theta = atan(length(r.xy), r.z);
   float alt = length(r) - uPlanetRadius;
   return vec3(phi, theta, alt);
+}
+*/
+
+// Вычисление нормали в точке, заданной сферическими координатами
+vec3 calcNormal(vec3 pos, float t) {
+  vec2 eps = vec2(0.1, 0.);
+  vec3 llax1 = lonLatAlt(pos + eps.xyy);
+  vec3 llax2 = lonLatAlt(pos - eps.xyy);
+  vec3 llay1 = lonLatAlt(pos + eps.yxy);
+  vec3 llay2 = lonLatAlt(pos - eps.yxy);
+  vec3 llaz1 = lonLatAlt(pos + eps.yyx);
+  vec3 llaz2 = lonLatAlt(pos - eps.yyx);
+
+  return normalize(vec3(
+    terrainOnSphere(llax2.xy) - terrainOnSphere(llax1.xy),
+    terrainOnSphere(llay2.xy) - terrainOnSphere(llay1.xy),
+    terrainOnSphere(llaz2.xy) - terrainOnSphere(llaz1.xy)
+  ));
 }
 
 /** 
@@ -124,7 +141,7 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   // НАЙТИ ТОЧКУ ПЕРЕСЕЧЕНИЯ
   //float d = ro.y - MAX_TRN_ELEVATION;
   //if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
-  float roAlt = length(ro) - uPlanetRadius;
+  //float roAlt = length(ro) - uPlanetRadius;
   for(int i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     vec3 lla = lonLatAlt(pos);
@@ -143,7 +160,7 @@ void main(void) {
   if(uScreenMode.x == MAP_VIEW) {
     // Режим отображения карты
     vec4 norDepth;
-    gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
+    //gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
     gNormalDepth = norDepth;
   }
   else {
@@ -170,7 +187,7 @@ void main(void) {
       else {
         pos = uCameraPosition + t*rd;
         vec3 lla = lonLatAlt(pos);
-        vec3 nor = calcNormalOnSphere(pos, max(1.,t));
+        vec3 nor = calcNormal(pos, max(1.,t));
         gNormalDepth = vec4(nor, t);
         col = terrain_color(pos, nor).rgb;
       }

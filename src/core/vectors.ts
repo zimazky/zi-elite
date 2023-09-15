@@ -70,6 +70,54 @@ export class Vec4 implements IVectors<Vec4> {
     this.x = x; this.y = y; this.z = z; this.w = w;
   }
 
+  get xy(): Vec2 { return new Vec2(this.x, this.y) }
+  get yx(): Vec2 { return new Vec2(this.y, this.x) }
+  get xz(): Vec2 { return new Vec2(this.x, this.z) }
+  get zx(): Vec2 { return new Vec2(this.z, this.x) }
+  get yz(): Vec2 { return new Vec2(this.y, this.z) }
+  get zy(): Vec2 { return new Vec2(this.z, this.y) }
+  get xx(): Vec2 { return new Vec2(this.x, this.x) }
+  get yy(): Vec2 { return new Vec2(this.y, this.y) }
+  get zz(): Vec2 { return new Vec2(this.z, this.z) }
+
+  get xw(): Vec2 { return new Vec2(this.x, this.w) }
+  get wx(): Vec2 { return new Vec2(this.w, this.x) }
+  get yw(): Vec2 { return new Vec2(this.y, this.w) }
+  get wy(): Vec2 { return new Vec2(this.w, this.y) }
+  get zw(): Vec2 { return new Vec2(this.z, this.w) }
+  get wz(): Vec2 { return new Vec2(this.w, this.z) }
+  get ww(): Vec2 { return new Vec2(this.w, this.w) }
+
+  get xyz(): Vec3 { return new Vec3(this.x, this.y, this.z) }
+  get xzy(): Vec3 { return new Vec3(this.x, this.z, this.y) }
+  get yzx(): Vec3 { return new Vec3(this.y, this.z, this.x) }
+  get yxz(): Vec3 { return new Vec3(this.y, this.x, this.z) }
+  get zxy(): Vec3 { return new Vec3(this.z, this.x, this.y) }
+  get zyx(): Vec3 { return new Vec3(this.z, this.y, this.x) }
+  get xxy(): Vec3 { return new Vec3(this.x, this.x, this.y) }
+  get xyx(): Vec3 { return new Vec3(this.x, this.y, this.x) }
+  get yxx(): Vec3 { return new Vec3(this.y, this.x, this.x) }
+  get xyy(): Vec3 { return new Vec3(this.x, this.y, this.y) }
+  get yxy(): Vec3 { return new Vec3(this.y, this.x, this.y) }
+  get yyx(): Vec3 { return new Vec3(this.y, this.y, this.x) }
+  get xxz(): Vec3 { return new Vec3(this.x, this.x, this.z) }
+  get xzx(): Vec3 { return new Vec3(this.x, this.z, this.x) }
+  get zxx(): Vec3 { return new Vec3(this.z, this.x, this.x) }
+  get xzz(): Vec3 { return new Vec3(this.x, this.z, this.z) }
+  get zxz(): Vec3 { return new Vec3(this.z, this.x, this.z) }
+  get zzx(): Vec3 { return new Vec3(this.z, this.z, this.x) }
+  get yyz(): Vec3 { return new Vec3(this.y, this.y, this.z) }
+  get yzy(): Vec3 { return new Vec3(this.y, this.z, this.y) }
+  get zyy(): Vec3 { return new Vec3(this.z, this.y, this.y) }
+  get yzz(): Vec3 { return new Vec3(this.y, this.z, this.z) }
+  get zyz(): Vec3 { return new Vec3(this.z, this.y, this.z) }
+  get zzy(): Vec3 { return new Vec3(this.z, this.z, this.y) }
+  get xxx(): Vec3 { return new Vec3(this.x, this.x, this.x) }
+  get yyy(): Vec3 { return new Vec3(this.y, this.y, this.y) }
+  get zzz(): Vec3 { return new Vec3(this.z, this.z, this.z) }
+
+  // ДОПИСАТЬ С КОМПОНЕНТОМ W
+
   addMutable(v: Vec4): Vec4 {
     this.x += v.x; this.y += v.y; this.z += v.z; this.w += v.w;
     return this;
@@ -218,6 +266,44 @@ export class Vec3 implements IVectors<Vec3> {
     this.x = x; this.y = y; this.z = z;
   }
 
+  get xy(): Vec2 { return new Vec2(this.x, this.y) }
+  get yx(): Vec2 { return new Vec2(this.y, this.x) }
+  get xz(): Vec2 { return new Vec2(this.x, this.z) }
+  get zx(): Vec2 { return new Vec2(this.z, this.x) }
+  get yz(): Vec2 { return new Vec2(this.y, this.z) }
+  get zy(): Vec2 { return new Vec2(this.z, this.y) }
+  get xx(): Vec2 { return new Vec2(this.x, this.x) }
+  get yy(): Vec2 { return new Vec2(this.y, this.y) }
+  get zz(): Vec2 { return new Vec2(this.z, this.z) }
+
+  get xyz(): Vec3 { return new Vec3(this.x, this.y, this.z) }
+  get xzy(): Vec3 { return new Vec3(this.x, this.z, this.y) }
+  get yzx(): Vec3 { return new Vec3(this.y, this.z, this.x) }
+  get yxz(): Vec3 { return new Vec3(this.y, this.x, this.z) }
+  get zxy(): Vec3 { return new Vec3(this.z, this.x, this.y) }
+  get zyx(): Vec3 { return new Vec3(this.z, this.y, this.x) }
+  get xxy(): Vec3 { return new Vec3(this.x, this.x, this.y) }
+  get xyx(): Vec3 { return new Vec3(this.x, this.y, this.x) }
+  get yxx(): Vec3 { return new Vec3(this.y, this.x, this.x) }
+  get xyy(): Vec3 { return new Vec3(this.x, this.y, this.y) }
+  get yxy(): Vec3 { return new Vec3(this.y, this.x, this.y) }
+  get yyx(): Vec3 { return new Vec3(this.y, this.y, this.x) }
+  get xxz(): Vec3 { return new Vec3(this.x, this.x, this.z) }
+  get xzx(): Vec3 { return new Vec3(this.x, this.z, this.x) }
+  get zxx(): Vec3 { return new Vec3(this.z, this.x, this.x) }
+  get xzz(): Vec3 { return new Vec3(this.x, this.z, this.z) }
+  get zxz(): Vec3 { return new Vec3(this.z, this.x, this.z) }
+  get zzx(): Vec3 { return new Vec3(this.z, this.z, this.x) }
+  get yyz(): Vec3 { return new Vec3(this.y, this.y, this.z) }
+  get yzy(): Vec3 { return new Vec3(this.y, this.z, this.y) }
+  get zyy(): Vec3 { return new Vec3(this.z, this.y, this.y) }
+  get yzz(): Vec3 { return new Vec3(this.y, this.z, this.z) }
+  get zyz(): Vec3 { return new Vec3(this.z, this.y, this.z) }
+  get zzy(): Vec3 { return new Vec3(this.z, this.z, this.y) }
+  get xxx(): Vec3 { return new Vec3(this.x, this.x, this.x) }
+  get yyy(): Vec3 { return new Vec3(this.y, this.y, this.y) }
+  get zzz(): Vec3 { return new Vec3(this.z, this.z, this.z) }
+
   addMutable(v: Vec3): Vec3 {
     this.x += v.x; this.y += v.y; this.z += v.z;
     return this;
@@ -348,6 +434,11 @@ export class Vec2 implements IVectors<Vec2> {
   constructor(x: number, y: number) {
     this.x = x; this.y = y;
   }
+
+  get xy(): Vec2 { return new Vec2(this.x, this.y) }
+  get yx(): Vec2 { return new Vec2(this.y, this.x) }
+  get xx(): Vec2 { return new Vec2(this.x, this.x) }
+  get yy(): Vec2 { return new Vec2(this.y, this.y) }
 
   addMutable(v: Vec2): Vec2 {
     this.x += v.x; this.y += v.y;

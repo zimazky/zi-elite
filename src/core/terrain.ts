@@ -4,12 +4,8 @@
 import { SUN_DISC_ANGLE_SIN } from "./constants";
 import { smoothstep } from "./mathutils";
 import { NoiseSampler } from "./noise";
+import { Planet } from "./planet";
 import { Mat2, Vec2, Vec3 } from "./vectors";
-
-interface ValD2 {
-  value: number;
-  derivative: Vec2;
-}
 
 const im2 = new Mat2(new Vec2(0.8,-0.6), new Vec2(0.6,0.8)); // матрица поворота шума при генерации ландшафта
 const W_SCALE = 3000.; // масштаб по горизонтали
@@ -23,12 +19,39 @@ function pyramid(x: Vec2) {
 
 export class TerrainSampler {
   private _noiseSampler: NoiseSampler;
+  private _planet: Planet;
 
-  constructor(noiseSampler: NoiseSampler) {
+  constructor(noiseSampler: NoiseSampler, planet: Planet) {
     this._noiseSampler = noiseSampler;
+    this._planet = planet;
   }
 
-    
+  // Высота на сфере в зависимости от сферических координат 
+  // s.x - долгота
+  // s.y - широта
+  terrainOnSphere(s: Vec2) {
+    return H_SCALE*pyramid(s.mul(360./Math.PI));
+  }
+
+  // Вычисление нормали в точке, заданной сферическими координатами
+  calcNormal(pos: Vec3, t: number) {
+    const eps = 0.1;
+    const llax1 = this._planet.lonLatAlt(new Vec3(pos.x+eps, pos.y, pos.z));
+    const llax2 = this._planet.lonLatAlt(new Vec3(pos.x-eps, pos.y, pos.z));
+    const llay1 = this._planet.lonLatAlt(new Vec3(pos.x, pos.y+eps, pos.z));
+    const llay2 = this._planet.lonLatAlt(new Vec3(pos.x, pos.y-eps, pos.z));
+    const llaz1 = this._planet.lonLatAlt(new Vec3(pos.x, pos.y, pos.z+eps));
+    const llaz2 = this._planet.lonLatAlt(new Vec3(pos.x, pos.y, pos.z-eps));
+
+    return new Vec3(
+      this.terrainOnSphere(llax2.xy) - this.terrainOnSphere(llax1.xy),
+      this.terrainOnSphere(llay2.xy) - this.terrainOnSphere(llay1.xy),
+      this.terrainOnSphere(llaz2.xy) - this.terrainOnSphere(llaz1.xy)
+    ).normalizeMutable();
+  }
+
+
+/*
   terrainH(x: Vec2) {
     return H_SCALE*pyramid(x.div(W_SCALE));
   }
@@ -38,7 +61,7 @@ export class TerrainSampler {
   terrainS(x: Vec2) {
     return H_SCALE*pyramid(x.div(W_SCALE));
   }
-
+*/
 
   /** Генерация высоты с эррозией с высокой детализацией без аналитических производных */
   /*
@@ -91,6 +114,8 @@ export class TerrainSampler {
     return H_SCALE*a;
   }
 */
+
+/*
   calcNormalM(pos: Vec3, t: number): Vec3 {
     const eps = new Vec2(0.001*t, 0.0);
     return new Vec3(
@@ -99,7 +124,7 @@ export class TerrainSampler {
       this.terrainM(new Vec2(pos.x-eps.y,pos.z-eps.x)) - this.terrainM(new Vec2(pos.x+eps.y, pos.z+eps.x))
     ).normalize();
   }
-  
+*/
 
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
@@ -109,8 +134,9 @@ export class TerrainSampler {
     const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
     for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
-      if(p.y > MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
-      const h = p.y - this.terrainM(new Vec2(p.x,p.z));
+      const lla = this._planet.lonLatAlt(p);
+      if(lla.z > MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
+      const h = lla.z - this.terrainOnSphere(lla.xy);
       res = Math.min(res, cosA*h/t);
       if(res<-SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN,SUN_DISC_ANGLE_SIN,res);
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени

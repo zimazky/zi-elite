@@ -17,9 +17,9 @@ uniform vec2 uScaleHeight;
 // Радиус атмосферы
 uniform float uAtmRadius;
 // Радиус планеты
-uniform float uPlanetRadius;
+//uniform float uPlanetRadius;
 // Положение центра планеты
-uniform vec3 uPlanetCenter;
+//uniform vec3 uPlanetCenter;
 
 const int PRIMARY_STEPS = 32; // primary steps, affects quality the most
 

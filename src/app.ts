@@ -24,6 +24,7 @@ import fshaderR from './shaders/render1/fs.glsl';
 
 import { ObjDoc } from './core/loadobj';
 import { ProgramC } from './programs/programC/programC';
+import { Planet } from './core/planet';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -67,7 +68,8 @@ export default async function main() {
   const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
-  const tSampler = new TerrainSampler(new NoiseSampler(grayNoiseImg));
+  const planet = new Planet();
+  const tSampler = new TerrainSampler(new NoiseSampler(grayNoiseImg), planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -82,11 +84,11 @@ export default async function main() {
   //let quat = Quaternion.Identity();
   //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   //if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
-  const camera = new Camera(pos, quat, tSampler);
-  const atm = new Atmosphere();
+  const camera = new Camera(pos, quat, tSampler, planet);
+  const atm = new Atmosphere(planet);
   const sky = new Sky(camera, atm);
-  const flare1 = new Flare(camera);
-  const flare2 = new Flare(camera);
+  const flare1 = new Flare(camera, planet);
+  const flare2 = new Flare(camera, planet);
 
   const o = new ObjDoc();
   await o.init('models/cobra3.obj');

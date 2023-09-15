@@ -1,5 +1,6 @@
 import { SUN_DISC_ANGLE_SIN } from "./constants";
 import { smoothstep } from "./mathutils";
+import { Planet } from "./planet";
 import { Vec3 } from "./vectors";
 
 const PI_CUBE = Math.PI*Math.PI*Math.PI;
@@ -22,12 +23,14 @@ type ResultScattering = {
 
 export class Atmosphere {
 
+  private _planet: Planet;
+
   /** Радиус планеты */
-  planetRadius: number = 200000; // 6371e3;
+  planetRadius: number;
   /** Квадрат радиуса планеты */
   planetRadius2: number;
   /** Положение центра планеты */
-  planetCenter: Vec3 = new Vec3(0., -this.planetRadius, 0.);
+  planetCenter: Vec3;
   /** Радиус атмосферы */
   radius: number = 300000; // 6471e3;
   /** Квадрат радиуса атмосферы */
@@ -55,7 +58,10 @@ export class Atmosphere {
   heightRayleigh: number = 8e3; // Масштабная высота для рассеивания Релея (высота 50% плотности молекул воздуха)
   heightMie: number = 1.2e3; // Масштабная высота для рассеивания Ми (высота 50% плотности крупных частиц воздуха)
 
-  constructor() {
+  constructor(planet: Planet) {
+    this._planet = planet;
+    this.planetRadius = planet.radius;
+    this.planetCenter = new Vec3(0., -this.planetRadius, 0.);
     this.planetRadius2 = this.planetRadius*this.planetRadius;
     this.radius2 = this.radius*this.radius;
   }

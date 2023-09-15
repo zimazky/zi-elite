@@ -12,6 +12,7 @@ export class Planet {
    * ось Y совпадает с большой полуосью орбиты, положительное направление - зима
    * ось X совпадает с малой полуосью орбиты, положительное направление - весна
    * */
+
   position: Vec3 = new Vec3(0., 147098291000., 0.);
   /** угол наклона экватора к плоскости орбиты (наклон оси вращения) */
   obliquity: number =  rad(23.44);
@@ -26,7 +27,9 @@ export class Planet {
    * */
   origin: Vec3;
   /** радиус планеты */
-  radius: number = 6371e3;
+  radius: number = 200000; // 6371e3;
+  /** Положение центра планеты относительно системы координат камеры */
+  center: Vec3 = new Vec3(0., -this.radius, 0.);
   /** кватернион, определяющий текущую ориентацию планеты при суточном вращении */
   orientation: Quaternion;
 
@@ -38,6 +41,21 @@ export class Planet {
   update(time: number, timeDelta: number): void {
 
 
+  }
+
+  // Перевод декартовых координат точки в сферические координаты относительно центра планеты
+  // Начало декартовых координат совпадает с точкой 0,0,0 на сфере
+  // Ось x 
+  // Возвращается:
+  // x - долгота
+  // y - широта
+  // z - высота над поверхностью сферы
+  lonLatAlt(p: Vec3): Vec3 {
+    const r = p.sub(this.center);
+    const phi = Math.atan2(r.y, r.x);
+    const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
+    const alt = r.length() - this.radius;
+    return new Vec3(phi, theta, alt);
   }
 
 }

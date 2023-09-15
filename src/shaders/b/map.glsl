@@ -17,14 +17,14 @@ vec2 grid(vec2 x, float st) {
   s = floor(mod(s,2.));
   return mix(a,1.-a,s);
 }
-
+/*
 // lla - сферические координаты камеры
 // camdir - направление камеры
 vec3 showMap(vec3 lla, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
   float mapScale = uMapScale*PI/360.;
   vec2 p = lla.xy + vec2(1,-1)*mapScale*uv;
   float h = terrainOnSphere(p);
-  vec3 nor = calcNormalOnSphere(lla, 500.);
+  vec3 nor = calcNormal(lla, 500.);
   norDepth = vec4(nor, MAX_TRN_ELEVATION-h);
   vec4 albedo = terrain_color(vec3(p.x,h,p.y), nor);
   vec3 col = albedo.rgb;//vec3(0.5+0.5*dot(nor.xyz,normalize(vec3(-1,1,-1))))*albedo.rgb;
@@ -42,3 +42,4 @@ vec3 showMap(vec3 lla, vec2 camdir, vec2 uv, int mode, out vec4 norDepth) {
   col *= (mode & MAP_HEIGHTS)!=0 ? smoothstep(0.,1., grid(h,50.)) : 1.;
   return col;
 }
+*/

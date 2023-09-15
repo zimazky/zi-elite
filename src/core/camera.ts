@@ -1,5 +1,6 @@
 import { Atmosphere } from "./atmosphere";
 import { isKeyPress, isKeyDown } from "./keyboard";
+import { Planet } from "./planet";
 import { Quaternion } from "./quaternion";
 import { TerrainSampler } from "./terrain";
 import { Mat3, Vec2, Vec3 } from "./vectors";
@@ -40,6 +41,9 @@ const KEY_PERIOD = 190;
 
 
 export class Camera {
+
+  private _planet: Planet;
+
   position: Vec3;
   velocity: Vec3;
   angularSpeed: Vec3;
@@ -63,7 +67,8 @@ export class Camera {
   mapMode: number;
   mapScale: number;
 
-  constructor(position: Vec3, quaternion: Quaternion, t: TerrainSampler) {
+  constructor(position: Vec3, quaternion: Quaternion, t: TerrainSampler, planet: Planet) {
+    this._planet = planet;
     this.position = position.copy();
     this.velocity = Vec3.ZERO();
     this.angularSpeed = Vec3.ZERO();
@@ -109,10 +114,13 @@ export class Camera {
     this.position.addMutable(this.velocity.mul(timeDelta));
 
     // не даем провалиться ниже поверхности
-    const height = this.tSampler.terrainM(new Vec2(this.position.x, this.position.z)) + 2.;
-    if(this.position.y < height) {
-      this.velocity.y = 0.;
-      this.position.y = height;
+    const lla = this._planet.lonLatAlt(this.position);
+    const height = this.tSampler.terrainOnSphere(lla.xy) + 2.;
+    if(lla.z < height) {
+      // направление от центра планеты
+      const r = this.position.sub(this._planet.center).normalize();
+      this.velocity.subMutable(r.mul(this.velocity.dot(r)));
+      this.position.addMutable(r.mul(height-lla.z));
     }
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);

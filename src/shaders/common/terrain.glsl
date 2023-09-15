@@ -1,6 +1,13 @@
 #define TERR_MODULE
 
 // ----------------------------------------------------------------------------
+// Модуль определения функций модуля планеты
+// ----------------------------------------------------------------------------
+#ifndef PLANET_MODULE
+#include "../common/planet.glsl";
+#endif
+
+// ----------------------------------------------------------------------------
 // Генерация ландшафта
 // ----------------------------------------------------------------------------
 uniform sampler2D uTextureGrayNoise;
@@ -40,6 +47,7 @@ const float H_SCALE = 1100.; // масштаб по высоте
 const float GRASS_HEIGHT_MAX = 600.;
 const float SEA_LEVEL = 0.;
 
+/*
 float terrainH(vec2 x) {
   return H_SCALE*pyramid(x/W_SCALE);
 }
@@ -51,6 +59,7 @@ float terrainM(vec2 x) {
 float terrainS(vec2 x) {
    return H_SCALE*pyramid(x/W_SCALE);
 }
+*/
 
 // Высота на сфере в зависимости от сферических координат 
 // s.x - долгота
@@ -63,17 +72,6 @@ float terrainOnSphere(vec2 s) {
 //float terrainOnCubeSphere(vec3 r) {
 //  return H_SCALE*pyramid(r*360./PI);
 //}
-
-
-// Вычисление нормали в точке, заданной сферическими координатами
-vec3 calcNormalOnSphere(vec3 lla, float t) {
-  vec2 eps = vec2(0.0000001, 0.0);
-  return normalize(vec3(
-    terrainOnSphere(lla.xy-eps.xy) - terrainOnSphere(lla.xy+eps.xy),
-    2.0*eps.x,
-    terrainOnSphere(lla.xy-eps.yx) - terrainOnSphere(lla.xy+eps.yx)
-  ));
-}
 
 /*
 // Генерация высоты с эррозией без производных упрощенная
@@ -148,8 +146,10 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   t = 0.01*dis;
   for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
-    if(p.y>MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = p.y - terrainS(p.xz);
+    //terrainH;
+    vec3 lla = lonLatAlt(p);
+    if(lla.z>MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
+    float h = lla.z - terrainOnSphere(lla.xy);
 	  res = min(res, cosA*h/t);
     if(res<-uSunDiscAngleSin) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
     t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
