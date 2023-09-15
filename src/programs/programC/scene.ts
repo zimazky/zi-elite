@@ -1,5 +1,5 @@
 import { GRAVITATION } from "src/core/constants";
-import { Mat3, Mat4, Quaternion, Vec3 } from "./vectors";
+import { Mat3, Mat4, Quaternion, Vec3 } from "src/shared/libs/vectors";
 
 class MovingObject {
   /** Положение в мировых координатах */

@@ -4,10 +4,9 @@ import { Engine, Renderbufer } from 'src/core/engine'
 import { Flare } from 'src/core/flare';
 import { initKeyBuffer } from 'src/shared/libs/keyboard';
 import { NoiseSampler } from 'src/core/noise';
-import { Quaternion } from 'src/shared/libs/quaternion';
 import { Sky } from 'src/core/sky';
 import { TerrainSampler } from 'src/core/terrain';
-import { Vec3 } from 'src/shared/libs/vectors';
+import { Quaternion, Vec3 } from 'src/shared/libs/vectors';
 import { ProgramA } from 'src/programs/programA';
 import { ProgramB } from 'src/programs/programB';
 import { ProgramRender } from 'src/programs/programRender';

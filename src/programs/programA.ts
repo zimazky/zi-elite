@@ -144,6 +144,7 @@ export class ProgramA {
   }
 
   update() {
+    // ПРАВИЛЬНО ОПРЕДЕЛЯТЬ МАТРИЦУ ПРОЕКЦИИ
     const aspect = this.bufferInput.width/this.bufferInput.height;
     this.engine.gl.uniformMatrix4fv(
       this.uProjectMatrix, 

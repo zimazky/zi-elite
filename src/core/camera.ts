@@ -1,6 +1,5 @@
 import { isKeyPress, isKeyDown } from "src/shared/libs/keyboard";
-import { Quaternion } from "src/shared/libs/quaternion";
-import { Mat3, Vec3 } from "src/shared/libs/vectors";
+import { Mat3, Quaternion, Vec3 } from "src/shared/libs/vectors";
 
 import { TerrainSampler } from "./terrain";
 import { Planet } from "./planet";
@@ -98,13 +97,13 @@ export class Camera {
 
     this.transformMatPrev = this.transformMat;
 
-    const mdir = this.orientation.mat3();
+    const mdir = Mat3.fromQuat(this.orientation);
     this.transformMat = mdir;
 
     // ускорение тяги
-    this.velocity.addMutable(mdir.mul(acceleration).mulMutable(THRUST*timeDelta));
+    this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
     // замедление от сопротивления воздуха
-    this.velocity.subMutable( mdir.mul(mdir.mulLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
+    this.velocity.subMutable( mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
     // гравитация
     this.velocity.y -= GRAVITATION*timeDelta;
     // экстренная остановка

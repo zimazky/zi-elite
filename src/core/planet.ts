@@ -1,6 +1,5 @@
 import { rad, smoothstep } from "src/shared/libs/mathutils";
-import { Quaternion } from "src/shared/libs/quaternion";
-import { Vec3 } from "src/shared/libs/vectors";
+import { Quaternion, Vec3 } from "src/shared/libs/vectors";
 
 import { SUN_DISC_ANGLE_SIN } from "./constants";
 

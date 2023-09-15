@@ -1,5 +1,4 @@
-import { Quaternion } from "src/shared/libs/quaternion";
-import { Mat3, Vec3 } from "src/shared/libs/vectors";
+import { Mat3, Quaternion, Vec3 } from "src/shared/libs/vectors";
 import { isKeyPress } from "src/shared/libs/keyboard";
 
 import { Camera } from "./camera";
@@ -12,7 +11,7 @@ const skyAngle = Math.PI*0.12; // угол наклона оси вращени�
 
 export class Sky {
   /** поворот небесного свода (плоскости млечного пути) относительно системы координат планеты (на момент t=0) */
-  quat: Quaternion = Quaternion.byAngle(Vec3.I(), 0.5*Math.PI);
+  quat: Quaternion = Quaternion.fromAxisAngle(Vec3.I(), 0.5*Math.PI);
   /** ось вращения небесной сферы */
   axis: Vec3 = new Vec3(0., Math.cos(skyAngle), -Math.sin(skyAngle));
   /** период полного поворота небесной сферы в секундах */
@@ -47,8 +46,8 @@ export class Sky {
   }
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.byAngle(this.axis, -2.*Math.PI*(0.205+time/this.period));
-    this.transformMat = this.orientation.qmul(this.quat).mat3();
+    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.205+time/this.period));
+    this.transformMat = Mat3.fromQuat(this.orientation.qmul(this.quat));
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
     this.moonDirection = this.orientation.rotate(this.moonDir).normalize();
 
