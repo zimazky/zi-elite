@@ -1,9 +1,10 @@
-import { Atmosphere } from "./atmosphere";
-import { isKeyPress, isKeyDown } from "./keyboard";
-import { Planet } from "./planet";
-import { Quaternion } from "./quaternion";
+import { isKeyPress, isKeyDown } from "src/shared/libs/keyboard";
+import { Quaternion } from "src/shared/libs/quaternion";
+import { Mat3, Vec3 } from "src/shared/libs/vectors";
+
 import { TerrainSampler } from "./terrain";
-import { Mat3, Vec2, Vec3 } from "./vectors";
+import { Planet } from "./planet";
+import { Atmosphere } from "./atmosphere";
 
 export const FRONT_VIEW = 0;
 export const MAP_VIEW = 1;
@@ -47,7 +48,7 @@ export class Camera {
   position: Vec3;
   velocity: Vec3;
   angularSpeed: Vec3;
-  altitude: number;
+  altitude: number = 0;
   viewAngle: number;
   orientation: Quaternion;
   /* Направление камеры */
@@ -81,7 +82,7 @@ export class Camera {
   }
 
   inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {
-    const planetShadow = atm.softPlanetShadow(pos,sunDir);
+    const planetShadow = this._planet.softPlanetShadow(pos,sunDir);
     if(planetShadow<=0.001) return 0.;
     const s = planetShadow*this.tSampler.softShadow(this.position, sunDir);
     return Math.pow(s, 4.);

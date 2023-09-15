@@ -1,7 +1,8 @@
-import { Camera } from "../../core/camera";
+import { Mat4, Vec4 } from "src/shared/libs/vectors";
+
+import { Camera } from "src/core/camera";
 import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
-import { ObjDoc } from "../../core/loadobj";
-import { Mat4, Vec4 } from "../../core/vectors";
+import { ObjDoc } from "src/core/loadobj";
 
 
 /**
@@ -11,12 +12,12 @@ export class ProgramC {
   engine: Engine;
   camera: Camera;
 
-  aspect: number;
+  aspect: number = 1;
 
   // Shader uniforms
-  uCameraViewAngle: WebGLUniformLocation;
-  uProjectMatrix: WebGLUniformLocation;
-  uTransformMatrix: WebGLUniformLocation;
+  uCameraViewAngle: WebGLUniformLocation | null = null;
+  uProjectMatrix: WebGLUniformLocation | null = null;
+  uTransformMatrix: WebGLUniformLocation | null = null;
 
   constructor(e: Engine, c: Camera) {
     this.engine = e;

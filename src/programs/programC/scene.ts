@@ -3,13 +3,13 @@ import { Mat3, Mat4, Quaternion, Vec3 } from "./vectors";
 
 class MovingObject {
   /** Положение в мировых координатах */
-  position: Vec3;
+  position: Vec3 = Vec3.ZERO();
   /** Скорость в мировых координатах */
-  velocity: Vec3;
+  velocity: Vec3 = Vec3.ZERO();
   /** Угловая скорость вращения */
-  angularVelocity: Vec3;
+  angularVelocity: Vec3 = Vec3.ZERO();
   /** Ориентация в виде кватерниона вращения */
-  orientation: Quaternion;
+  orientation: Quaternion = Quaternion.Identity();
   /** Коэффициенты сопротивления воздуха по осям объекта */
   airDrag: Vec3 = new Vec3(0.01, 0.05, 0.001).mulMutable(58.);
   /** 
@@ -61,7 +61,7 @@ class MovingObject {
 }
 
 export class Scene {
-  objects: MovingObject[];
+  objects: MovingObject[] = [];
 
 
 }

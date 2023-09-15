@@ -1,6 +1,7 @@
-import { Quaternion } from "./quaternion";
-import { Mat3, Vec3 } from "./vectors";
-import { isKeyPress, isKeyDown } from "./keyboard";
+import { Quaternion } from "src/shared/libs/quaternion";
+import { Mat3, Vec3 } from "src/shared/libs/vectors";
+import { isKeyPress } from "src/shared/libs/keyboard";
+
 import { Camera } from "./camera";
 import { Atmosphere } from "./atmosphere";
 import { SUN_COLOR } from "./constants";

@@ -1,6 +1,7 @@
-import { Camera } from "../core/camera";
-import { Engine, Framebuffer, Renderbufer } from "../core/engine";
-import { Mat4, Vec4 } from "../core/vectors";
+import { Mat4, Vec4 } from "src/shared/libs/vectors";
+
+import { Camera } from "src/core/camera";
+import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
 
 export class ProgramA {
   engine: Engine;
@@ -12,11 +13,11 @@ export class ProgramA {
   numY: number; // = 480;//240;//120;
 
   // Shader uniforms
-  uCameraViewAngle: WebGLUniformLocation;
-  uPositionDelta: WebGLUniformLocation;
-  uProjectMatrix: WebGLUniformLocation;
-  uTransformMatrix: WebGLUniformLocation;
-  uTransformMatrixPrev: WebGLUniformLocation;
+  uCameraViewAngle: WebGLUniformLocation | null = null;
+  uPositionDelta: WebGLUniformLocation | null = null;
+  uProjectMatrix: WebGLUniformLocation | null = null;
+  uTransformMatrix: WebGLUniformLocation | null = null;
+  uTransformMatrixPrev: WebGLUniformLocation | null = null;
 
   constructor(e: Engine, bInput: Framebuffer, c: Camera) {
     this.engine = e;

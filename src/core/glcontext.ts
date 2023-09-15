@@ -11,19 +11,21 @@ export class GLContext {
       this.canvas = document.createElement('canvas');
       document.body.appendChild(this.canvas);
     }
-    this.gl = this.canvas.getContext('webgl2');
+    const gl = this.canvas.getContext('webgl2');
+    if (!gl) throw new Error('Unable to initialize WebGL. Your browser or machine may not support it.');
+    this.gl = gl;
     if (!this.gl) throw new Error('Unable to initialize WebGL. Your browser or machine may not support it.');
     this.gl.getExtension('EXT_color_buffer_float');
   }
 
   createShader(type: number, source: string): WebGLShader {
     const shader = this.gl.createShader(type);
+    if(shader === null) throw new Error('Ошибка при создании шейдера');
     this.gl.shaderSource(shader, source.trim());
     this.gl.compileShader(shader);
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      alert("Error compiling shader: " + this.gl.getShaderInfoLog(shader));
       this.gl.deleteShader(shader);   
-      return null;
+      throw new Error('Ошмбка компиляции шейдера: ' + this.gl.getShaderInfoLog(shader));
     }
     return shader;  
   }
@@ -32,12 +34,12 @@ export class GLContext {
     const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vsSource);
     const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fsSource);
     const shaderProgram = this.gl.createProgram();
+    if(shaderProgram === null) throw new Error('Ошибка при создании шейдерной программы');
     this.gl.attachShader(shaderProgram, vertexShader);
     this.gl.attachShader(shaderProgram, fragmentShader);
     this.gl.linkProgram(shaderProgram);
     if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
-      alert('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(shaderProgram));
-      return null;
+      throw new Error('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(shaderProgram));
     }
     return shaderProgram;
   }
@@ -46,9 +48,11 @@ export class GLContext {
   createFramebuffer0(width: number, height: number): [WebGLFramebuffer, WebGLTexture] {
     // Создаем и привязываем framebuffer
     const framebuffer = this.gl.createFramebuffer();
+    if(framebuffer === null) throw new Error('Ошибка при создании фреймбуфера');
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     // Создание текстуры
     const texture = this.gl.createTexture();
+    if(texture === null) throw new Error('Ошибка при создании текстуры');
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     // Определение формата текстуры
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
@@ -77,11 +81,13 @@ export class GLContext {
   createFramebufferMRT(width: number, height: number, num: number): [WebGLFramebuffer, WebGLTexture[]] {
     // Создаем и привязываем framebuffer
     const framebuffer = this.gl.createFramebuffer();
+    if(framebuffer === null) throw new Error('Ошибка при создании фреймбуфера');
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     // Создание текстур
     const textures: WebGLTexture[] = [];
     for(let i=0; i<num; i++) {
       const texture = this.gl.createTexture();
+      if(texture === null) throw new Error('Ошибка при создании текстуры');
       textures.push(texture);
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
       // Определение формата текстуры

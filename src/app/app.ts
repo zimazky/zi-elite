@@ -1,30 +1,30 @@
-import { Atmosphere } from './core/atmosphere';
-import { Camera } from './core/camera';
-import { Engine, Renderbufer } from './core/engine'
-import { Flare } from './core/flare';
-import { initKeyBuffer } from './core/keyboard';
-import { NoiseSampler } from './core/noise';
-import { Quaternion } from './core/quaternion';
-import { Sky } from './core/sky';
-import { TerrainSampler } from './core/terrain';
-import { Vec3 } from './core/vectors';
-import { ProgramA } from './programs/programA';
-import { ProgramB } from './programs/programB';
-import { ProgramRender } from './programs/programRender';
-import { loadImage } from './utils/loadimg';
+import { Atmosphere } from 'src/core/atmosphere';
+import { Camera } from 'src/core/camera';
+import { Engine, Renderbufer } from 'src/core/engine'
+import { Flare } from 'src/core/flare';
+import { initKeyBuffer } from 'src/shared/libs/keyboard';
+import { NoiseSampler } from 'src/core/noise';
+import { Quaternion } from 'src/shared/libs/quaternion';
+import { Sky } from 'src/core/sky';
+import { TerrainSampler } from 'src/core/terrain';
+import { Vec3 } from 'src/shared/libs/vectors';
+import { ProgramA } from 'src/programs/programA';
+import { ProgramB } from 'src/programs/programB';
+import { ProgramRender } from 'src/programs/programRender';
+import { loadImage } from 'src/shared/utils/loadimg';
 
-import vshaderA from './shaders/a/vs.glsl';
-import fshaderA from './shaders/a/fs.glsl';
-import vshaderB from './shaders/b/vs.glsl';
-import fshaderB from './shaders/b/fs.glsl';
-import vshaderC from './shaders/c/vs.glsl';
-import fshaderC from './shaders/c/fs.glsl';
-import vshaderR from './shaders/render1/vs.glsl';
-import fshaderR from './shaders/render1/fs.glsl';
+import vshaderA from 'src/shaders/a/vs.glsl';
+import fshaderA from 'src/shaders/a/fs.glsl';
+import vshaderB from 'src/shaders/b/vs.glsl';
+import fshaderB from 'src/shaders/b/fs.glsl';
+import vshaderC from 'src/shaders/c/vs.glsl';
+import fshaderC from 'src/shaders/c/fs.glsl';
+import vshaderR from 'src/shaders/render1/vs.glsl';
+import fshaderR from 'src/shaders/render1/fs.glsl';
 
-import { ObjDoc } from './core/loadobj';
-import { ProgramC } from './programs/programC/programC';
-import { Planet } from './core/planet';
+import { ObjDoc } from 'src/core/loadobj';
+import { ProgramC } from 'src/programs/programC/programC';
+import { Planet } from 'src/core/planet';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -55,7 +55,10 @@ import { Planet } from './core/planet';
 export default async function main() {
 
   const divInfo = document.getElementById('info');
+  if(divInfo === null)  throw new Error('Не найден блок id="info"');
   const loaderIndicator = document.getElementById('loader_indicator');
+  if(loaderIndicator === null)  throw new Error('Не найден блок id="loader_indicator"');
+
   const e = new Engine('glcanvas');
   let infoRefreshTime = 0;
   let positionStoreTime = 0;

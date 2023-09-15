@@ -1,5 +1,6 @@
+import { Vec4 } from "src/shared/libs/vectors";
+
 import { GLContext } from "./glcontext";
-import { Vec4 } from "./vectors";
 
 
 interface OnProgramInit {
@@ -22,7 +23,7 @@ export type Renderbufer = {
   /** Колбэк-функция, вызываемая в цикле перед отрисовкой шейдерной программы */
   onProgramLoop: OnProgramLoop;
   /** Объект вершинных массивов */
-  vertexArray: WebGLVertexArrayObject;
+  vertexArray: WebGLVertexArrayObject | null;
   /** Количество вершин */
   numOfVertices: number;
   /** Признак применения поэлементной отрисовки с помощью gl.drawElements */
@@ -30,14 +31,14 @@ export type Renderbufer = {
   /** Признак необходимости проверки глубины при отрисовке */
   isDepthTest: boolean;
   /** Цвет очистки буфера перед отрисовкой, null если очистка не нужна */
-  clearColor: Vec4;
+  clearColor: Vec4 | null;
   /** Тип элементов отрисовки, по умолчанию gl.TRIANGLE_STRIP */
   drawMode: number;
 
   /** (uResolution) Разрешение */
-  resolutionLocation: WebGLUniformLocation;
+  resolutionLocation: WebGLUniformLocation | null;
   /** (uTime) Время */
-  timeLocation: WebGLUniformLocation;
+  timeLocation: WebGLUniformLocation | null;
 }
 
 export type Framebuffer = Renderbufer & {
@@ -53,16 +54,16 @@ export type Framebuffer = Renderbufer & {
 
 export class Engine extends GLContext {
   /** Время запуска программы */
-  startTime: number;
+  startTime: number = 0;
   /** Текущее время */
-  currentTime: number;
+  currentTime: number = 0;
   /** Массив активных текстур */
   textures: WebGLTexture[] = [];
 
   /** Список фреймбуферов со собственными программами */
   framebuffers: Framebuffer[] = [];
   /** Финальный рендер в canvas */
-  renderbufer: Renderbufer;
+  renderbufer: Renderbufer | null = null;
 
   onUpdate: OnUpdate = (t,dt)=>{};
 
@@ -119,6 +120,7 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+
     this.renderbufer = {program, vertexArray: null, numOfVertices: 4, 
       isElementDraw: false, isDepthTest: false,  clearColor: null,
       drawMode: this.gl.TRIANGLE_STRIP,
@@ -140,7 +142,9 @@ export class Engine extends GLContext {
    * @param pointSize - размер элемента вершинных координат, по умолчанию 2 (x, y)
    */
   setVertexArray(buffer: Renderbufer, name: string, vertices: number[], indices: number[], pointSize: number = 2) {
-    buffer.vertexArray = this.gl.createVertexArray();
+    const va = this.gl.createVertexArray();
+    if(va === null) throw new Error('Ошибка при создании VertexArray')
+    buffer.vertexArray = va;
     buffer.numOfVertices = vertices.length/pointSize;
     this.gl.bindVertexArray(buffer.vertexArray);
     const positionBuffer = this.gl.createBuffer();
@@ -166,7 +170,9 @@ export class Engine extends GLContext {
    * @param pointSize - размер элемента вершинных координат, по умолчанию 2 (x, y)
    */
   setVertexNormalArray(buffer: Renderbufer, nameVertices: string, vertices: number[], nameNormals: string, normals: number[], indices: number[], pointSize: number = 2) {
-    buffer.vertexArray = this.gl.createVertexArray();
+    const va = this.gl.createVertexArray();
+    if(va === null) throw new Error('Ошибка при создании VertexArray')
+    buffer.vertexArray = va;
     buffer.numOfVertices = vertices.length/pointSize;
     this.gl.bindVertexArray(buffer.vertexArray);
 
@@ -223,6 +229,7 @@ export class Engine extends GLContext {
   /** Привязка текстуры без генерации данных MIPMAP */
   setTexture(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
+    if(texture === null) throw new Error('Ошибка при создании текстуры')
     const n = this.textures.length;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
@@ -243,6 +250,7 @@ export class Engine extends GLContext {
   setTextureWithArray16F(program: WebGLProgram, uname: string, 
     width: number, height: number, array: Float32Array): WebGLTexture {
     const texture = this.gl.createTexture();
+    if(texture === null) throw new Error('Ошибка при создании текстуры')
     const n = this.textures.length;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
@@ -263,6 +271,7 @@ export class Engine extends GLContext {
   /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();
+    if(texture === null) throw new Error('Ошибка при создании текстуры')
     const n = this.textures.length;
     this.gl.activeTexture(this.gl.TEXTURE0 + n);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
@@ -298,6 +307,7 @@ export class Engine extends GLContext {
       e.onProgramInit(e); 
     })
 
+    if(this.renderbufer === null) throw new Error('Не задан фреймбуфер для рендеринга на экран')
     this.gl.useProgram(this.renderbufer.program);
     this.renderbufer.onProgramInit(this.renderbufer);
 
@@ -348,6 +358,7 @@ export class Engine extends GLContext {
     });
 
     // Финальный рендер
+    if(this.renderbufer === null) throw new Error('Не задан фреймбуфер для рендеринга на экран')
     this.resizeCanvasToDisplaySize();
     this.gl.disable(this.gl.DEPTH_TEST);
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);

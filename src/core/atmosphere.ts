@@ -1,7 +1,6 @@
-import { SUN_DISC_ANGLE_SIN } from "./constants";
-import { smoothstep } from "./mathutils";
+import { Vec3 } from "src/shared/libs/vectors";
+
 import { Planet } from "./planet";
-import { Vec3 } from "./vectors";
 
 const PI_CUBE = Math.PI*Math.PI*Math.PI;
 const SQRTPILN2HALF = 1.04345246;
@@ -114,22 +113,6 @@ export class Atmosphere {
     }
   }
   
-  /** 
-   * Функция определения пересечения луча с планетой
-   *   ro - положение камеры
-   *   rd - направление луча
-   * Возвращает true если луч пересекается с планетой
-   */
-  softPlanetShadow(ro: Vec3, rd: Vec3): number {
-    const pos = ro.sub(this.planetCenter);
-    //const pos = new Vec3(0, ro.y+this.planetRadius, 0);
-    const OT = pos.dot(rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-    const CT = Math.sqrt(pos.dot(pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
-    if(OT>0.) return 1.;
-    const d = (this.planetRadius-CT)/OT;
-    return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, d);
-  }
-
   /** 
    * Функция вычисления атмосферного рассеивания
    *   ro - положение камеры

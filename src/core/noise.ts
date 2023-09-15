@@ -1,4 +1,4 @@
-import { Vec2 } from "./vectors";
+import { Vec2 } from "src/shared/libs/vectors";
 
 export interface ValD2 {
   value: number;
@@ -14,6 +14,7 @@ export class NoiseSampler {
     canvas.width = sample.width;
     canvas.height = sample.height;
     const ctx = canvas.getContext('2d');
+    if(ctx === null) throw new Error('Не удалось получить контекст');
     ctx.drawImage(sample, 0, 0, sample.width, sample.height);
     this._data = ctx.getImageData(0, 0, canvas.width, canvas.height);
   }

@@ -1,4 +1,4 @@
-import { Vec3 } from "./vectors";
+import { Vec3 } from "src/shared/libs/vectors";
 
 /** синус углового размера солнца (половина угла) */
 export const SUN_DISC_ANGLE_SIN = 0.5*0.01745;

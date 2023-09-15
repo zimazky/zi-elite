@@ -116,7 +116,45 @@ export class Vec4 implements IVectors<Vec4> {
   get yyy(): Vec3 { return new Vec3(this.y, this.y, this.y) }
   get zzz(): Vec3 { return new Vec3(this.z, this.z, this.z) }
 
-  // ДОПИСАТЬ С КОМПОНЕНТОМ W
+  get xyw(): Vec3 { return new Vec3(this.x, this.y, this.w) }
+  get xwy(): Vec3 { return new Vec3(this.x, this.w, this.y) }
+  get ywx(): Vec3 { return new Vec3(this.y, this.w, this.x) }
+  get yxw(): Vec3 { return new Vec3(this.y, this.x, this.w) }
+  get wxy(): Vec3 { return new Vec3(this.w, this.x, this.y) }
+  get wyx(): Vec3 { return new Vec3(this.w, this.y, this.x) }
+  get xxw(): Vec3 { return new Vec3(this.x, this.x, this.w) }
+  get xwx(): Vec3 { return new Vec3(this.x, this.w, this.x) }
+  get wxx(): Vec3 { return new Vec3(this.w, this.x, this.x) }
+  get xww(): Vec3 { return new Vec3(this.x, this.w, this.w) }
+  get wxw(): Vec3 { return new Vec3(this.w, this.x, this.w) }
+  get wwx(): Vec3 { return new Vec3(this.w, this.w, this.x) }
+  get yyw(): Vec3 { return new Vec3(this.y, this.y, this.w) }
+  get ywy(): Vec3 { return new Vec3(this.y, this.w, this.y) }
+  get wyy(): Vec3 { return new Vec3(this.w, this.y, this.y) }
+  get yww(): Vec3 { return new Vec3(this.y, this.w, this.w) }
+  get wyw(): Vec3 { return new Vec3(this.w, this.y, this.w) }
+  get wwy(): Vec3 { return new Vec3(this.w, this.w, this.y) }
+  get www(): Vec3 { return new Vec3(this.w, this.w, this.w) }
+
+  get wyz(): Vec3 { return new Vec3(this.w, this.y, this.z) }
+  get wzy(): Vec3 { return new Vec3(this.w, this.z, this.y) }
+  get yzw(): Vec3 { return new Vec3(this.y, this.z, this.w) }
+  get ywz(): Vec3 { return new Vec3(this.y, this.w, this.z) }
+  get zwy(): Vec3 { return new Vec3(this.z, this.w, this.y) }
+  get zyw(): Vec3 { return new Vec3(this.z, this.y, this.w) }
+  get wwz(): Vec3 { return new Vec3(this.w, this.w, this.z) }
+  get wzw(): Vec3 { return new Vec3(this.w, this.z, this.w) }
+  get zww(): Vec3 { return new Vec3(this.z, this.w, this.w) }
+  get wzz(): Vec3 { return new Vec3(this.w, this.z, this.z) }
+  get zwz(): Vec3 { return new Vec3(this.z, this.w, this.z) }
+  get zzw(): Vec3 { return new Vec3(this.z, this.z, this.w) }
+
+  get xwz(): Vec3 { return new Vec3(this.x, this.w, this.z) }
+  get xzw(): Vec3 { return new Vec3(this.x, this.z, this.w) }
+  get wzx(): Vec3 { return new Vec3(this.w, this.z, this.x) }
+  get wxz(): Vec3 { return new Vec3(this.w, this.x, this.z) }
+  get zxw(): Vec3 { return new Vec3(this.z, this.x, this.w) }
+  get zwx(): Vec3 { return new Vec3(this.z, this.w, this.x) }
 
   addMutable(v: Vec4): Vec4 {
     this.x += v.x; this.y += v.y; this.z += v.z; this.w += v.w;

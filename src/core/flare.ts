@@ -1,7 +1,8 @@
-import { Vec2, Vec3 } from "./vectors";
-import { isKeyPress, isKeyDown } from "./keyboard";
+import { Vec2, Vec3 } from "src/shared/libs/vectors";
+import { isKeyPress } from "src/shared/libs/keyboard";
+import { rad } from "src/shared/libs/mathutils";
+
 import { Camera } from "./camera";
-import { rad } from "./mathutils";
 import { Planet } from "./planet";
 
 const KEY_F = 70;

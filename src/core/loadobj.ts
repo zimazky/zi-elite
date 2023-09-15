@@ -1,5 +1,3 @@
-import { Vec3 } from "./vectors";
-
 /** Функция загрузки файла */
 async function loadFile(sourceUrl: string): Promise<string> {
   let response = await fetch(sourceUrl);
@@ -8,7 +6,7 @@ async function loadFile(sourceUrl: string): Promise<string> {
 }
 
 export class ObjDoc {
-  filename: string = null;
+  //filename: string = null;
   verticies: number[] = [];
   normals: number[] = [];
   vertexIds: number[] = [];

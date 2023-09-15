@@ -1,17 +1,18 @@
-import { Flare } from "../core/flare";
-import { Vec3 } from "../core/vectors";
-import { Atmosphere } from "../core/atmosphere";
-import { Camera, FRONT_VIEW } from "../core/camera";
-import { SUN_DISC_ANGLE_SIN } from "../core/constants";
-import { Engine, Framebuffer, Renderbufer } from "../core/engine";
-import { Sky } from "../core/sky";
-import { mix } from "../core/mathutils";
+import { mix } from "src/shared/libs/mathutils";
+import { Vec3 } from "src/shared/libs/vectors";
+
+import { Flare } from "src/core/flare";
+import { Atmosphere } from "src/core/atmosphere";
+import { Camera, FRONT_VIEW } from "src/core/camera";
+import { SUN_DISC_ANGLE_SIN } from "src/core/constants";
+import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
+import { Sky } from "src/core/sky";
 
 export class ProgramRender {
   engine: Engine;
   shaderA: Framebuffer;
   shaderB: Framebuffer;
-  shaderC: Framebuffer;
+  //shaderC: Framebuffer;
   camera: Camera;
   atm: Atmosphere;
   sky: Sky;
@@ -30,68 +31,68 @@ export class ProgramRender {
   // Shader uniforms
 
   /** Разрешение текстуры шейдера B */
-  uTextureBResolution: WebGLUniformLocation;
+  uTextureBResolution: WebGLUniformLocation | null = null;
 
 
   /** Синус углового размера солнца */
-  uSunDiscAngleSin: WebGLUniformLocation;
+  uSunDiscAngleSin: WebGLUniformLocation | null = null;
   /** Направление на солнце */
-  uSunDirection: WebGLUniformLocation;
+  uSunDirection: WebGLUniformLocation | null = null;
   /** Цвет диска солнца */
-  uSunDiscColor: WebGLUniformLocation;
+  uSunDiscColor: WebGLUniformLocation | null = null;
   /** Направление на луну */
-  uMoonDirection: WebGLUniformLocation;
+  uMoonDirection: WebGLUniformLocation | null = null;
   /** Цвет диска луны */
-  uMoonDiscColor: WebGLUniformLocation;
+  uMoonDiscColor: WebGLUniformLocation | null = null;
   /** Цвет неба для окружающего освещения */
-  uSkyColor: WebGLUniformLocation;
+  uSkyColor: WebGLUniformLocation | null = null;
   
   /** Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря */
-  uBetaRayleigh: WebGLUniformLocation;
+  uBetaRayleigh: WebGLUniformLocation | null = null;
   /** Коэффициенты рассеивания Ми для трех частот спектра (rgb) на уровне моря */
-  uBetaMie: WebGLUniformLocation;
+  uBetaMie: WebGLUniformLocation | null = null;
   /** Коэффициент фазового рассеивания Ми */
-  uGMie: WebGLUniformLocation;
+  uGMie: WebGLUniformLocation | null = null;
   /** 
    * Масштабная высота (высота 50% плотности молекул воздуха)
    *  x - для рассеивания Релея
    *  y - для рассеивания Ми 
    * */
-  uScaleHeight: WebGLUniformLocation;
+  uScaleHeight: WebGLUniformLocation | null = null;
   /** Радиус атмосферы */
-  uAtmRadius: WebGLUniformLocation;
+  uAtmRadius: WebGLUniformLocation | null = null;
   /** Радиус планеты */
-  uPlanetRadius: WebGLUniformLocation;
+  uPlanetRadius: WebGLUniformLocation | null = null;
   /** Положение центра планеты */
-  uPlanetCenter: WebGLUniformLocation;
+  uPlanetCenter: WebGLUniformLocation | null = null;
 
   /** Положение камеры */
-  uCameraPosition: WebGLUniformLocation;
+  uCameraPosition: WebGLUniformLocation | null = null;
   /** Признак нахождения камеры в тени */
-  uCameraInShadow: WebGLUniformLocation;
+  uCameraInShadow: WebGLUniformLocation | null = null;
   /** Матрица вращения камеры для вершинного шейдера */
-  uTransformMat: WebGLUniformLocation;
+  uTransformMat: WebGLUniformLocation | null = null;
   /** Угол объектива камеры по x координате */
-  uCameraViewAngle: WebGLUniformLocation;
+  uCameraViewAngle: WebGLUniformLocation | null = null;
   /** Матрица вращения небесного свода */
-  uSkyTransformMat: WebGLUniformLocation;
+  uSkyTransformMat: WebGLUniformLocation | null = null;
   /** Подсветка созвездий, 0. - не подсвечивать */
-  uConstellationsColor: WebGLUniformLocation;
+  uConstellationsColor: WebGLUniformLocation | null = null;
 
   /** Свет фар */
-  uHeadLight: WebGLUniformLocation;
+  uHeadLight: WebGLUniformLocation | null = null;
 
   /** Положение сигнальных ракет */
-  uFlarePositions: WebGLUniformLocation;
+  uFlarePositions: WebGLUniformLocation | null = null;
   /** Цвет и интенсивность свечения сигнальных ракет */
-  uFlareLights: WebGLUniformLocation;
+  uFlareLights: WebGLUniformLocation | null = null;
 
   /** Ядро выборки (набор векторов в пределах единичной полусферы) для тестирования затененности */
-  uSSAOSamples: WebGLUniformLocation;
+  uSSAOSamples: WebGLUniformLocation | null = null;
   /** Режим экрана */
-  uScreenMode: WebGLUniformLocation;
+  uScreenMode: WebGLUniformLocation | null = null;
   /** Масштаб карты */
-  uMapScale: WebGLUniformLocation;
+  uMapScale: WebGLUniformLocation | null = null;
 
   
   constructor(e: Engine, bufferA: Framebuffer, bufferB: Framebuffer,// bufferC: Framebuffer,

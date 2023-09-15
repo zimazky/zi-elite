@@ -1,6 +1,6 @@
-import { Atmosphere } from "../core/atmosphere";
-import { Camera } from "../core/camera";
-import { Engine, Framebuffer, Renderbufer } from "../core/engine";
+import { Atmosphere } from "src/core/atmosphere";
+import { Camera } from "src/core/camera";
+import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
 
 export class ProgramB {
   engine: Engine;
@@ -11,22 +11,22 @@ export class ProgramB {
   // Shader uniforms
 
   /** Положение камеры */
-  uCameraPosition: WebGLUniformLocation;
+  uCameraPosition: WebGLUniformLocation | null = null;
   /** Угол объектива камеры по x координате */
-  uCameraViewAngle: WebGLUniformLocation;
+  uCameraViewAngle: WebGLUniformLocation | null = null;
   /** Вектор направления камеры */
-  uCameraDirection: WebGLUniformLocation;
+  uCameraDirection: WebGLUniformLocation | null = null;
   /** Матрица вращения камеры для вершинного шейдера */
-  uTransformMat: WebGLUniformLocation;
+  uTransformMat: WebGLUniformLocation | null = null;
   /** Режим экрана */
-  uScreenMode: WebGLUniformLocation;
+  uScreenMode: WebGLUniformLocation | null = null;
   /** Масштаб карты */
-  uMapScale: WebGLUniformLocation;
+  uMapScale: WebGLUniformLocation | null = null;
 
   /** Радиус планеты */
-  uPlanetRadius: WebGLUniformLocation;
+  uPlanetRadius: WebGLUniformLocation | null = null;
   /** Положение центра планеты */
-  uPlanetCenter: WebGLUniformLocation;
+  uPlanetCenter: WebGLUniformLocation | null = null;
 
   constructor(e: Engine, bInput: Framebuffer, c: Camera, atm: Atmosphere) {
     this.engine = e;
