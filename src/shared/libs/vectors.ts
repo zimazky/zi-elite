@@ -1438,6 +1438,7 @@ export class Quaternion extends Vec4 {
 
   /** Кватернион не меняющий ориентацию */
   static get ID() { return new Quaternion(0.,0.,0.,1.) };
+  
   /** Получить случайный кватернион */
   static get QRAND() {
     var u1 = Math.random();

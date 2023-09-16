@@ -111,23 +111,6 @@ vec3 lonLatAlt(vec3 p) {
 }
 */
 
-// Вычисление нормали в точке, заданной сферическими координатами
-vec3 calcNormal(vec3 pos, float t) {
-  vec2 eps = vec2(0.1, 0.);
-  vec3 llax1 = lonLatAlt(pos + eps.xyy);
-  vec3 llax2 = lonLatAlt(pos - eps.xyy);
-  vec3 llay1 = lonLatAlt(pos + eps.yxy);
-  vec3 llay2 = lonLatAlt(pos - eps.yxy);
-  vec3 llaz1 = lonLatAlt(pos + eps.yyx);
-  vec3 llaz2 = lonLatAlt(pos - eps.yyx);
-
-  return normalize(vec3(
-    terrainOnSphere(llax2.xy) - terrainOnSphere(llax1.xy),
-    terrainOnSphere(llay2.xy) - terrainOnSphere(llay1.xy),
-    terrainOnSphere(llaz2.xy) - terrainOnSphere(llaz1.xy)
-  ));
-}
-
 /** 
  * Рейкастинг для случая сферической поверхности планеты 
  *   ro - положение камеры

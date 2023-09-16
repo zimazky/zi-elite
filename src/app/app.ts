@@ -5,7 +5,6 @@ import { Flare } from 'src/core/flare';
 import { initKeyBuffer } from 'src/shared/libs/keyboard';
 import { NoiseSampler } from 'src/core/noise';
 import { Sky } from 'src/core/sky';
-import { TerrainSampler } from 'src/core/terrain';
 import { Quaternion, Vec3 } from 'src/shared/libs/vectors';
 import { ProgramA } from 'src/programs/programA';
 import { ProgramB } from 'src/programs/programB';
@@ -24,6 +23,8 @@ import fshaderR from 'src/shaders/render1/fs.glsl';
 import { ObjDoc } from 'src/core/loadobj';
 import { ProgramC } from 'src/programs/programC/programC';
 import { Planet } from 'src/core/planet';
+import { grad } from 'src/shared/libs/mathutils';
+import { SphericalPyramidsTerrain } from 'src/core/Terrain/SphericalPyramids';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -70,8 +71,8 @@ export default async function main() {
   const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
-  const planet = new Planet();
-  const tSampler = new TerrainSampler(new NoiseSampler(grayNoiseImg), planet);
+  const planet = new Planet(200000, 9.81); //6371e3
+  const tSampler = new SphericalPyramidsTerrain(planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -169,13 +170,14 @@ export default async function main() {
       const heightB = shaderB.height.toFixed(0);
       const nxA = programA.numX.toFixed(0);
       const nyA = programA.numY.toFixed(0);
-
+      const lla = planet.lonLatAlt(camera.position);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       shB: ${widthB}x${heightB} nA: ${nxA}x${nyA}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
-      alt: ${camera.altitude.toFixed(2)} h: ${camera.position.y.toFixed(2)}
-      x: ${camera.position.x.toFixed(2)} y: ${camera.position.z.toFixed(2)}
+      alt: ${camera.altitude.toFixed(2)} h: ${lla.z.toFixed(2)}
+      lat: ${grad(lla.x).toFixed(7)} lon: ${grad(lla.y).toFixed(7)}
+      x: ${camera.position.x.toFixed(2)} y: ${camera.position.y.toFixed(2)} z: ${camera.position.z.toFixed(2)}
       sun: ${sky.sunDiscColor.x.toFixed(2)} ${sky.sunDiscColor.y.toFixed(2)} ${sky.sunDiscColor.z.toFixed(2)}`;
 
       infoRefreshTime = time + 0.5;

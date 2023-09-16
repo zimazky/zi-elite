@@ -1,9 +1,11 @@
 import { isKeyPress, isKeyDown } from "src/shared/libs/keyboard";
 import { Mat3, Quaternion, Vec3 } from "src/shared/libs/vectors";
 
-import { TerrainSampler } from "./terrain";
 import { Planet } from "./planet";
 import { Atmosphere } from "./atmosphere";
+import ITerrainSampler from "./Terrain/ITerrainSampler";
+import { smoothstep } from "src/shared/libs/mathutils";
+import { SUN_DISC_ANGLE_SIN } from "./constants";
 
 export const FRONT_VIEW = 0;
 export const MAP_VIEW = 1;
@@ -11,7 +13,6 @@ export const MAP_VIEW = 1;
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;
 
-const GRAVITATION = 0.; //9.8; // ускорение свободного падения м/с2
 const THRUST = 11.; // ускорение двигателя м/с2
 const AIR_DRAG_FACTOR = 58.; // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR); // вектор сопротивления по осям
@@ -61,13 +62,13 @@ export class Camera {
   /** Яркость фар, 0. - выключены */
   headLights: number = 0;
 
-  tSampler: TerrainSampler;
+  tSampler: ITerrainSampler;
 
   screenMode: number;
   mapMode: number;
   mapScale: number;
 
-  constructor(position: Vec3, quaternion: Quaternion, t: TerrainSampler, planet: Planet) {
+  constructor(position: Vec3, quaternion: Quaternion, t: ITerrainSampler, planet: Planet) {
     this._planet = planet;
     this.position = position.copy();
     this.velocity = Vec3.ZERO;
@@ -80,10 +81,27 @@ export class Camera {
     this.mapScale = 5000.;
   }
 
+  /** Функция определения затененности */
+  softShadow(ro: Vec3, rd: Vec3): number {
+    const minStep = 1.;
+    let res = 1.;
+    let t = 0.1;
+    const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
+    for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+      const p = ro.add(rd.mul(t));
+      if(this.tSampler.isHeightGreaterMax(p)) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
+      const h = this.tSampler.height(p);
+      res = Math.min(res, cosA*h/t);
+      if(res < -SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
+      t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
+    }
+    return 0.;
+  }
+  
   inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {
     const planetShadow = this._planet.softPlanetShadow(pos,sunDir);
     if(planetShadow<=0.001) return 0.;
-    const s = planetShadow*this.tSampler.softShadow(this.position, sunDir);
+    const s = planetShadow*this.softShadow(this.position, sunDir);
     return Math.pow(s, 4.);
   }
 
@@ -105,7 +123,7 @@ export class Camera {
     // замедление от сопротивления воздуха
     this.velocity.subMutable( mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
     // гравитация
-    this.velocity.y -= GRAVITATION*timeDelta;
+    //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
     // экстренная остановка
     if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO;
 
@@ -114,13 +132,13 @@ export class Camera {
     this.position.addMutable(this.velocity.mul(timeDelta));
 
     // не даем провалиться ниже поверхности
-    const lla = this._planet.lonLatAlt(this.position);
-    const height = this.tSampler.terrainOnSphere(lla.xy) + 2.;
-    if(lla.z < height) {
+
+    const height = this.tSampler.height(this.position) - 2.;
+    if(height < 0) {
       // направление от центра планеты
-      const r = this.position.sub(this._planet.center).normalize();
-      this.velocity.subMutable(r.mul(this.velocity.dot(r)));
-      this.position.addMutable(r.mul(height-lla.z));
+      const rn = this.position.sub(this._planet.center).normalize();
+      this.velocity.subMutable(rn.mul(this.velocity.dot(rn)));
+      this.position.subMutable(rn.mul(height));
     }
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);

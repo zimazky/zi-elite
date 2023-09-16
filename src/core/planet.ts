@@ -28,13 +28,18 @@ export class Planet {
    * */
   origin: Vec3;
   /** радиус планеты */
-  radius: number = 200000; // 6371e3;
+  radius: number; //  6371e3;
   /** Положение центра планеты относительно системы координат камеры */
-  center: Vec3 = new Vec3(0., -this.radius, 0.);
+  center: Vec3;
   /** кватернион, определяющий текущую ориентацию планеты при суточном вращении */
   orientation: Quaternion = Quaternion.ID;
+  /** ускорение свободного падения на поверхности */
+  g: number = 9.81;
 
-  constructor() {
+  constructor(radius: number, g: number) {
+    this.g = g;
+    this.radius = radius;
+    this.center = new Vec3(0., -radius, 0.);
     this.axis = new Vec3(0., Math.sin(this.obliquity), Math.cos(this.obliquity));
     this.origin = new Vec3(0., Math.cos(this.obliquity), -Math.sin(this.obliquity));
   }

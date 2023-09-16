@@ -31,7 +31,7 @@ export class Atmosphere {
   /** Положение центра планеты */
   planetCenter: Vec3;
   /** Радиус атмосферы */
-  radius: number = 300000; // 6471e3;
+  radius: number; // 6471e3;
   /** Квадрат радиуса атмосферы */
   radius2: number;
   /** Коэффициент преломления воздуха */
@@ -62,6 +62,7 @@ export class Atmosphere {
     this.planetRadius = planet.radius;
     this.planetCenter = new Vec3(0., -this.planetRadius, 0.);
     this.planetRadius2 = this.planetRadius*this.planetRadius;
+    this.radius = planet.radius + 100000;
     this.radius2 = this.radius*this.radius;
   }
 

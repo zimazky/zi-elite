@@ -20,3 +20,8 @@ export function mix(a: number, b: number, x: number): number {
 export function rad(x: number): number {
   return Math.PI*x/180.;
 }
+
+/** Перевод из радиан в градусы */
+export function grad(x: number): number {
+  return x*180./Math.PI;
+}
