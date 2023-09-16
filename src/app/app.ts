@@ -25,6 +25,7 @@ import { ProgramC } from 'src/programs/programC/programC';
 import { Planet } from 'src/core/planet';
 import { grad } from 'src/shared/libs/mathutils';
 import { SphericalPyramidsTerrain } from 'src/core/Terrain/SphericalPyramids';
+import { CubeSpherePyramidsTerrain } from 'src/core/Terrain/CubeSpherePyramids';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -72,7 +73,7 @@ export default async function main() {
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
   const planet = new Planet(100000, 9.81); //6371e3
-  const tSampler = new SphericalPyramidsTerrain(planet);
+  const tSampler = new CubeSpherePyramidsTerrain(planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -85,8 +86,8 @@ export default async function main() {
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
   //let quat = Quaternion.Identity();
-  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
-  if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
+  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  //if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler, planet);
   const atm = new Atmosphere(planet);
   const sky = new Sky(camera, atm);

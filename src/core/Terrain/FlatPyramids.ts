@@ -6,6 +6,8 @@ import ITerrainSampler from './ITerrainSampler'
 
 /** масштаб по высоте */
 const H_SCALE = 1100.
+/** масштаб по горизонтали */
+const W_SCALE = 1000.
 /** максимальная высота ландшафта */
 const MAX_TRN_ELEVATION = H_SCALE
 
@@ -14,8 +16,8 @@ function pyramid(x: Vec2) {
   return Math.min(f.x,f.y);
 }
 
-/** Генератор ландшафта в виде пирамид на сфере, выстроенных по сферическим координатам */
-export class SphericalPyramidsTerrain implements ITerrainSampler {
+/** Генератор ландшафта в виде пирамид на плоскости XZ */
+export class FlatPyramidsTerrain implements ITerrainSampler {
   private _planet: Planet
 
   constructor(planet: Planet) {
@@ -23,29 +25,26 @@ export class SphericalPyramidsTerrain implements ITerrainSampler {
   }
 
   isHeightGreaterMax(p: Vec3): boolean {
-    const lla = this._planet.lonLatAlt(p)
-    return lla.z > MAX_TRN_ELEVATION
-  }
-
-  altitude(p: Vec3): number {
-    const lla = this._planet.lonLatAlt(p)
-    return lla.z - H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+    return p.y > MAX_TRN_ELEVATION
   }
 
   height(p: Vec3): number {
-    const lla = this._planet.lonLatAlt(p)
-    return H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+    return H_SCALE*pyramid(p.xz.div(W_SCALE))
+  }
+
+  altitude(p: Vec3): number {
+    return p.y - H_SCALE*this.height(p)
   }
 
   zenith(p: Vec3): Vec3 {
-    return p.sub(this._planet.center).normalizeMutable()
+    return Vec3.J
   }
 
   normal(p: Vec3) {
     const eps = 0.1
     return new Vec3(
       this.height(new Vec3(p.x-eps, p.y, p.z)) - this.height(new Vec3(p.x+eps, p.y, p.z)),
-      this.height(new Vec3(p.x, p.y-eps, p.z)) - this.height(new Vec3(p.x, p.y+eps, p.z)),
+      2*eps,
       this.height(new Vec3(p.x, p.y, p.z-eps)) - this.height(new Vec3(p.x, p.y, p.z+eps))
     ).normalizeMutable()
   }

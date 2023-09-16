@@ -56,9 +56,9 @@ export class Sky {
 
     if(time>this.skyRefreshTime) {
       // Определение цвета неба и цвета диска солнца
-      const pos = new Vec3(this.camera.position.x, 0., this.camera.position.z); // положение для которого рассчитываем цвета
+      const pos = this.camera.position; // положение для которого рассчитываем цвета
       const sunDir = this.sunDirection.copy();
-      if(sunDir.y<0.) sunDir.y = 0.;
+      //if(sunDir.y<0.) sunDir.y = 0.;
       sunDir.normalizeMutable();
       const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
       const sunIntensity = SUN_COLOR.mul(20.);
