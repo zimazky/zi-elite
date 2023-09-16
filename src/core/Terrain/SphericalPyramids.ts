@@ -27,9 +27,14 @@ export class SphericalPyramidsTerrain implements ITerrainSampler {
     return lla.z > MAX_TRN_ELEVATION
   }
 
-  height(r: Vec3): number {
+  altitude(r: Vec3): number {
     const lla = this._planet.lonLatAlt(r)
     return lla.z - H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+  }
+
+  height(r: Vec3): number {
+    const lla = this._planet.lonLatAlt(r)
+    return H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
   }
 
   normal(r: Vec3) {

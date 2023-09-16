@@ -4,9 +4,9 @@
 import { smoothstep } from "src/shared/libs/mathutils";
 import { Mat2, Vec2, Vec3 } from "src/shared/libs/vectors";
 
-import { SUN_DISC_ANGLE_SIN } from "./constants";
-import { NoiseSampler } from "./noise";
-import { Planet } from "./planet";
+import { SUN_DISC_ANGLE_SIN } from "src/core/constants";
+import { NoiseSampler } from "src/core/noise";
+import { Planet } from "src/core/planet";
 
 const im2 = new Mat2(new Vec2(0.8,-0.6), new Vec2(0.6,0.8)); // матрица поворота шума при генерации ландшафта
 const W_SCALE = 3000.; // масштаб по горизонтали

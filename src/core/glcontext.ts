@@ -24,6 +24,7 @@ export class GLContext {
     this.gl.shaderSource(shader, source.trim());
     this.gl.compileShader(shader);
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+      alert('Ошмбка компиляции шейдера: ' + this.gl.getShaderInfoLog(shader));
       this.gl.deleteShader(shader);   
       throw new Error('Ошмбка компиляции шейдера: ' + this.gl.getShaderInfoLog(shader));
     }

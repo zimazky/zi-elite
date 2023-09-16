@@ -48,14 +48,14 @@ layout (location = 1) out vec4 gAlbedo;
 // Модуль определения констант
 // ----------------------------------------------------------------------------
 #ifndef CONST_MODULE
-#include "../common/constants.glsl";
+#include "src/shaders/common/constants.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "../common/terrain.glsl";
+#include "src/shaders/common/terrain/spherical.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
@@ -94,23 +94,6 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
 }
 */
 
-/*
-// Перевод декартовых координат точки в сферические координаты относительно центра планеты
-// Начало декартовых координат совпадает с точкой 0,0,0 на сфере
-// Ось x 
-// Возвращается:
-// x - долгота
-// y - широта
-// z - высота над поверхностью сферы
-vec3 lonLatAlt(vec3 p) {
-  vec3 r = p - uPlanetCenter;
-  float phi = atan(r.y, r.x);
-  float theta = atan(length(r.xy), r.z);
-  float alt = length(r) - uPlanetRadius;
-  return vec3(phi, theta, alt);
-}
-*/
-
 /** 
  * Рейкастинг для случая сферической поверхности планеты 
  *   ro - положение камеры
@@ -124,12 +107,11 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   // НАЙТИ ТОЧКУ ПЕРЕСЕЧЕНИЯ
   //float d = ro.y - MAX_TRN_ELEVATION;
   //if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
-  //float roAlt = length(ro) - uPlanetRadius;
+  float roAlt = lonLatAlt(ro).z;
   for(int i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
-    vec3 lla = lonLatAlt(pos);
-    //if(lla.z>roAlt && lla.z>MAX_TRN_ELEVATION) return tmax + 1.;
-    float h = lla.z - terrainOnSphere(lla.xy);
+    if(isHeightGreaterTerrainMax(pos, roAlt)) return tmax + 1.;
+    float h = terrainAlt(pos);
     if( abs(h)<(0.003*t) || t>tmax ) break; // двоятся детали при большем значении
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
   }
@@ -170,9 +152,9 @@ void main(void) {
       else {
         pos = uCameraPosition + t*rd;
         vec3 lla = lonLatAlt(pos);
-        vec3 nor = calcNormal(pos, max(1.,t));
+        vec3 nor = terrainNormal(pos);
         gNormalDepth = vec4(nor, t);
-        col = terrain_color(pos, nor).rgb;
+        col = terrainColor(pos, nor).rgb;
       }
     }
 

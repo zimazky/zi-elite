@@ -90,7 +90,7 @@ export class Camera {
     for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
       if(this.tSampler.isHeightGreaterMax(p)) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
-      const h = this.tSampler.height(p);
+      const h = this.tSampler.altitude(p);
       res = Math.min(res, cosA*h/t);
       if(res < -SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
@@ -133,7 +133,7 @@ export class Camera {
 
     // не даем провалиться ниже поверхности
 
-    const height = this.tSampler.height(this.position) - 2.;
+    const height = this.tSampler.altitude(this.position) - 2.;
     if(height < 0) {
       // направление от центра планеты
       const rn = this.position.sub(this._planet.center).normalize();
