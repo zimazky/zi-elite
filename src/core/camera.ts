@@ -86,7 +86,8 @@ export class Camera {
     const minStep = 1.;
     let res = 1.;
     let t = 0.1;
-    const cosA = Math.sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
+    const rdZenith = rd.dot(this.tSampler.zenith(ro))
+    const cosA = Math.sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
     for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
       if(this.tSampler.isHeightGreaterMax(p)) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);

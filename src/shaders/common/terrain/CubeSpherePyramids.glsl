@@ -72,6 +72,11 @@ float terrainAlt(vec3 p) {
   return lla.z - terrainHeight(p);
 }
 
+// Единичный вектор направленный в зенит
+vec3 zenith(vec3 p) {
+  return normalize(p - uPlanetCenter);
+}
+
 // Вычисление нормали под точкой
 vec3 terrainNormal(vec3 pos) {
   vec2 eps = vec2(1., 0.);
@@ -85,7 +90,8 @@ vec3 terrainNormal(vec3 pos) {
 // функция определения затененности
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
-  float cosA = sqrt(1.-rd.z*rd.z); // косинус угла наклона луча от камеры к горизонтали
+  float rdZenith = dot(rd, zenith(ro));
+  float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
 
   float res = 1.;
   t = 0.01*dis;
