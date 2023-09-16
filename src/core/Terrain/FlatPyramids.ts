@@ -33,7 +33,7 @@ export class FlatPyramidsTerrain implements ITerrainSampler {
   }
 
   altitude(p: Vec3): number {
-    return p.y - H_SCALE*this.height(p)
+    return p.y - this.height(p)
   }
 
   zenith(p: Vec3): Vec3 {

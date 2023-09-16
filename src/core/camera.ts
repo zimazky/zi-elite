@@ -133,17 +133,17 @@ export class Camera {
 
     // не даем провалиться ниже поверхности
 
-    const height = this.tSampler.altitude(this.position) - 2.;
-    if(height < 0) {
+    const altitude = this.tSampler.altitude(this.position) - 2.;
+    if(altitude < 0) {
       // направление от центра планеты
-      const rn = this.position.sub(this._planet.center).normalize();
+      const rn = this.tSampler.zenith(this.position);
       this.velocity.subMutable(rn.mul(this.velocity.dot(rn)));
-      this.position.subMutable(rn.mul(height));
+      this.position.subMutable(rn.mul(altitude));
     }
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
-    this.altitude = this.position.y - height;
+    this.altitude = this.tSampler.altitude(this.position);
 
     // вращение
     const angularAcceleration = new Vec3(

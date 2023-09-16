@@ -26,6 +26,7 @@ import { Planet } from 'src/core/planet';
 import { grad } from 'src/shared/libs/mathutils';
 import { SphericalPyramidsTerrain } from 'src/core/Terrain/SphericalPyramids';
 import { CubeSpherePyramidsTerrain } from 'src/core/Terrain/CubeSpherePyramids';
+import { FlatPyramidsTerrain } from 'src/core/Terrain/FlatPyramids';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -73,7 +74,7 @@ export default async function main() {
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
   const planet = new Planet(100000, 9.81); //6371e3
-  const tSampler = new CubeSpherePyramidsTerrain(planet);
+  const tSampler = new FlatPyramidsTerrain(planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
