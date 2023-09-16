@@ -274,8 +274,9 @@ void main() {
       // небо из текстуры
       col = 0.5*nightSky(normalize(vRaySky));
       // диск солнца
-      float sunsin = sqrt(1.-sundot*sundot);
-      col += sunsin < uSunDiscAngleSin ? vec3(1.,0.8,0.6) : vec3(0);
+      float sunsin =  1. - smoothstep(uSunDiscAngleSin-0.001,uSunDiscAngleSin+0.001,sqrt(1.-sundot*sundot));
+      //sqrt(1.-sundot*sundot);
+      col += sunsin*vec3(1.,0.8,0.6);
       // диск луны
       float moonsin = 1. - smoothstep(uSunDiscAngleSin-0.001,uSunDiscAngleSin+0.001,sqrt(1.-moondot*moondot));
       col += moonsin;

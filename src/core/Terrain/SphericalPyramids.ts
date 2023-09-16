@@ -41,6 +41,10 @@ export class SphericalPyramidsTerrain implements ITerrainSampler {
     return p.sub(this._planet.center).normalizeMutable()
   }
 
+  fromCenter(p: Vec3) {
+    return p.sub(this._planet.center)
+  }
+
   normal(p: Vec3) {
     const eps = 0.1
     return new Vec3(

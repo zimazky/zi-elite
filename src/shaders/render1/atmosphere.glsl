@@ -72,7 +72,7 @@ struct ResultScattering {
  */
 ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
   // Положение относительно центра планеты
-  vec3 start = ro - uPlanetCenter;
+  vec3 start = terrainFromCenter(ro);//ro - uPlanetCenter;
 
   float PLANET_RADIUS_SQR = uPlanetRadius*uPlanetRadius;
   float ATM_RADIUS_SQR = uAtmRadius*uAtmRadius;
@@ -171,7 +171,7 @@ const int PRIMARY_STEPS_INTERSECTION = 8;
 ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float rayLen) {
   
   // Положение относительно центра планеты
-  vec3 start = ro - uPlanetCenter;
+  vec3 start = terrainFromCenter(ro);// ro - uPlanetCenter;
 
   float PLANET_RADIUS_SQR = uPlanetRadius*uPlanetRadius;
   float ATM_RADIUS_SQR = uAtmRadius*uAtmRadius;
@@ -231,7 +231,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
   * Возвращает 0. если луч пересекается с планетой
   */
 float planetIntersection(vec3 ro, vec3 rd) {
-  vec3 pos = ro - uPlanetCenter;
+  vec3 pos = terrainFromCenter(ro);//ro - uPlanetCenter;
   //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
   
   float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
@@ -252,7 +252,7 @@ float planetIntersection(vec3 ro, vec3 rd) {
   *   1. - если солнце полностью видно
   */
 float softPlanetShadow(vec3 ro, vec3 rd) {
-  vec3 pos = ro - uPlanetCenter;
+  vec3 pos = terrainFromCenter(ro);//ro - uPlanetCenter;
   //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
 
   float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты

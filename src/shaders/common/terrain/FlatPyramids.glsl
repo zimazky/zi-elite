@@ -38,8 +38,13 @@ float terrainAlt(vec3 p) {
 }
 
 // Единичный вектор направленный в зенит
-vec3 zenith(vec3 p) {
+vec3 terrainZenith(vec3 p) {
   return vec3(0, 1, 0);
+}
+
+// Вектор относительно центра планеты
+vec3 terrainFromCenter(vec3 p) {
+  return vec3(0, p.y, 0) - uPlanetCenter;
 }
 
 // Вычисление нормали под точкой
@@ -55,7 +60,7 @@ vec3 terrainNormal(vec3 pos) {
 // функция определения затененности
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
-  float rdZenith = dot(rd, zenith(ro));
+  float rdZenith = dot(rd, terrainZenith(ro));
   float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
 
   float res = 1.;

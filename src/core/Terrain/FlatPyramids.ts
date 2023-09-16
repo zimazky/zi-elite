@@ -40,6 +40,10 @@ export class FlatPyramidsTerrain implements ITerrainSampler {
     return Vec3.J
   }
 
+  fromCenter(p: Vec3) {
+    return new Vec3(0, p.y+this._planet.radius, 0)
+  }
+
   normal(p: Vec3) {
     const eps = 0.1
     return new Vec3(
