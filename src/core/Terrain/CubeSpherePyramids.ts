@@ -13,6 +13,11 @@ const MAX_TRN_ELEVATION = H_SCALE
 
 const ONE_OVER_SQRT3 = 0.57735026918962576450914878050196
 
+function pyramid(x: Vec2) {
+  const f = Vec2.ONE.subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE).abs());
+  return Math.min(f.x,f.y);
+}
+
 /** Генератор ландшафта в виде пирамид на кубосфере */
 export class CubeSpherePyramidsTerrain implements ITerrainSampler {
   private _planet: Planet
@@ -50,8 +55,7 @@ export class CubeSpherePyramidsTerrain implements ITerrainSampler {
         else f = new Vec2(s.x, s.y) // z-
       }
     }
-    f = Vec2.ONE.subMutable(f.div(W_SCALE).fract().mulMutable(2).subMutable(Vec2.ONE).abs())
-    return Math.min(f.x, f.y)
+    return pyramid(f.div(W_SCALE))
   }
   
   isHeightGreaterMax(p: Vec3): boolean {

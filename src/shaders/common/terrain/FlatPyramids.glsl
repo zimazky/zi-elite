@@ -15,7 +15,7 @@ float pyramid(vec2 x) {
   return min(f.x,f.y);
 }
 
-const float W_SCALE = 3000.; // масштаб по горизонтали
+const float W_SCALE = 1500.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
 //const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
 

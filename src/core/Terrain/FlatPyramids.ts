@@ -7,7 +7,7 @@ import ITerrainSampler from './ITerrainSampler'
 /** масштаб по высоте */
 const H_SCALE = 1100.
 /** масштаб по горизонтали */
-const W_SCALE = 1000.
+const W_SCALE = 1500.
 /** максимальная высота ландшафта */
 const MAX_TRN_ELEVATION = H_SCALE
 

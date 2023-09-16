@@ -177,7 +177,7 @@ export default async function main() {
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       shB: ${widthB}x${heightB} nA: ${nxA}x${nyA}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
-      alt: ${camera.altitude.toFixed(2)} h: ${lla.z.toFixed(2)}
+      alt: ${camera.altitude.toFixed(2)} h: ${tSampler.height(camera.position).toFixed(2)}
       lat: ${grad(lla.x).toFixed(7)} lon: ${grad(lla.y).toFixed(7)}
       x: ${camera.position.x.toFixed(2)} y: ${camera.position.y.toFixed(2)} z: ${camera.position.z.toFixed(2)}
       sun: ${sky.sunDiscColor.x.toFixed(2)} ${sky.sunDiscColor.y.toFixed(2)} ${sky.sunDiscColor.z.toFixed(2)}`;
