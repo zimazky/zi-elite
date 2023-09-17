@@ -95,14 +95,14 @@ vec3 terrainNormal(vec3 pos) {
 // функция определения затененности
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
-  float rdZenith = dot(rd, terrainZenith(ro));
-  float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-
   float res = 1.;
   t = 0.01*dis;
   float roAlt = lonLatAlt(ro).z;
   for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
+    float rdZenith = dot(rd, terrainZenith(p));
+    float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
+
     if(isHeightGreaterTerrainMax(p, roAlt)) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
     float h = terrainAlt(p);
 	  res = min(res, cosA*h/t);

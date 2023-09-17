@@ -1,3 +1,7 @@
+type TextureDescription = {
+  format: 'RGBA'|'RGBA16F'|'RGBA32F'
+}
+
 export class GLContext {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;

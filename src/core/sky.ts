@@ -4,6 +4,7 @@ import { isKeyPress } from "src/shared/libs/keyboard";
 import { Camera } from "./camera";
 import { Atmosphere } from "./atmosphere";
 import { SUN_COLOR } from "./constants";
+import ITerrainSampler from "./Terrain/ITerrainSampler";
 
 const KEY_C = 67;
 
@@ -33,6 +34,7 @@ export class Sky {
 
   camera: Camera;
   atm: Atmosphere;
+  tSampler: ITerrainSampler;
 
   skyRefreshTime: number = 0.;
 
@@ -40,9 +42,10 @@ export class Sky {
   moonDiskColor: Vec3 = new Vec3(0.005,0.005,0.01);
   skyColor: Vec3 = Vec3.ZERO;
 
-  constructor(camera: Camera, atm: Atmosphere) {
+  constructor(camera: Camera, atm: Atmosphere, tSampler: ITerrainSampler) {
     this.camera = camera;
     this.atm = atm;
+    this.tSampler = tSampler;
   }
 
   loopCalculation(time: number, timeDelta: number) {
@@ -56,9 +59,11 @@ export class Sky {
 
     if(time>this.skyRefreshTime) {
       // Определение цвета неба и цвета диска солнца
-      const pos = this.camera.position; // положение для которого рассчитываем цвета
+      const zenith = this.tSampler.zenith(this.camera.position);
+      const pos = this.atm.planetCenter.add(zenith.mul(this.atm.planetRadius+100)); // положение для которого рассчитываем цвета
       const sunDir = this.sunDirection.copy();
-      //if(sunDir.y<0.) sunDir.y = 0.;
+      const sunDirZ = sunDir.dot(zenith);
+      if(sunDirZ < 0.) sunDir.subMutable(zenith.mul(sunDirZ));
       sunDir.normalizeMutable();
       const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
       const sunIntensity = SUN_COLOR.mul(20.);
@@ -66,12 +71,21 @@ export class Sky {
 
       const oneDivSqrt2 = 1./Math.sqrt(2.);
       // светимость неба по 5-ти точкам
+      let tangent: Vec3;
+      let binormal: Vec3;
+      const c1 = zenith.cross(Vec3.K);
+      const c2 = zenith.cross(Vec3.I);
+      if(c1.length() > c2.length()) tangent = c1;
+      else tangent = c2;
+      tangent.normalizeMutable();
+      binormal = zenith.cross(tangent).normalizeMutable();
+
       const skyDirScatter = 
-        this.atm.scattering(pos, Vec3.J, this.sunDirection).t
-        .add(this.atm.scattering(pos, new Vec3(oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
-        .add(this.atm.scattering(pos, new Vec3(-oneDivSqrt2, oneDivSqrt2, 0), this.sunDirection).t)
-        .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, oneDivSqrt2), this.sunDirection).t)
-        .add(this.atm.scattering(pos, new Vec3(0, oneDivSqrt2, -oneDivSqrt2), this.sunDirection).t)
+        this.atm.scattering(pos, zenith, this.sunDirection).t
+        .add(this.atm.scattering(pos, zenith.add(tangent).normalizeMutable(), this.sunDirection).t)
+        .add(this.atm.scattering(pos, zenith.sub(tangent).normalizeMutable(), this.sunDirection).t)
+        .add(this.atm.scattering(pos, zenith.add(binormal).normalizeMutable(), this.sunDirection).t)
+        .add(this.atm.scattering(pos, zenith.sub(binormal).normalizeMutable(), this.sunDirection).t)
         .div(5.);
       this.skyColor = sunIntensity.mulEl(skyDirScatter);//.mulMutable(2);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
 
