@@ -85,7 +85,7 @@ out vec4 fragColor;
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "src/shaders/common/terrain/FlatPyramids.glsl";
+#include "src/shaders/common/terrain/CubeSpherePyramids.glsl";
 #endif
 
 // ----------------------------------------------------------------------------

@@ -79,20 +79,58 @@ export class GLContext {
    * @param num - число текстур (multiple render targets)
    * @returns [фреймбуфер, массив созданных текстур]
    */
-  createFramebufferMRT(width: number, height: number, num: number): [WebGLFramebuffer, WebGLTexture[]] {
+  createFramebufferMRT(width: number, height: number, descriptions: TextureDescription[]): [WebGLFramebuffer, WebGLTexture[]] {
     // Создаем и привязываем framebuffer
     const framebuffer = this.gl.createFramebuffer();
     if(framebuffer === null) throw new Error('Ошибка при создании фреймбуфера');
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     // Создание текстур
     const textures: WebGLTexture[] = [];
-    for(let i=0; i<num; i++) {
+    for(let i=0; i<descriptions.length; i++) {
       const texture = this.gl.createTexture();
       if(texture === null) throw new Error('Ошибка при создании текстуры');
       textures.push(texture);
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
       // Определение формата текстуры
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA16F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, null);
+      let internalFormat, format: GLenum;
+      switch(descriptions[i].format) {
+        case 'RGBA16F': 
+          internalFormat = this.gl.RGBA16F;
+          format = this.gl.RGBA;
+          break;
+        case 'RGB16F':
+          internalFormat = this.gl.RGB16F;
+          format = this.gl.RGB;
+          break;
+        case 'RG16F':
+          internalFormat = this.gl.RG16F;
+          format = this.gl.RG;
+          break;
+        case 'R16F':
+          internalFormat = this.gl.R16F;
+          format = this.gl.RED;
+          break;
+        case 'RGBA32F': 
+          internalFormat = this.gl.RGBA32F;
+          format = this.gl.RGBA;
+          break;
+        case 'RGB32F':
+          internalFormat = this.gl.RGB32F;
+          format = this.gl.RGB;
+          break;
+        case 'RG32F':
+          internalFormat = this.gl.RG32F;
+          format = this.gl.RG;
+          break;
+        case 'R32F':
+          internalFormat = this.gl.R32F;
+          format = this.gl.RED;
+          break;
+        default: 
+          alert(`Формат текстуры ${descriptions[i].format} не поддерживается`);
+          throw new Error(`Формат текстуры ${descriptions[i].format} не поддерживается`);
+      }
+      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, this.gl.FLOAT, null);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
@@ -109,4 +147,8 @@ export class GLContext {
     return [framebuffer, textures]
   }
 
+}
+
+export type TextureDescription = {
+  format: 'RGBA16F'|'RGB16F'|'RG16F'|'R16F'|'RGBA32F'|'RGB32F'|'RG32F'|'R32F'
 }

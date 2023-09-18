@@ -74,7 +74,7 @@ export default async function main() {
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
   const planet = new Planet(100000, 9.81); //6371e3
-  const tSampler = new FlatPyramidsTerrain(planet);
+  const tSampler = new CubeSpherePyramidsTerrain(planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -103,7 +103,7 @@ export default async function main() {
 
   // Шейдер оценки глубины по предыдущему кадру
   const shaderA = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, 1,
+    e.canvas.width, e.canvas.height, [{format: 'RGBA16F'}],
     //2195, 1131, 1,
     vshaderA, fshaderA,
     (shader) => {
@@ -116,7 +116,7 @@ export default async function main() {
 
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, 2,
+    e.canvas.width, e.canvas.height, [{format: 'RGBA16F'}, {format: 'RGBA16F'}],
     //2195, 1131, 2,
     vshaderB, fshaderB,
     (shader: Renderbufer) => {

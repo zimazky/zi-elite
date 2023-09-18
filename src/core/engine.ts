@@ -1,6 +1,6 @@
 import { Vec4 } from "src/shared/libs/vectors";
 
-import { GLContext } from "./glcontext";
+import { GLContext, TextureDescription } from "./glcontext";
 
 
 interface OnProgramInit {
@@ -94,11 +94,11 @@ export class Engine extends GLContext {
 */
 
   /** Добавление промежуточного фреймбуфера с собственной шейдерной программой */
-  addFramebufferMRT(width: number, height: number, numMRT: number, vsSource: string, fsSource: string, 
+  addFramebufferMRT(width: number, height: number, textureDescriptions: TextureDescription[], vsSource: string, fsSource: string, 
     onInit: OnProgramInit = (p)=>{}, onLoop: OnProgramLoop = (t,dt)=>{}): Framebuffer {
 
     const program = this.createProgram(vsSource, fsSource);
-    const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, numMRT);
+    const [framebuffer, fbTextures] = this.createFramebufferMRT(width, height, textureDescriptions);
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
