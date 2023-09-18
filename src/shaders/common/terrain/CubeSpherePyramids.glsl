@@ -16,14 +16,9 @@ const float H_SCALE = 1100.; // масштаб по высоте
 //const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
 
 
-bool isHeightGreaterTerrainMax(vec3 p) {
-  vec3 lla = lonLatAlt(p);
-  return lla.z > MAX_TRN_ELEVATION;
-}
-
 bool isHeightGreaterTerrainMax(vec3 p, float aPrev) {
   vec3 lla = lonLatAlt(p);
-  return lla.z > aPrev && lla.z > MAX_TRN_ELEVATION;
+  return /*lla.z > aPrev &&*/ lla.z > MAX_TRN_ELEVATION;
 }
 
 float pyramidOnCubeSphere(vec3 r) {

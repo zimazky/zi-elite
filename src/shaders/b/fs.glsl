@@ -104,30 +104,30 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
  */
 float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
-  // НАЙТИ ТОЧКУ ПЕРЕСЕЧЕНИЯ
-  //float d = ro.y - MAX_TRN_ELEVATION;
-  //if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
-
-  float roAlt = lonLatAlt(ro).z;
-  if(roAlt > MAX_TRN_ELEVATION) {
+  float altPrev = lonLatAlt(ro).z;
+  
+  if(altPrev > MAX_TRN_ELEVATION) {
     vec3 r = uPlanetCenter - ro;
     float OT = dot(rd, r);
-    if(OT < 0.) return 2. * MAX_TERRAIN_DISTANCE; // луч уходит от планеты
+    if(OT < 0.) return 1.01 * MAX_TERRAIN_DISTANCE; // луч уходит от планеты
     float CO = length(r);
     float CT2 = CO*CO - OT*OT;
     float R = uPlanetRadius + MAX_TRN_ELEVATION;
     float R2 = R*R;
-    if(CT2 >= R2) return 2. * MAX_TERRAIN_DISTANCE; // луч не пересекается со сферой
+    if(CT2 >= R2) return 1.01 * MAX_TERRAIN_DISTANCE; // луч не пересекается со сферой
     float AT = sqrt(R2 - CT2);
     t = max(tmin, OT-AT);
   }
+  
   for(i=0; i<600; i++) {
     vec3 pos = ro + t*rd;
-    if(isHeightGreaterTerrainMax(pos, roAlt)) return tmax * 2.;
+    float alt = lonLatAlt(ro).z;
+    if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
+    altPrev = alt;
     float h = terrainAlt(pos);
     if( abs(h)<(0.003*t) ) return t; // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
-    if(t>tmax) return tmax * 2.;
+    if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;
   }
   return t;
 }
@@ -153,17 +153,16 @@ void main(void) {
 
     vec3 col = vec3(0);
     int raycastIterations = 0;
-    if(t0 > MAX_TERRAIN_DISTANCE) {
-      gNormalDepth = vec4(-rd, 2. * MAX_TERRAIN_DISTANCE);
+    if(t0 >= MAX_TERRAIN_DISTANCE) {
+      gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
     else {
       float t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
-      if(t > MAX_TERRAIN_DISTANCE) {
-        gNormalDepth = vec4(-rd, 2. * MAX_TERRAIN_DISTANCE);
+      if(t >= MAX_TERRAIN_DISTANCE) {
+        gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
       }
       else {
         vec3 pos = uCameraPosition + t*rd;
-        vec3 lla = lonLatAlt(pos);
         vec3 nor = terrainNormal(pos);
         gNormalDepth = vec4(nor, t);
         col = terrainColor(pos, nor).rgb;

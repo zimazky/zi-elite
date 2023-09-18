@@ -213,7 +213,7 @@ void main() {
   vec4 normalDepthC = texture(uNormalDepthProgramC, uv);
 
 #ifdef DEPTH_ERROR_VIEW
-  float derr = normalDepthB.w-depthA;
+  float derr = normalDepthB.w - depthA;
   vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
   col = pow(col, vec3(1./2.2));
 #else

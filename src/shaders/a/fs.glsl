@@ -11,18 +11,14 @@ precision mediump float;
 
 /** разрешение экрана */
 uniform vec2 uResolution;
-/** разрешение текстуры предыдущего кадра */
-uniform vec2 uTextureBResolution;
 
-/** текстура предыдущего кадра */
-uniform sampler2D uTextureProgramB;
+in float vTextureBData;
 
-in vec4 vTextureBData;
-
-out vec4 fragDepth;
+layout (location = 0) out vec4 fragDepth;
 
 void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
-  fragDepth = vTextureBData;
+  fragDepth = vec4(0);
+  fragDepth.w = vTextureBData;
 }
  
