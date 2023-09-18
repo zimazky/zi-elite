@@ -220,7 +220,7 @@ void main() {
 
   vec3 col = albedoB.rgb;
   //vec3 normal = normalDepthB.xyz;
-  float t = normalDepthB.w;
+  float t = exp2(normalDepthB.w);
   /*
   if(normalDepthC.w < t) {
     col = normalDepthC.xyz;//vec3(0.5);

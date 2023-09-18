@@ -141,18 +141,18 @@ void main(void) {
     vec3 col = vec3(0);
     int raycastIterations = 0;
     if(t0 > MAX_TERRAIN_DISTANCE) {
-      gNormalDepth = vec4(-rd, 1.1*MAX_TERRAIN_DISTANCE);
+      gNormalDepth = vec4(-rd, log2(1.1*MAX_TERRAIN_DISTANCE));
     }
     else {
       float t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
       if(t > MAX_TERRAIN_DISTANCE) {
-        gNormalDepth = vec4(-rd, 1.1*MAX_TERRAIN_DISTANCE);
+        gNormalDepth = vec4(-rd, log2(1.1*MAX_TERRAIN_DISTANCE));
       }
       else {
         vec3 pos = uCameraPosition + t*rd;
         vec3 lla = lonLatAlt(pos);
         vec3 nor = terrainNormal(pos);
-        gNormalDepth = vec4(nor, t);
+        gNormalDepth = vec4(nor, log2(t));
         col = terrainColor(pos, nor).rgb;
       }
     }

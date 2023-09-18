@@ -52,7 +52,7 @@ void main() {
 
   float t = tan(0.5*uCameraViewAngle);
   vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
-  vec3 pos = rd*buf.w;
+  vec3 pos = rd*exp2(buf.w);
 
   pos = pos*transpose(uTransformMatrixPrev);
   pos = (pos - uPositionDelta)*uTransformMatrix;

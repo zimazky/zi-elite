@@ -8,7 +8,7 @@
 
 
 // Максимальная дальность отображения ландшафта
-const float MAX_TERRAIN_DISTANCE = 65000.;
+const float MAX_TERRAIN_DISTANCE = 500000.;
 // Mаксимальная высота ландшафта
 const float MAX_TRN_ELEVATION = 1.8*1100.;//1.8*H_SCALE; 
 
