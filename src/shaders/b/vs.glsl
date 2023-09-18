@@ -8,9 +8,9 @@
 /** Матрица вращения камеры */
 uniform mat3 uTransformMat;
 /** Угол обзора камеры по горизонтали */
-uniform mediump float uCameraViewAngle;
+uniform highp float uCameraViewAngle;
 /** Разрешение фреймбуфера */
-uniform mediump vec2 uResolution;
+uniform highp vec2 uResolution;
 
 in vec3 aVertexPosition;
 

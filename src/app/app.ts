@@ -73,7 +73,7 @@ export default async function main() {
   const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
-  const planet = new Planet(100000, 9.81); //6371e3
+  const planet = new Planet(500000, 9.81); //6371e3
   const tSampler = new CubeSpherePyramidsTerrain(planet);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
@@ -91,7 +91,7 @@ export default async function main() {
   //if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler, planet);
   const atm = new Atmosphere(planet);
-  const sky = new Sky(camera, atm);
+  const sky = new Sky(camera, atm, tSampler);
   const flare1 = new Flare(camera, planet);
   const flare2 = new Flare(camera, planet);
 

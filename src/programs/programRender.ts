@@ -206,8 +206,6 @@ export class ProgramRender {
 
     this.engine.gl.uniform1f(this.uCameraInShadow, cameraInShadow);
 
-    this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
-
     this.engine.gl.uniform3f(this.uHeadLight, this.camera.headLights, this.camera.headLights, this.camera.headLights);
 
     this.engine.gl.uniform3fv(this.uSunDirection, this.sky.sunDirection.getArray());

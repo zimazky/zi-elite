@@ -221,14 +221,17 @@ void main() {
   vec3 col = albedoB.rgb;
   //vec3 normal = normalDepthB.xyz;
   float t = normalDepthB.w;
+  /*
   if(normalDepthC.w < t) {
     col = normalDepthC.xyz;//vec3(0.5);
     t = normalDepthC.w;
     //normal = normalDepthC.xyz;
   }
+  */
   vec3 rd = normalize(vRay);
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
+#ifndef RAYCAST_ITERATIONS_VIEW
 #ifdef TEST_VIEW
   col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, 1., uSunDirection, uMoonDirection);
 #else
@@ -335,6 +338,7 @@ void main() {
   col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
   //col = pow(col, vec3(1./2.2));
+#endif
   
 #endif
 

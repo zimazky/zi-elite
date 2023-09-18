@@ -2,12 +2,13 @@
 
 // Просмотр ошибки карты глубины буфера A
 //#define DEPTH_ERROR_VIEW
+//#define RAYCAST_ITERATIONS_VIEW
 //#define SHADOWS_ITERATIONS_VIEW
 //#define SHADOW_DISTANCE_VIEW
 
 
 // Максимальная дальность отображения ландшафта
-const float MAX_TERRAIN_DISTANCE = 30000.;
+const float MAX_TERRAIN_DISTANCE = 65000.;
 // Mаксимальная высота ландшафта
 const float MAX_TRN_ELEVATION = 1.8*1100.;//1.8*H_SCALE; 
 

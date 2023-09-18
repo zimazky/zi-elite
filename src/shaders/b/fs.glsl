@@ -1,6 +1,6 @@
 #version 300 es
 
-precision mediump float;
+precision highp float;
 
 /**
  * Шейдер формирования G-буфера ландшафта.
@@ -108,12 +108,13 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   //float d = ro.y - MAX_TRN_ELEVATION;
   //if(d >= 0.) t = clamp(-d/rd.y, 0., tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
   float roAlt = lonLatAlt(ro).z;
-  for(int i=0; i<300; i++) {
+  for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
-    if(isHeightGreaterTerrainMax(pos, roAlt)) return tmax + 1.;
+    if(isHeightGreaterTerrainMax(pos, roAlt)) return tmax * 1.1;
     float h = terrainAlt(pos);
-    if( abs(h)<(0.003*t) || t>tmax ) break; // двоятся детали при большем значении
+    if( abs(h)<(0.003*t) ) break; // двоятся детали при большем значении
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    if(t>tmax) return 1.1*tmax;
   }
   return t;
 }
@@ -139,18 +140,16 @@ void main(void) {
 
     vec3 col = vec3(0);
     int raycastIterations = 0;
-    float t = 2.*MAX_TERRAIN_DISTANCE;
-    vec3 pos = uCameraPosition + t*rd;
     if(t0 > MAX_TERRAIN_DISTANCE) {
-      gNormalDepth = vec4(-rd, t);
+      gNormalDepth = vec4(-rd, 1.1*MAX_TERRAIN_DISTANCE);
     }
     else {
-      t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+      float t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
       if(t > MAX_TERRAIN_DISTANCE) {
-        gNormalDepth = vec4(-rd, 2.*MAX_TERRAIN_DISTANCE);
+        gNormalDepth = vec4(-rd, 1.1*MAX_TERRAIN_DISTANCE);
       }
       else {
-        pos = uCameraPosition + t*rd;
+        vec3 pos = uCameraPosition + t*rd;
         vec3 lla = lonLatAlt(pos);
         vec3 nor = terrainNormal(pos);
         gNormalDepth = vec4(nor, t);
