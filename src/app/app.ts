@@ -103,7 +103,7 @@ export default async function main() {
 
   // Шейдер оценки глубины по предыдущему кадру
   const shaderA = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, [{format: 'RGBA16F'}],
+    e.canvas.width, e.canvas.height, [{format: WebGL2RenderingContext.RGBA32F}],
     //2195, 1131, 1,
     vshaderA, fshaderA,
     (shader) => {
@@ -116,7 +116,10 @@ export default async function main() {
 
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, [{format: 'RGBA16F'}, {format: 'RGBA16F'}],
+    e.canvas.width, e.canvas.height, [
+      {format: WebGL2RenderingContext.RGBA32F},
+      {format: WebGL2RenderingContext.RGBA16F}
+    ],
     //2195, 1131, 2,
     vshaderB, fshaderB,
     (shader: Renderbufer) => {

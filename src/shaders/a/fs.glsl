@@ -19,10 +19,10 @@ uniform sampler2D uTextureProgramB;
 
 in vec4 vTextureBData;
 
-out vec4 fragColor;
+out vec4 fragDepth;
 
 void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
-  fragColor = vTextureBData;
+  fragDepth = vTextureBData;
 }
  

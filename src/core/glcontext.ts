@@ -15,7 +15,12 @@ export class GLContext {
     if (!gl) throw new Error('Unable to initialize WebGL. Your browser or machine may not support it.');
     this.gl = gl;
     if (!this.gl) throw new Error('Unable to initialize WebGL. Your browser or machine may not support it.');
-    this.gl.getExtension('EXT_color_buffer_float');
+    if (!gl.getExtension('EXT_color_buffer_float')) {
+      alert('need EXT_color_buffer_float');
+    }
+    if (!gl.getExtension('OES_texture_float_linear')) {
+      alert('need OES_texture_float_linear');
+    }
   }
 
   createShader(type: number, source: string): WebGLShader {
@@ -92,49 +97,16 @@ export class GLContext {
       textures.push(texture);
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
       // Определение формата текстуры
-      let internalFormat, format: GLenum;
-      switch(descriptions[i].format) {
-        case 'RGBA16F': 
-          internalFormat = this.gl.RGBA16F;
-          format = this.gl.RGBA;
-          break;
-        case 'RGB16F':
-          internalFormat = this.gl.RGB16F;
-          format = this.gl.RGB;
-          break;
-        case 'RG16F':
-          internalFormat = this.gl.RG16F;
-          format = this.gl.RG;
-          break;
-        case 'R16F':
-          internalFormat = this.gl.R16F;
-          format = this.gl.RED;
-          break;
-        case 'RGBA32F': 
-          internalFormat = this.gl.RGBA32F;
-          format = this.gl.RGBA;
-          break;
-        case 'RGB32F':
-          internalFormat = this.gl.RGB32F;
-          format = this.gl.RGB;
-          break;
-        case 'RG32F':
-          internalFormat = this.gl.RG32F;
-          format = this.gl.RG;
-          break;
-        case 'R32F':
-          internalFormat = this.gl.R32F;
-          format = this.gl.RED;
-          break;
-        default: 
-          alert(`Формат текстуры ${descriptions[i].format} не поддерживается`);
-          throw new Error(`Формат текстуры ${descriptions[i].format} не поддерживается`);
-      }
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, this.gl.FLOAT, null);
-      this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-      this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-      this.gl.texParameterf(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-      this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, this.gl.TEXTURE_2D, texture, 0);
+      let {
+        format,
+        filtering = WebGL2RenderingContext.LINEAR,
+        target = WebGL2RenderingContext.TEXTURE_2D
+      } = descriptions[i];
+      this.gl.texStorage2D(target, 1, format, width, height);
+      this.gl.texParameterf(target, this.gl.TEXTURE_MIN_FILTER, filtering);
+      this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+      this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+      this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture, 0);
     }
     // Создаем и привязываем буфер глубины
     const depthBuffer = this.gl.createRenderbuffer();
@@ -150,5 +122,7 @@ export class GLContext {
 }
 
 export type TextureDescription = {
-  format: 'RGBA16F'|'RGB16F'|'RG16F'|'R16F'|'RGBA32F'|'RGB32F'|'RG32F'|'R32F'
+  format: GLenum
+  filtering?: GLenum
+  target?: GLenum
 }
