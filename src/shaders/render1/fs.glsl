@@ -287,7 +287,7 @@ void main() {
     }
     else {
       col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection, uMoonDirection);
-      ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t);
+      ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t, mix(0.01,0.99,noise));
       // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
       // alpha - угол направления на солнце к зениту
       // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)

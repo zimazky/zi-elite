@@ -117,8 +117,8 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
     
   float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
-  vec3 nextpos = start + step; // следующая точка
   vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
+  vec3 nextpos = pos + step; // следующая точка
 
   // оптическая глубина x - Релея, y - Ми, z - озон
   vec2 optDepth = vec2(0.);
@@ -166,15 +166,29 @@ const int PRIMARY_STEPS_INTERSECTION = 8;
  *   rd - направление луча камеры
  *   ld - направление на источник света
  *   rayLen - дистанция до пересечения луча с поверхностью
+ *   noise - случайное число в диапазоне 0...1 для смещения начальной точки чтобы избежать полос на сильных градиентах
  * В функции вырезано отраженное рассеивание Ми, т.к. невозможно учесть все пересечения лучей с ландшафтом 
  */
-ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float rayLen) {
+ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float rayLen, float noise) {
   
   // Положение относительно центра планеты
   vec3 start = terrainFromCenter(ro);// ro - uPlanetCenter;
 
   float PLANET_RADIUS_SQR = uPlanetRadius*uPlanetRadius;
   float ATM_RADIUS_SQR = uAtmRadius*uAtmRadius;
+
+  float r2 = dot(start,start); // квадрат расстояния до центра планеты
+  if(r2 > ATM_RADIUS_SQR) {
+    float OT = -dot(start,rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
+    float CT2 = r2 - OT*OT; // квадрат минимального расстояния от луча до центра планеты
+    if(CT2 >= ATM_RADIUS_SQR) return ResultScattering(vec3(0), vec3(1)); // луч проходит выше атмосферы
+    float AT = sqrt(ATM_RADIUS_SQR - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
+
+    // выше атмосферы
+    if(OT < 0.) return ResultScattering(vec3(0), vec3(1)); // направление от планеты
+    // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
+    start += rd*(OT - AT);
+  }
 
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
@@ -185,8 +199,8 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     
   float stepSize = rayLen/float(PRIMARY_STEPS_INTERSECTION); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
+  vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
   vec3 nextpos = start + step; // следующая точка
-  vec3 pos = start + 0.5*step; // смещение на половину шага для более точного интегрирования по серединам отрезков
 
   // оптическая глубина x - Релея, y - Ми, z - озон
   vec2 optDepth = vec2(0.);
