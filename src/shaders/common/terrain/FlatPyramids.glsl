@@ -34,11 +34,6 @@ float terrainHeight(vec3 p) {
   return H_SCALE*pyramid(p.xz/W_SCALE);
 }
 
-// Высота заданной точки над поверхностью
-float terrainAlt(vec3 p) {
-  return p.y - terrainHeight(p);
-}
-
 // Единичный вектор направленный в зенит
 vec3 terrainZenith(vec3 p) {
   return vec3(0, 1, 0);
