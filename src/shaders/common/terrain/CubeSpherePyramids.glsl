@@ -3,22 +3,27 @@
 // Генерация ландшафта - пирамиды на кубосфере
 // ----------------------------------------------------------------------------
 
-
-// ----------------------------------------------------------------------------
-// Модуль определения функций модуля планеты
-// ----------------------------------------------------------------------------
-#ifndef PLANET_MODULE
-#include "src/shaders/common/planet.glsl";
-#endif
+// Радиус планеты
+uniform float uPlanetRadius;
+// Положение центра планеты
+uniform vec3 uPlanetCenter;
 
 const float W_SCALE = 1000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
 //const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
 
-
-bool isHeightGreaterTerrainMax(vec3 p, float aPrev) {
-  vec3 lla = lonLatAlt(p);
-  return /*lla.z > aPrev &&*/ lla.z > MAX_TRN_ELEVATION;
+// Перевод декартовых координат точки в сферические координаты относительно центра планеты
+// Начало декартовых координат совпадает с точкой 0,0,0 на сфере
+// Возвращается:
+// x - долгота
+// y - широта
+// z - высота над поверхностью сферы
+vec3 lonLatAlt(vec3 p) {
+  vec3 r = p - uPlanetCenter;
+  float phi = atan(r.y, r.x);
+  float theta = atan(length(r.xy), r.z);
+  float alt = length(r) - uPlanetRadius;
+  return vec3(phi, theta, alt);
 }
 
 float pyramidOnCubeSphere(vec3 r) {
@@ -61,12 +66,6 @@ float terrainHeight(vec3 p) {
   return H_SCALE * pyramidOnCubeSphere(r);
 }
 
-// Высота заданной точки над поверхностью
-float terrainAlt(vec3 p) {
-  vec3 lla = lonLatAlt(p);
-  return lla.z - terrainHeight(p);
-}
-
 // Единичный вектор направленный в зенит
 vec3 terrainZenith(vec3 p) {
   return normalize(p - uPlanetCenter);
@@ -85,26 +84,6 @@ vec3 terrainNormal(vec3 pos) {
     terrainHeight(pos - eps.yxy) - terrainHeight(pos + eps.yxy),
     terrainHeight(pos - eps.yyx) - terrainHeight(pos + eps.yyx)
   ));
-}
-
-// функция определения затененности
-float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
-  float minStep = clamp(0.01*dis,10.,500.);
-  float res = 1.;
-  t = 0.01*dis;
-  float roAlt = lonLatAlt(ro).z;
-  for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
-	  vec3 p = ro + t*rd;
-    float rdZenith = dot(rd, terrainZenith(p));
-    float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-
-    if(isHeightGreaterTerrainMax(p, roAlt)) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = terrainAlt(p);
-	  res = min(res, cosA*h/t);
-    if(res<-uSunDiscAngleSin) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
-  }
-  return 0.;
 }
 
 vec4 terrainColor(vec3 pos, vec3 nor) {

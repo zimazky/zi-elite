@@ -103,7 +103,7 @@ export default async function main() {
 
   // Шейдер оценки глубины по предыдущему кадру
   const shaderA = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, [{format: WebGL2RenderingContext.RGBA32F}],
+    e.canvas.width, e.canvas.height, [{format: WebGL2RenderingContext.R32F}],
     //2195, 1131, 1,
     vshaderA, fshaderA,
     (shader) => {

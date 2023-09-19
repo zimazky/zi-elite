@@ -40,7 +40,7 @@ export class ProgramB {
     const texture0 = this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
 
     // привязка текстуры из шейдера A
-    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureProgramA');
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureADepth');
     const textureAResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureAResolution');
     this.engine.gl.uniform2f(textureAResolution, this.bufferInput.width, this.bufferInput.height);
 

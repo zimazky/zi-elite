@@ -3,12 +3,22 @@
 // Генерация ландшафта - пирамиды на плоскости XZ
 // ----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
-// Модуль определения функций модуля планеты
-// ----------------------------------------------------------------------------
-#ifndef PLANET_MODULE
-#include "src/shaders/common/planet.glsl";
-#endif
+#define TERR_FLAT // Определение ландшафта на плоскости
+
+// Радиус планеты
+uniform float uPlanetRadius;
+// Положение центра планеты
+uniform vec3 uPlanetCenter;
+
+// Перевод декартовых координат точки в псевдосферические координаты для плоской поверхности
+// Начало декартовых координат совпадает с точкой 0,0,0
+// Возвращается:
+// x - долгота (координата x)
+// y - широта (координата z)
+// z - высота над поверхностью (координата y)
+vec3 lonLatAlt(vec3 p) {
+  return p.xzy;
+}
 
 float pyramid(vec2 x) {
   vec2 f = vec2(1) - abs(2.*fract(x)-vec2(1));
@@ -18,14 +28,6 @@ float pyramid(vec2 x) {
 const float W_SCALE = 1500.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
 //const float MAX_TRN_ELEVATION = 1.8*H_SCALE; // максимальная высота
-
-bool isHeightGreaterTerrainMax(vec3 p) {
-  return p.y > MAX_TRN_ELEVATION;
-}
-
-bool isHeightGreaterTerrainMax(vec3 p, float aPrev) {
-  return p.y > aPrev && p.y > MAX_TRN_ELEVATION;
-}
 
 // Высота поверхности 
 float terrainHeight(vec3 p) {
@@ -55,26 +57,6 @@ vec3 terrainNormal(vec3 pos) {
     2.*eps.x,
     terrainHeight(pos - eps.yyx) - terrainHeight(pos + eps.yyx)
   ));
-}
-
-// функция определения затененности
-float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
-  float minStep = clamp(0.01*dis,10.,500.);
-  float rdZenith = dot(rd, terrainZenith(ro));
-  float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-
-  float res = 1.;
-  t = 0.01*dis;
-  float roAlt = lonLatAlt(ro).z;
-  for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
-	  vec3 p = ro + t*rd;
-    if(isHeightGreaterTerrainMax(p, roAlt)) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = terrainAlt(p);
-	  res = min(res, cosA*h/t);
-    if(res<-uSunDiscAngleSin) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
-  }
-  return 0.;
 }
 
 vec4 terrainColor(vec3 pos, vec3 nor) {

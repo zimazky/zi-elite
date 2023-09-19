@@ -29,7 +29,7 @@ export class ProgramA {
 
   init(shader: Renderbufer) {
     // привязка текстуры gNormalDepth из шейдера B
-    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureProgramB');
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureBNormalDepth');
 
     // установка разрешения текстуры шейдера B
     const textureBResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureBResolution');

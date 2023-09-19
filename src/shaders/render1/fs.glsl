@@ -36,13 +36,13 @@ uniform vec3 uFlarePositions[2];
 uniform vec3 uFlareLights[2];
 
 /** Текстура программы A */
-uniform sampler2D uTextureProgramA;
+uniform sampler2D uTextureADepth;
 /** Нормали и глубина программы B */
-uniform sampler2D uNormalDepthProgramB;
+uniform sampler2D uTextureBNormalDepth;
 /** Значения альбедо программы B */
-uniform sampler2D uAlbedoProgramB;
+uniform sampler2D uTextureBAlbedo;
 /** Нормали и глубина программы C */
-uniform sampler2D uNormalDepthProgramC;
+uniform sampler2D uTextureCNormalDepth;
 
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
@@ -82,10 +82,10 @@ out vec4 fragColor;
 #endif
 
 // ----------------------------------------------------------------------------
-// Модуль определения функций генерации ландшафта
+// Модуль определения функций расчета пересечения луча с поверхностью
 // ----------------------------------------------------------------------------
-#ifndef TERR_MODULE
-#include "src/shaders/common/terrain/CubeSpherePyramids.glsl";
+#ifndef RAYCAST_MODULE
+#include "src/shaders/common/raycasting/Raycast.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
@@ -202,18 +202,13 @@ void main() {
     : vec2(vAspect/vAspectB, 1);
   vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
+  vec4 albedoB = texture(uTextureBAlbedo, uv);
+  vec4 normalDepthB = texture(uTextureBNormalDepth, uv);
+  vec4 normalDepthC = texture(uTextureCNormalDepth, uv);
+
 #ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
-  float depthA = texture(uTextureProgramA, uv).w;
-#endif
-
-  vec4 albedoB = texture(uAlbedoProgramB, uv);
-  vec4 normalDepthB = texture(uNormalDepthProgramB, uv);
-
-  vec4 normalDepthC = texture(uNormalDepthProgramC, uv);
-
-#ifdef DEPTH_ERROR_VIEW
-  float derr = normalDepthB.w - depthA;
+  float derr = normalDepthB.w - texture(uTextureADepth, uv).r;
   vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
   col = pow(col, vec3(1./2.2));
 #else
@@ -246,14 +241,14 @@ void main() {
     normal = normalDepthB.xzy*vec3(1, 1, -1);
     vec2 uv1 = uMapScale*vec2(1, 1./vAspectB)*(gl_FragCoord.xy/uResolution-0.5);
     posScreen = vec3(uv1.x, uv1.y, t);
-    ssao = calcSSAOOrtho(posScreen, normal, rand, uNormalDepthProgramB, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
+    ssao = 1.;//calcSSAOOrtho(posScreen, normal, rand, uTextureBNormalDepth, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
   }
   else {
     normal = vInverseTransformMat*normalDepthB.xyz;
     normal.z = -normal.z;
     posScreen = normalize(vRayScreen)*t;
     posScreen.z = -posScreen.z;
-    ssao = calcSSAO(posScreen, normal, rand, uNormalDepthProgramB, 300.);
+    ssao = 1.;//calcSSAO(posScreen, normal, rand, uTextureBNormalDepth, 300.);
   }
   //col = (uSSAOSamples[int(mod(0.1*gl_FragCoord.x,64.))]);
   //col = vec3(ssao*ssao);
@@ -287,7 +282,7 @@ void main() {
       col *= planetIntersection(uCameraPosition, rd);
       // атмосферное рассеивание
       ResultScattering rs;
-      rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.3,0.7,noise));
+      rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.01,0.99,noise));
       col = rs.t*LIGHT_INTENSITY + rs.i*col;
     }
     else {

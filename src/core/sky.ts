@@ -49,7 +49,7 @@ export class Sky {
   }
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.205+time/this.period));
+    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.185+time/this.period));
     this.transformMat = Mat3.fromQuat(this.orientation.qmul(this.quat));
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
     this.moonDirection = this.orientation.rotate(this.moonDir).normalize();

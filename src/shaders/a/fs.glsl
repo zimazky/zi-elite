@@ -12,13 +12,15 @@ precision mediump float;
 /** разрешение экрана */
 uniform vec2 uResolution;
 
-in float vTextureBData;
+in float vTextureBDepth;
+//in vec4 vTextureRenderColor;
 
-layout (location = 0) out vec4 fragDepth;
+layout (location = 0) out float fragDepth;
+//layout (location = 1) out vec4 fragAlbedo;
 
 void main() {
   vec2 uv = gl_FragCoord.xy/uResolution;
-  fragDepth = vec4(0);
-  fragDepth.w = vTextureBData;
+  fragDepth = vTextureBDepth;
+  //fragAlbedo = vTextureRenderColor;
 }
  

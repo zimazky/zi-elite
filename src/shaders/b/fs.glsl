@@ -11,7 +11,7 @@ precision mediump float;
 uniform vec2 uResolution;
 
 /** Текстура с предварительными данными глубины на основе предыдущего кадра */
-uniform sampler2D uTextureProgramA;
+uniform sampler2D uTextureADepth;
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -52,10 +52,10 @@ layout (location = 1) out vec4 gAlbedo;
 #endif
 
 // ----------------------------------------------------------------------------
-// Модуль определения функций генерации ландшафта
+// Модуль определения функций расчета пересечения луча с поверхностью
 // ----------------------------------------------------------------------------
-#ifndef TERR_MODULE
-#include "src/shaders/common/terrain/CubeSpherePyramids.glsl";
+#ifndef RAYCAST_MODULE
+#include "src/shaders/common/raycasting/Raycast.glsl";
 #endif
 
 // ----------------------------------------------------------------------------
@@ -121,10 +121,10 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   
   for(i=0; i<600; i++) {
     vec3 pos = ro + t*rd;
-    float alt = lonLatAlt(ro).z;
+    float alt = lonLatAlt(pos).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
     altPrev = alt;
-    float h = terrainAlt(pos);
+    float h = alt - terrainHeight(pos);
     if( abs(h)<(0.003*t) ) return t; // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;
@@ -148,7 +148,7 @@ void main(void) {
     float t0 = 1.;
     #else
     // Нормальный режим, с испльзованием данных предыдущего кадра
-    float t0 = texture(uTextureProgramA, gl_FragCoord.xy/uResolution).w;
+    float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).r;
     #endif
 
     vec3 col = vec3(0);
@@ -157,7 +157,7 @@ void main(void) {
       gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
     else {
-      float t = raycastSpheric(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+      float t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
       if(t >= MAX_TERRAIN_DISTANCE) {
         gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
       }
