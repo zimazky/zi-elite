@@ -60,38 +60,44 @@ export class Sky {
     if(time>this.skyRefreshTime) {
       // Определение цвета неба и цвета диска солнца
       const zenith = this.tSampler.zenith(this.camera.position);
-      const pos = this.atm.planetCenter.add(zenith.mul(this.atm.planetRadius+100)); // положение для которого рассчитываем цвета
-      const sunDir = this.sunDirection.copy();
-      const sunDirZ = sunDir.dot(zenith);
-      if(sunDirZ < 0.) sunDir.subMutable(zenith.mul(sunDirZ));
-      sunDir.normalizeMutable();
-      const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
-      const sunIntensity = SUN_COLOR.mul(20.);
-      this.sunDiscColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
-
-      const oneDivSqrt2 = 1./Math.sqrt(2.);
-      // светимость неба по 5-ти точкам
-      let tangent: Vec3;
-      let binormal: Vec3;
-      const c1 = zenith.cross(Vec3.K);
-      const c2 = zenith.cross(Vec3.I);
-      if(c1.length() > c2.length()) tangent = c1;
-      else tangent = c2;
-      tangent.normalizeMutable();
-      binormal = zenith.cross(tangent).normalizeMutable();
-
-      const skyDirScatter = 
-        this.atm.scattering(pos, zenith, this.sunDirection).t
-        .add(this.atm.scattering(pos, zenith.add(tangent).normalizeMutable(), this.sunDirection).t)
-        .add(this.atm.scattering(pos, zenith.sub(tangent).normalizeMutable(), this.sunDirection).t)
-        .add(this.atm.scattering(pos, zenith.add(binormal).normalizeMutable(), this.sunDirection).t)
-        .add(this.atm.scattering(pos, zenith.sub(binormal).normalizeMutable(), this.sunDirection).t)
-        .div(5.);
-      this.skyColor = sunIntensity.mulEl(skyDirScatter);//.mulMutable(2);//.mulMutable(2.*Math.PI);//.addMutable(new Vec3(0.001,0.001,0.001));
+      const cosTheta = this.sunDirection.dot(zenith);
+      const {sun, sky} = this.getSunAndSkyColor(cosTheta);
+      this.sunDiscColor = sun;
+      this.skyColor = sky;
 
       this.skyRefreshTime = time + 0.05;
     }
 
+  }
+
+  /**
+   * Определение цвета для солнца и неба на поверхности в зависимости от склонения солнца
+   * Считаем без учета рассеивания Ми
+   * @param cosTheta - косинус угла направления на солнце к зениту
+   */
+  getSunAndSkyColor(cosTheta: number): {sun: Vec3, sky: Vec3} {
+    const zenith = Vec3.J; // зенит в направлении оси Y
+    const pos = new Vec3(0,100,0); // положение для которого рассчитываем цвета
+    const sunDir = new Vec3(Math.sqrt(1-cosTheta*cosTheta), cosTheta, 0);
+    if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
+    const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
+    const sunIntensity = SUN_COLOR.mul(20.);
+    const sun = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
+
+    const oneDivSqrt2 = 1./Math.sqrt(2.);
+    // светимость неба по 5-ти точкам
+    const tangent = new Vec3(0, oneDivSqrt2, oneDivSqrt2);
+    const binormal1 = new Vec3(oneDivSqrt2, oneDivSqrt2, 0);
+    const binormal2 = new Vec3(-oneDivSqrt2, oneDivSqrt2, 0);
+
+    const skyDirScatter = 
+      this.atm.scattering(pos, zenith, sunDir).t
+      .add(this.atm.scattering(pos, tangent, sunDir).t.mul(2))
+      .add(this.atm.scattering(pos, binormal1, sunDir).t)
+      .add(this.atm.scattering(pos, binormal2, sunDir).t)
+      .div(5.);
+    const sky = sunIntensity.mulEl(skyDirScatter);
+    return {sun, sky};
   }
 
 }
