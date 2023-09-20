@@ -2,13 +2,13 @@ import { Mat3, Quaternion, Vec3 } from "src/shared/libs/vectors";
 import { isKeyPress } from "src/shared/libs/keyboard";
 
 import { Camera } from "./camera";
-import { Atmosphere } from "./atmosphere";
+import { Atmosphere } from "./Atmosphere/Atmosphere";
 import { SUN_COLOR } from "./constants";
 import ITerrainSampler from "./Terrain/ITerrainSampler";
 
 const KEY_C = 67;
 
-const skyAngle = Math.PI*0.12; // угол наклона оси вращения небесной сферы относительно зенита
+const skyAngle = 0.5*Math.PI;//*0.12; // угол наклона оси вращения небесной сферы относительно зенита
 
 export class Sky {
   /** поворот небесного свода (плоскости млечного пути) относительно системы координат планеты (на момент t=0) */
@@ -69,7 +69,7 @@ export class Sky {
   }
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.0185+time/this.period));
+    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.0285+time/this.period));
     this.transformMat = Mat3.fromQuat(this.orientation.qmul(this.quat));
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
     this.moonDirection = this.orientation.rotate(this.moonDir).normalize();
@@ -80,8 +80,7 @@ export class Sky {
     if(time>this.skyRefreshTime) {
       // Определение цвета неба и цвета диска солнца
       const sunDirScatter = this.atm.scattering(this.camera.position, this.sunDirection, this.sunDirection);
-      const sunIntensity = SUN_COLOR.mul(20.);
-      this.sunDiscColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
+      this.sunDiscColor = sunDirScatter.t.mulEl(SUN_COLOR).addMutable(sunDirScatter.i.mulEl(SUN_COLOR)).safeNormalize().mulMutable(2.);
 
       this.skyRefreshTime = time + 0.05;
     }
@@ -99,8 +98,7 @@ export class Sky {
     const sunDir = new Vec3(Math.sqrt(1-cosTheta*cosTheta), cosTheta, 0);
     //if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
     const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
-    const sunIntensity = SUN_COLOR.mul(20.);
-    const sun = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
+    const sun = sunDirScatter.t.mulEl(SUN_COLOR).addMutable(sunDirScatter.i.mulEl(SUN_COLOR)).safeNormalize().mulMutable(2.);
 
     const oneDivSqrt2 = 1./Math.sqrt(2.);
     // светимость неба по 5-ти точкам
@@ -109,11 +107,12 @@ export class Sky {
     const binormal2 = new Vec3(-oneDivSqrt2, oneDivSqrt2, 0);
 
     const skyDirScatter = 
-      this.atm.scattering(pos, zenith, sunDir).t
-      .add(this.atm.scattering(pos, tangent, sunDir).t.mul(2))
-      .add(this.atm.scattering(pos, binormal1, sunDir).t)
-      .add(this.atm.scattering(pos, binormal2, sunDir).t)
+      this.atm.scatteringRayleigh(pos, zenith, sunDir).t
+      .add(this.atm.scatteringRayleigh(pos, tangent, sunDir).t.mul(2))
+      .add(this.atm.scatteringRayleigh(pos, binormal1, sunDir).t)
+      .add(this.atm.scatteringRayleigh(pos, binormal2, sunDir).t)
       .div(5.);
+    const sunIntensity = SUN_COLOR.mul(20.);
     const sky = sunIntensity.mulEl(skyDirScatter);
     return {sun, sky};
   }

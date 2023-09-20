@@ -1,4 +1,4 @@
-import { Atmosphere } from "src/core/atmosphere";
+import { Atmosphere } from "src/core/Atmosphere/Atmosphere";
 import { Camera } from "src/core/camera";
 import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
 

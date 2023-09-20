@@ -72,7 +72,6 @@ export class Planet {
    */
   softPlanetShadow(ro: Vec3, rd: Vec3): number {
     const pos = ro.sub(this.center);
-    //const pos = new Vec3(0, ro.y+this.planetRadius, 0);
     const OT = pos.dot(rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
     const CT = Math.sqrt(pos.dot(pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
     if(OT>0.) return 1.;

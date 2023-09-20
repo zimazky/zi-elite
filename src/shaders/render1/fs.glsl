@@ -153,9 +153,9 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   // цвет
   vec3 kd = albedo;
   // ambient
-  float amb = clamp(0.5+0.5*nor.y, 0., 1.);
-  vec3 light = light1;
   vec3 zenith = terrainZenith(pos);
+  float amb = clamp(0.5+0.5*dot(nor,zenith), 0., 1.);
+  vec3 light = light1;
   float LdotZ = dot(zenith, light1);
   vec3 lightcolor = texture(uTextureSunColor, vec2((LdotZ+1.)/2., 0.5)).xyz;//uSunDiscColor;
   vec3 skycolor = texture(uTextureSkyColor, vec2((LdotZ+1.)/2., 0.5)).xyz;
@@ -274,14 +274,13 @@ void main() {
   //col = posScreen/1000.;
   //col = vec3(1);
   //col *= ssao;
-
   if(uScreenMode.x == MAP_VIEW) {
-    col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    //col *= clamp(0.5+0.5*dot(normalDepthB,zenith), 0., 1.);
     col *= ssao; //*ssao;
   }
   else {
     
-    //col *= clamp(0.5+0.5*normalDepthB.y, 0., 1.);
+    //col *= clamp(0.5+0.5*dot(normalDepthB,zenith), 0., 1.);
     //col = vec3(ssao*ssao);
 
     // косинус угла между лучем и солнцем 

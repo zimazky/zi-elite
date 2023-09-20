@@ -2,7 +2,7 @@ import { isKeyPress, isKeyDown } from "src/shared/libs/keyboard";
 import { Mat3, Quaternion, Vec3 } from "src/shared/libs/vectors";
 
 import { Planet } from "./planet";
-import { Atmosphere } from "./atmosphere";
+import { Atmosphere } from "./Atmosphere/Atmosphere";
 import ITerrainSampler from "./Terrain/ITerrainSampler";
 import { smoothstep } from "src/shared/libs/mathutils";
 import { SUN_DISC_ANGLE_SIN } from "./constants";

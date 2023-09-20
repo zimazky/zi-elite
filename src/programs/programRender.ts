@@ -2,7 +2,7 @@ import { mix } from "src/shared/libs/mathutils";
 import { Vec3 } from "src/shared/libs/vectors";
 
 import { Flare } from "src/core/flare";
-import { Atmosphere } from "src/core/atmosphere";
+import { Atmosphere } from "src/core/Atmosphere/Atmosphere";
 import { Camera, FRONT_VIEW } from "src/core/camera";
 import { SUN_DISC_ANGLE_SIN } from "src/core/constants";
 import { Engine, Framebuffer, Renderbufer } from "src/core/engine";

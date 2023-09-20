@@ -91,5 +91,7 @@ vec3 terrainNormal(vec3 pos) {
 }
 
 vec4 terrainColor(vec3 pos, vec3 nor) {
-  return vec4(0.6*pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
+  return vec4(0.6*pow(vec3(0.5, 0.5, 0.5), vec3(2.2)), 1.);
+
+  //return vec4(0.6*pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
 }
