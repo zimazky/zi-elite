@@ -188,8 +188,21 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     if(OT < 0.) return ResultScattering(vec3(0), vec3(1)); // направление от планеты
     // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
     start += rd*(OT - AT);
+    r2 = ATM_RADIUS_SQR;
+    //rayLen -= (OT - AT);
   }
-
+/*
+  // Расчет расстояния до тени планеты
+  float BO = dot(ld, start);
+  float BO2 = BO*BO;
+  float AS = sqrt(r2-BO2)-uPlanetRadius;
+  float RdotL = dot(rd,ld);
+  float AX = AS/sqrt(1.-RdotL*RdotL);
+  float AD = sqrt(AS*AS+BO2);
+  if((AX-AD)*BO > 0.) { // проверка на попадание в теневую часть
+    rayLen = min(rayLen, AX);
+  }
+*/
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
   // Для рассеяния Ми g принимают 0,76 ... 0,999.
