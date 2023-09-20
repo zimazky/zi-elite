@@ -5,6 +5,7 @@ precision mediump float;
 /** Разрешение экрана */
 uniform vec2 uResolution;
 uniform vec2 uTime;
+uniform uint uFrame;
 
 /** 
  * Насколько камера попадает под солнце:
@@ -21,8 +22,6 @@ uniform vec3 uSunDiscColor;
 uniform vec3 uMoonDirection;
 /** Цвет и интенсивность света от луны */
 uniform vec3 uMoonDiscColor;
-/** Цвет и интенсивность света неба */
-uniform vec3 uSkyColor;
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -43,6 +42,20 @@ uniform sampler2D uTextureBNormalDepth;
 uniform sampler2D uTextureBAlbedo;
 /** Нормали и глубина программы C */
 uniform sampler2D uTextureCNormalDepth;
+
+/** 
+* Таблица цвета солнца от косинуса угла высоты солнца
+* индекс 0 - косинус = -1
+* индекс 1 - косинус = 1
+*/
+uniform sampler2D uTextureSunColor;
+/** 
+* Таблица цвета неба от косинуса угла высоты солнца
+* индекс 0 - косинус = -1
+* индекс 1 - косинус = 1
+*/
+uniform sampler2D uTextureSkyColor;
+
 
 uniform vec2 uTextureBResolution;
 uniform sampler2D uTextureBlueNoise;
@@ -142,10 +155,14 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   // ambient
   float amb = clamp(0.5+0.5*nor.y, 0., 1.);
   vec3 light = light1;
-  vec3 lightcolor = uSunDiscColor;
-  if(light1.y < 0.) {
+  vec3 zenith = terrainZenith(pos);
+  float LdotZ = dot(zenith, light1);
+  vec3 lightcolor = texture(uTextureSunColor, vec2((LdotZ+1.)/2., 0.5)).xyz;//uSunDiscColor;
+  vec3 skycolor = texture(uTextureSkyColor, vec2((LdotZ+1.)/2., 0.5)).xyz;
+  if(LdotZ < 0.) {
     light = light2;
     lightcolor = uMoonDiscColor;
+    //skycolor = vec3(0);
   }
   //vec3 hal = normalize(light-rd);
 
@@ -173,7 +190,7 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
   LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
-  vec3 lunar = uSkyColor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
+  vec3 lunar = skycolor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
     + lightcolor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца или луны
     + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
     + uFlareLights[0]*F0dotN*lunar_lambert(kd, RdotN, F0dotN)/(fdist0sqr)  // свет 1-ой сигнальной ракеты
@@ -231,7 +248,9 @@ void main() {
   col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, 1., uSunDirection, uMoonDirection);
 #else
 
- 	float noise = texture(uTextureBlueNoise, gl_FragCoord.xy/1024.).x;
+  uint mframe = uFrame - 1024u * (uFrame/1024u);
+  uvec2 nshift = uvec2(1000, 15)*mframe;
+ 	float noise = texture(uTextureBlueNoise, (gl_FragCoord.xy+vec2(nshift))/1024.).x;
   vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 
   vec3 posScreen;
@@ -282,12 +301,12 @@ void main() {
       col *= planetIntersection(uCameraPosition, rd);
       // атмосферное рассеивание
       ResultScattering rs;
-      rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.01,0.99,noise));
+      rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.,1.,noise));
       col = rs.t*LIGHT_INTENSITY + rs.i*col;
     }
     else {
       col = render(uCameraPosition, t, rd, normalDepthB.xyz, col, ssao*ssao, uSunDirection, uMoonDirection);
-      ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t, mix(0.01,0.99,noise));
+      ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t, mix(0.,1.,noise));
       // считаем, что средняя длина дени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
       // alpha - угол направления на солнце к зениту
       // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)
@@ -325,7 +344,7 @@ void main() {
     // тональная компрессия с экспозицией
     col = vec3(1.) - exp(-col * exposure);
     // засвечивание солнцем
-    col += 0.2*uCameraInShadow*normalize(uSunDiscColor)*pow(sundot, 8.0);
+    col += 0.2*uCameraInShadow*uSunDiscColor*pow(sundot, 8.0);
   }
 #endif
 

@@ -34,25 +34,29 @@ float pyramidOnCubeSphere(vec3 r) {
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
       vec3 s = r - r*(r.x-cubeRad)/r.x;
-      if(r.x > 0.) f = vec2(s.y, s.z); // x+
-      else f = vec2(s.y, s.z); // x-
+      f = s.yz;
+      //if(r.x > 0.) f = vec2(s.y, s.z); // x+
+      //else f = vec2(s.y, s.z); // x-
     }
     else {
       vec3 s = r - r*(r.z-cubeRad)/r.z;
-      if(r.z > 0.) f = vec2(s.x, s.y); // z+
-      else f = vec2(s.x, s.y); // z-
+      f = s.xy;
+      //if(r.z > 0.) f = vec2(s.x, s.y); // z+
+      //else f = vec2(s.x, s.y); // z-
     }
   }
   else {
     if(absR.y > absR.z) {
       vec3 s = r - r*(r.y-cubeRad)/r.y;
-      if(r.y > 0.) f = vec2(s.x, s.z); // y+
-      else f = vec2(s.x, s.z); // y-
+      f = s.xz;
+      //if(r.y > 0.) f = vec2(s.x, s.z); // y+
+      //else f = vec2(s.x, s.z); // y-
     }
     else {
       vec3 s = r - r*(r.z-cubeRad)/r.z;
-      if(r.z > 0.) f = vec2(s.x, s.y); // z+
-      else f = vec2(s.x, s.y); // z-
+      f = s.xy;
+      //if(r.z > 0.) f = vec2(s.x, s.y); // z+
+      //else f = vec2(s.x, s.y); // z-
     }
   }
   f = vec2(1) - abs(2.*fract(f/W_SCALE)-vec2(1));

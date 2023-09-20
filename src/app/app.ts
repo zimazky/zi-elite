@@ -83,7 +83,9 @@ export default async function main() {
   // одна из предустановленных точек
   let pos = new Vec3(2316,0,7696);
   let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
-
+  //let pos = new Vec3(127857.9675744353,-4410.132631224615,332644.718708906);
+  //let quat = new Quaternion(0.08401592608814235,0.4728007576980472,0.4222206424740206,-0.7688501133202295);
+  
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
   //let quat = Quaternion.Identity();

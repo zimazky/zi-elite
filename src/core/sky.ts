@@ -38,18 +38,38 @@ export class Sky {
 
   skyRefreshTime: number = 0.;
 
-  sunDiscColor: Vec3 = Vec3.ZERO;
-  moonDiskColor: Vec3 = new Vec3(0.005,0.005,0.01);
-  skyColor: Vec3 = Vec3.ZERO;
+  sunDiscColor: Vec3 = Vec3.ONE;
+  moonDiskColor: Vec3 = new Vec3(0.005,0.005,0.005);
+
+  /** Таблица цвета неба в зависимости от косинуса угла наклона солнца
+   * индекс 0 соответствует косинусу -1
+   * индекс N-1 - соответствует 1
+   */
+  skyColorTable: Float32Array;
+  sunColorTable: Float32Array;
 
   constructor(camera: Camera, atm: Atmosphere, tSampler: ITerrainSampler) {
     this.camera = camera;
     this.atm = atm;
     this.tSampler = tSampler;
+    const N = 2*1024;
+    this.skyColorTable = new Float32Array(N*3);
+    this.sunColorTable = new Float32Array(N*3);
+    for(let i=0, j=0; j<N; j++, i+=3) {
+      const cosTheta = -1. + j*2./(N-1);
+      const {sun, sky} = this.getSunAndSkyColor(cosTheta);
+      this.skyColorTable[i] = sky.x;
+      this.skyColorTable[i+1] = sky.y;
+      this.skyColorTable[i+2] = sky.z;
+      this.sunColorTable[i] = sun.x;
+      this.sunColorTable[i+1] = sun.y;
+      this.sunColorTable[i+2] = sun.z;
+    }
+
   }
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.185+time/this.period));
+    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.0185+time/this.period));
     this.transformMat = Mat3.fromQuat(this.orientation.qmul(this.quat));
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
     this.moonDirection = this.orientation.rotate(this.moonDir).normalize();
@@ -59,11 +79,9 @@ export class Sky {
 
     if(time>this.skyRefreshTime) {
       // Определение цвета неба и цвета диска солнца
-      const zenith = this.tSampler.zenith(this.camera.position);
-      const cosTheta = this.sunDirection.dot(zenith);
-      const {sun, sky} = this.getSunAndSkyColor(cosTheta);
-      this.sunDiscColor = sun;
-      this.skyColor = sky;
+      const sunDirScatter = this.atm.scattering(this.camera.position, this.sunDirection, this.sunDirection);
+      const sunIntensity = SUN_COLOR.mul(20.);
+      this.sunDiscColor = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);
 
       this.skyRefreshTime = time + 0.05;
     }
@@ -79,7 +97,7 @@ export class Sky {
     const zenith = Vec3.J; // зенит в направлении оси Y
     const pos = new Vec3(0,100,0); // положение для которого рассчитываем цвета
     const sunDir = new Vec3(Math.sqrt(1-cosTheta*cosTheta), cosTheta, 0);
-    if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
+    //if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
     const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
     const sunIntensity = SUN_COLOR.mul(20.);
     const sun = sunIntensity.mulEl(sunDirScatter.t).safeNormalize().mulMutable(2.);

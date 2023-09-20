@@ -39,6 +39,8 @@ export type Renderbufer = {
   resolutionLocation: WebGLUniformLocation | null;
   /** (uTime) Время */
   timeLocation: WebGLUniformLocation | null;
+  /** (uFrame) Номер кадра */
+  frameLocation: WebGLUniformLocation | null;
 }
 
 export type Framebuffer = Renderbufer & {
@@ -57,6 +59,8 @@ export class Engine extends GLContext {
   startTime: number = 0;
   /** Текущее время */
   currentTime: number = 0;
+  /** Счетчик фреймов */
+  frame: number = 0;
   /** Массив активных текстур */
   textures: WebGLTexture[] = [];
 
@@ -102,11 +106,12 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+    const frameLocation = this.gl.getUniformLocation(program, 'uFrame');
     this.framebuffers.push({
       width, height, program, framebuffer, fbTextures,
       vertexArray: null, numOfVertices: 4, isElementDraw: false, isDepthTest: false, clearColor: null,
       drawMode: this.gl.TRIANGLE_STRIP,
-      resolutionLocation, timeLocation,
+      resolutionLocation, timeLocation, frameLocation,
       onProgramInit: onInit,
       onProgramLoop: onLoop});
     return this.framebuffers[this.framebuffers.length-1];
@@ -120,11 +125,12 @@ export class Engine extends GLContext {
     this.gl.useProgram(program);
     const resolutionLocation = this.gl.getUniformLocation(program, 'uResolution');
     const timeLocation = this.gl.getUniformLocation(program, 'uTime');
+    const frameLocation = this.gl.getUniformLocation(program, 'uFrame');
 
     this.renderbufer = {program, vertexArray: null, numOfVertices: 4, 
       isElementDraw: false, isDepthTest: false,  clearColor: null,
       drawMode: this.gl.TRIANGLE_STRIP,
-      resolutionLocation, timeLocation, onProgramInit: onInit, onProgramLoop: onLoop};
+      resolutionLocation, timeLocation, frameLocation, onProgramInit: onInit, onProgramLoop: onLoop};
   }
 
   public async loadShader(sourceUrl: string): Promise<string> {
@@ -321,6 +327,7 @@ export class Engine extends GLContext {
     const time = lCurrentTime - this.startTime;
     const timeDelta = lCurrentTime - this.currentTime;
     this.currentTime = lCurrentTime;
+    this.frame++;
 
     this.onUpdate(time, timeDelta);
 
@@ -350,6 +357,7 @@ export class Engine extends GLContext {
       this.gl.bindVertexArray(e.vertexArray);
       this.gl.uniform2f(e.resolutionLocation, e.width, e.height);
       this.gl.uniform2f(e.timeLocation, time, timeDelta);
+      this.gl.uniform1ui(e.frameLocation, this.frame);
       this.gl.viewport(0, 0, e.width, e.height);
       if(e.isElementDraw) this.gl.drawElements(e.drawMode, e.numOfVertices, this.gl.UNSIGNED_INT, 0);
       else this.gl.drawArrays(e.drawMode, 0, e.numOfVertices);
@@ -366,6 +374,7 @@ export class Engine extends GLContext {
     this.gl.bindVertexArray(this.renderbufer.vertexArray);
     this.gl.uniform2f(this.renderbufer.resolutionLocation, this.canvas.width, this.canvas.height);
     this.gl.uniform2f(this.renderbufer.timeLocation, time, timeDelta);
+    this.gl.uniform1ui(this.renderbufer.frameLocation, this.frame);
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     if(this.renderbufer.isElementDraw) 
       this.gl.drawElements(this.renderbufer.drawMode, this.renderbufer.numOfVertices, this.gl.UNSIGNED_INT, 0);

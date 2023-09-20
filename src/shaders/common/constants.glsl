@@ -13,7 +13,7 @@ const float MAX_TERRAIN_DISTANCE = 500000.;
 const float MAX_TRN_ELEVATION = 1.8*1100.;//1.8*H_SCALE; 
 
 // Интенсивность солнечного света
-const vec3 LIGHT_INTENSITY = vec3(15.);
+const vec3 LIGHT_INTENSITY = vec3(10.);
 
 const float PI = 3.1415926535897932384626433832795;
 const float SQRT2 = 1.4142135623730950488016887242097;

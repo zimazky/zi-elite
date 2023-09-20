@@ -44,8 +44,6 @@ export class ProgramRender {
   uMoonDirection: WebGLUniformLocation | null = null;
   /** Цвет диска луны */
   uMoonDiscColor: WebGLUniformLocation | null = null;
-  /** Цвет неба для окружающего освещения */
-  uSkyColor: WebGLUniformLocation | null = null;
   
   /** Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря */
   uBetaRayleigh: WebGLUniformLocation | null = null;
@@ -135,6 +133,8 @@ export class ProgramRender {
     //this.engine.setRenderedTexture(shader.program, this.shaderC.fbTextures[0], 'uNormalDepthProgramC');
 
     this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
+    const texture1 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSkyColor', this.sky.skyColorTable.length/3, 1, this.sky.skyColorTable);
+    const texture2 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSunColor', this.sky.sunColorTable.length/3, 1, this.sky.sunColorTable);
 
     const width = this.shaderB.width;
     const height = this.shaderB.height;
@@ -157,7 +157,6 @@ export class ProgramRender {
     this.uTransformMat = this.engine.gl.getUniformLocation(shader.program, 'uTransformMat');
     this.uCameraInShadow = this.engine.gl.getUniformLocation(shader.program, 'uCameraInShadow');
 
-    this.uSkyColor = this.engine.gl.getUniformLocation(shader.program, 'uSkyColor');
     this.uSunDirection = this.engine.gl.getUniformLocation(shader.program, 'uSunDirection');
     this.uSunDiscColor = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscColor');
     this.uMoonDirection = this.engine.gl.getUniformLocation(shader.program, 'uMoonDirection');
@@ -212,7 +211,6 @@ export class ProgramRender {
     this.engine.gl.uniform3fv(this.uSunDiscColor, this.sky.sunDiscColor.getArray());
     this.engine.gl.uniform3fv(this.uMoonDirection, this.sky.moonDirection.getArray());
     this.engine.gl.uniform3fv(this.uMoonDiscColor, this.sky.moonDiskColor.getArray());
-    this.engine.gl.uniform3fv(this.uSkyColor, this.sky.skyColor.getArray());
 
     const flarePos = [...this.flare1.position.getArray(), ...this.flare2.position.getArray()];
     this.engine.gl.uniform3fv(this.uFlarePositions, flarePos);
