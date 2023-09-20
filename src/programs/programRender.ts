@@ -133,8 +133,14 @@ export class ProgramRender {
     //this.engine.setRenderedTexture(shader.program, this.shaderC.fbTextures[0], 'uNormalDepthProgramC');
 
     this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
-    const texture1 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSkyColor', this.sky.skyColorTable.length/3, 1, this.sky.skyColorTable);
-    const texture2 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSunColor', this.sky.sunColorTable.length/3, 1, this.sky.sunColorTable);
+    const texture1 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSkyColor', this.sky.skyColorTable.length/3, 1, this.sky.skyColorTable, {
+      wrapS: WebGL2RenderingContext.CLAMP_TO_EDGE,
+      wrapT: WebGL2RenderingContext.CLAMP_TO_EDGE
+    });
+    const texture2 = this.engine.setTextureWithArray16F(shader.program, 'uTextureSunColor', this.sky.sunColorTable.length/3, 1, this.sky.sunColorTable, {
+      wrapS: WebGL2RenderingContext.CLAMP_TO_EDGE,
+      wrapT: WebGL2RenderingContext.CLAMP_TO_EDGE
+    });
 
     const width = this.shaderB.width;
     const height = this.shaderB.height;
@@ -142,7 +148,11 @@ export class ProgramRender {
     this.engine.gl.uniform2f(textureBResolution, width, height);
     const SSAONoiseArray: number[] = [];
     this.SSAONoise.forEach(e=>SSAONoiseArray.push(...e.getArray()));
-    this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 4, 4, new Float32Array(SSAONoiseArray));
+    this.engine.setTextureWithArray16F(shader.program, 'uTextureSSAONoise', 4, 4, new Float32Array(SSAONoiseArray), 
+    {
+      wrapS: WebGL2RenderingContext.REPEAT,
+      wrapT: WebGL2RenderingContext.REPEAT
+    });
     this.engine.setTexture(shader.program, 'uTextureBlueNoise', blueNoiseImg);
     this.engine.setTexture(shader.program, 'uTextureMilkyway', milkywayImg);
     this.engine.setTexture(shader.program, 'uTextureConstellation', constellationImg);
