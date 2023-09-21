@@ -348,9 +348,9 @@ void main() {
 #endif
 
   //col = posScreen/1000.;
-  col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
+  //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
-  //col = pow(col, vec3(1./2.2));
+  col = toSRGB(col);
 #endif
   
 #endif

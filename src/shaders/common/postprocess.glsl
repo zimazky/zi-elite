@@ -34,3 +34,25 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 	vec3 discr = mix( eotf( c0 ), eotf( c1 ), noise );
 	return mix( c0, c1, lessThan( discr, col ) );
 }
+
+/** 
+ * Преобразование в sRGB из линейного пространства
+ * На входе и выходе значения в диапазоне [0, 1]
+ */
+vec3 toSRGB(vec3 c) {
+  float r = c.r > 0.0031308 ? 1.055*pow(c.r, 1./2.4) - 0.055 : c.r * 12.92;
+  float g = c.g > 0.0031308 ? 1.055*pow(c.g, 1./2.4) - 0.055 : c.g * 12.92;
+  float b = c.b > 0.0031308 ? 1.055*pow(c.b, 1./2.4) - 0.055 : c.b * 12.92;
+  return vec3(r, g, b);
+}
+
+/** 
+ * Преобразование в линейное пространство из sRGB
+ * На входе и выходе значения в диапазоне [0, 1]
+ */
+vec3 fromSRGB(vec3 c) {
+  float r = c.r > 0.04045 ? pow((c.r+0.055)/1.055, 2.4) : c.r / 12.92;
+  float g = c.g > 0.04045 ? pow((c.g+0.055)/1.055, 2.4) : c.g / 12.92;
+  float b = c.b > 0.04045 ? pow((c.b+0.055)/1.055, 2.4) : c.b / 12.92;
+  return vec3(r, g, b);
+}

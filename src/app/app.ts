@@ -27,6 +27,8 @@ import { grad } from 'src/shared/libs/mathutils';
 import { SphericalPyramidsTerrain } from 'src/core/Terrain/SphericalPyramids';
 import { CubeSpherePyramidsTerrain } from 'src/core/Terrain/CubeSpherePyramids';
 import { FlatPyramidsTerrain } from 'src/core/Terrain/FlatPyramids';
+import Rand from 'src/shared/libs/Rand';
+import NoiseImg from 'src/core/Noise/NoiseImg';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -61,6 +63,16 @@ export default async function main() {
   const loaderIndicator = document.getElementById('loader_indicator');
   if(loaderIndicator === null)  throw new Error('Не найден блок id="loader_indicator"');
 
+/*
+/////////////////////////////////////////////////////////////////
+
+  const img = NoiseImg.createBWNoiseImage(256,256,'apples')
+  const divCanvas = document.getElementById('canvas')!;
+  divCanvas.appendChild(img);
+
+/////////////////////////////////////////////////////////////////
+*/
+
   const e = new Engine('glcanvas');
   let infoRefreshTime = 0;
   let positionStoreTime = 0;
@@ -81,10 +93,10 @@ export default async function main() {
   const obj = JSON.parse(json);
   
   // одна из предустановленных точек
-  //let pos = new Vec3(2316,0,7696);
-  //let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
-  let pos = new Vec3(127857.9675744353,-4410.132631224615,332644.718708906);
-  let quat = new Quaternion(0.08401592608814235,0.4728007576980472,0.4222206424740206,-0.7688501133202295);
+  let pos = new Vec3(2316,0,7696);
+  let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
+  //let pos = new Vec3(127857.9675744353,-4410.132631224615,332644.718708906);
+  //let quat = new Quaternion(0.08401592608814235,0.4728007576980472,0.4222206424740206,-0.7688501133202295);
   
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);

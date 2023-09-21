@@ -187,9 +187,11 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     // выше атмосферы
     if(OT < 0.) return ResultScattering(vec3(0), vec3(1)); // направление от планеты
     // камера выше атмосферы, поэтому переопределяем начальную точку как точку входа в атмосферу
-    start += rd*(OT - AT);
+    float d = OT - AT;
+    start += rd*d;
     r2 = ATM_RADIUS_SQR;
-    //rayLen -= (OT - AT);
+    // корректировка дальности пересечения с поверхностью с учетом переопределения начальной точки
+    rayLen -= d;
   }
 /*
   // Расчет расстояния до тени планеты
