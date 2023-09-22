@@ -342,10 +342,14 @@ void main() {
     }
 
     float exposure = 2.;
+    // засвечивание солнцем
+    sundot *= sundot;
+    sundot *= sundot;
+    sundot *= sundot;
+    sundot *= sundot;
+    col += 0.2*uCameraInShadow*uSunDiscColor*sundot;
     // тональная компрессия с экспозицией
     col = vec3(1.) - exp(-col * exposure);
-    // засвечивание солнцем
-    col += 0.2*uCameraInShadow*uSunDiscColor*pow(sundot, 8.0);
   }
 #endif
 
@@ -354,7 +358,7 @@ void main() {
 
   //col = linearToSRGB(col);
 
-  col = mix(quantizeDitherToSRGB(col, 1./255., gl_FragCoord.xy), linearToSRGB(col), LvsR);
+  col = quantizeDitherToSRGB(col, 1./255., gl_FragCoord.xy);
 #endif
   
 #endif
