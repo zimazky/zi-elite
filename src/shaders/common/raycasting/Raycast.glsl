@@ -16,7 +16,7 @@
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "src/shaders/common/terrain/CubeSpherePyramids.glsl";
+#include "src/shaders/common/terrain/CubeSphereInigoQuilezFBM.glsl";
 #endif
 
 

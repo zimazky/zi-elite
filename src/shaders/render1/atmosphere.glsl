@@ -117,6 +117,8 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
     
   float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
+  vec3 currentpos = start;
+  //vec3 nextpos = currentpos + step; // следующая точка
   vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
   vec3 nextpos = pos + step; // следующая точка
 
@@ -127,7 +129,7 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
 
   vec2 fDensity = stepSize*exp(-(length(start)-uPlanetRadius)/uScaleHeight);
 
-  for (int i=0; i<PRIMARY_STEPS; i++, nextpos += step, pos += step) {
+  for (int i=0; i<PRIMARY_STEPS; i++, nextpos += step, currentpos+= step, pos += step) {
     // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
     vec2 density = stepSize*exp(-(length(nextpos)-uPlanetRadius)/uScaleHeight);
     optDepth += 0.5*(density + fDensity);
@@ -215,7 +217,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
   float stepSize = rayLen/float(PRIMARY_STEPS_INTERSECTION); // длина шага
   vec3 step = rd*stepSize; // шаг вдоль луча
   vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
-  vec3 nextpos = start + step; // следующая точка
+  vec3 nextpos = pos + step; // следующая точка
 
   // оптическая глубина x - Релея, y - Ми, z - озон
   vec2 optDepth = vec2(0.);
