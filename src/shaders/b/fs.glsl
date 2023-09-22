@@ -94,6 +94,23 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
 }
 */
 
+bool isIntersectMaxTerrain(vec3 ro, vec3 rd, out float dist) {
+  float alt = lonLatAlt(ro).z;
+  dist = 0.;
+  if(alt < MAX_TRN_ELEVATION) return true;
+  vec3 r = uPlanetCenter - ro;
+  float OT = dot(rd, r);
+  if(OT < 0.) return false; // луч уходит от планеты
+  float CO = length(r);
+  float CT2 = CO*CO - OT*OT;
+  float R = uPlanetRadius + MAX_TRN_ELEVATION;
+  float R2 = R*R;
+  if(CT2 >= R2) return false; // луч не пересекается со сферой
+  float AT = sqrt(R2 - CT2);
+  dist = OT-AT;
+  return true;
+}
+
 /** 
  * Рейкастинг для случая сферической поверхности планеты 
  *   ro - положение камеры
@@ -105,7 +122,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
 float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   float altPrev = lonLatAlt(ro).z;
-  
+
   if(altPrev > MAX_TRN_ELEVATION) {
     vec3 r = uPlanetCenter - ro;
     float OT = dot(rd, r);
@@ -117,6 +134,7 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
     if(CT2 >= R2) return 1.01 * MAX_TERRAIN_DISTANCE; // луч не пересекается со сферой
     float AT = sqrt(R2 - CT2);
     t = max(tmin, OT-AT);
+    tmax += t;
   }
   
   for(i=0; i<600; i++) {
@@ -141,39 +159,38 @@ void main(void) {
     vec4 norDepth = vec4(0);
     //gAlbedo = vec4(showMap(uCameraPosition, uCameraDirection.xz, uv, int(uScreenMode.y), norDepth), 1);
     gNormalDepth = norDepth;
+    return;
+  }
+  #ifdef DEPTH_ERROR_VIEW
+  // Режим для просмотра ошибки глубины между расчетным значением и предсказанием на основе предыдущего кадра
+  float t0 = 1.;
+  #else
+  // Нормальный режим, с испльзованием данных предыдущего кадра
+  float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).r;
+  #endif
+
+  vec3 col = vec3(0);
+  int raycastIterations = 0;
+  if(t0 >= MAX_TERRAIN_DISTANCE) {
+    gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   }
   else {
-    #ifdef DEPTH_ERROR_VIEW
-    // Режим для просмотра ошибки глубины между расчетным значением и предсказанием на основе предыдущего кадра
-    float t0 = 1.;
-    #else
-    // Нормальный режим, с испльзованием данных предыдущего кадра
-    float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).r;
-    #endif
-
-    vec3 col = vec3(0);
-    int raycastIterations = 0;
-    if(t0 >= MAX_TERRAIN_DISTANCE) {
+    float t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+    if(t >= MAX_TERRAIN_DISTANCE) {
       gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
     else {
-      float t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
-      if(t >= MAX_TERRAIN_DISTANCE) {
-        gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
-      }
-      else {
-        vec3 pos = uCameraPosition + t*rd;
-        vec3 nor = terrainNormal(pos);
-        gNormalDepth = vec4(nor, t);
-        col = terrainColor(pos, nor).rgb;
-      }
+      vec3 pos = uCameraPosition + t*rd;
+      vec3 nor = terrainNormal(pos);
+      gNormalDepth = vec4(nor, t);
+      col = terrainColor(pos, nor).rgb;
     }
-
-    #ifdef RAYCAST_ITERATIONS_VIEW
-    // Для вывода числа итераций рейтрейсинга
-    col = vec3(raycastIterations)/300.;
-    #endif
-    gAlbedo = vec4(col, 1);
   }
+
+  #ifdef RAYCAST_ITERATIONS_VIEW
+  // Для вывода числа итераций рейтрейсинга
+  col = vec3(raycastIterations)*255./300.;
+  #endif
+  gAlbedo = vec4(col, 1);
 }
  

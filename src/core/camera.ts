@@ -51,6 +51,9 @@ export class Camera {
   altitude: number = 0;
   viewAngle: number;
   orientation: Quaternion;
+  /** Максимальная дистанция отрисовки планеты, зависит от расстояния до планеты */
+  maxDistance: number = 500000;
+
   /* Направление камеры */
   direction: Vec3 = new Vec3(0., 0., -1.);
   /** Матрица вращения камеры для передачи вершинному шейдеру. Используется для определения направления лучей */
@@ -114,6 +117,7 @@ export class Camera {
       isKeyDown(KEY_S) - isKeyDown(KEY_W)
     );
 
+    this.maxDistance = this._planet.center.sub(this.position).length() + this._planet.radius;
     this.transformMatPrev = this.transformMat;
 
     const mdir = Mat3.fromQuat(this.orientation);
@@ -122,7 +126,7 @@ export class Camera {
     // ускорение тяги
     this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
     // замедление от сопротивления воздуха
-    this.velocity.subMutable( mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
+    //this.velocity.subMutable( mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
     // гравитация
     //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
     // экстренная остановка

@@ -250,7 +250,9 @@ void main() {
 
   uint mframe = uFrame - 1024u * (uFrame/1024u);
   uvec2 nshift = uvec2(1000, 15)*mframe;
- 	float noise = texture(uTextureBlueNoise, (gl_FragCoord.xy+vec2(nshift))/1024.).x;
+ 	//float noise = texture(uTextureBlueNoise, (gl_FragCoord.xy+vec2(nshift))/1024.).x;
+  float noise = texelFetch(uTextureBlueNoise, ivec2(gl_FragCoord.xy + vec2(nshift)) & (1024 - 1), 0).r;
+
   vec3 rand = vec3(1,0,0);//texture(uTextureSSAONoise, gl_FragCoord.xy/4.).xyz;
 
   vec3 posScreen;
@@ -350,7 +352,9 @@ void main() {
   //col = posScreen/1000.;
   //col = quantize_and_dither(col.rgb, 1./255., gl_FragCoord.xy);
 
-  col = toSRGB(col);
+  //col = linearToSRGB(col);
+
+  col = mix(quantizeDitherToSRGB(col, 1./255., gl_FragCoord.xy), linearToSRGB(col), LvsR);
 #endif
   
 #endif

@@ -21,6 +21,32 @@ mat3 mat2sRGB = mat3(
   -0.0283, -0.1119,  1.0491
 );
 
+/** 
+ * Преобразование в sRGB из линейного пространства
+ * На входе и выходе значения в диапазоне [0, 1]
+ */
+vec3 linearToSRGB(vec3 c) {
+  return mix(c * 12.92, 1.055*pow(c, vec3(1./2.4)) - 0.055, greaterThan(c, vec3(0.0031308)));
+}
+
+vec4 linearToSRGB(vec4 c) {
+  vec3 r = mix(c.rgb * 12.92, 1.055*pow(c.rgb, vec3(1./2.4)) - 0.055, greaterThan(c.rgb, vec3(0.0031308)));
+  return vec4(r, c.a);
+}
+
+/** 
+ * Преобразование в линейное пространство из sRGB
+ * На входе и выходе значения в диапазоне [0, 1]
+ */
+vec3 sRGBtoLinear(vec3 c) {
+  return mix(c / 12.92, pow((c+0.055)/1.055, vec3(2.4)), greaterThan(c, vec3(0.04045)));
+}
+
+vec4 sRGBtoLinear(vec4 c) {
+  vec3 r = mix(c.rgb / 12.92, pow((c.rgb+0.055)/1.055, vec3(2.4)), greaterThan(c.rgb, vec3(0.04045)));
+  return vec4(r, c.a);
+}
+
 /**
  * Квантование цвета и дитеринг (добавление шума, чтобы не было резких переходов между квантами цвета)
  * quant = 1./255.
@@ -29,30 +55,20 @@ vec3 quantize_and_dither(vec3 col, float quant, vec2 fcoord) {
 	vec3 noise = .5/65536. +
     texelFetch( uTextureBlueNoise, ivec2( fcoord / 8. ) & ( 1024 - 1 ), 0 ).xyz * 255./65536. +
     texelFetch( uTextureBlueNoise, ivec2( fcoord )		 & ( 1024 - 1 ), 0 ).xyz * 255./256.;
-	vec3 c0 = floor( oetf( col ) / quant ) * quant;
+	vec3 c0 = floor( linearToSRGB( col ) / quant ) * quant;
 	vec3 c1 = c0 + quant;
-	vec3 discr = mix( eotf( c0 ), eotf( c1 ), noise );
+	vec3 discr = mix( sRGBtoLinear( c0 ), sRGBtoLinear( c1 ), noise );
 	return mix( c0, c1, lessThan( discr, col ) );
 }
 
-/** 
- * Преобразование в sRGB из линейного пространства
- * На входе и выходе значения в диапазоне [0, 1]
- */
-vec3 toSRGB(vec3 c) {
-  float r = c.r > 0.0031308 ? 1.055*pow(c.r, 1./2.4) - 0.055 : c.r * 12.92;
-  float g = c.g > 0.0031308 ? 1.055*pow(c.g, 1./2.4) - 0.055 : c.g * 12.92;
-  float b = c.b > 0.0031308 ? 1.055*pow(c.b, 1./2.4) - 0.055 : c.b * 12.92;
-  return vec3(r, g, b);
+
+vec3 quantizeDitherToSRGB(vec3 col, float quant, vec2 fcoord) {
+  vec3 noise = texelFetch( uTextureBlueNoise, ivec2( fcoord ) & ( 1024 - 1 ), 0 ).rgb;
+  // to range [-1..1]
+  noise = 2.*noise - 1.;
+  // to a symmetric triangular distribution on [-1,1] 
+  // with maximal density at 0
+  noise = sign(noise)*(1. - sqrt(1. - abs(noise)));
+  return linearToSRGB(col) + noise*quant;
 }
 
-/** 
- * Преобразование в линейное пространство из sRGB
- * На входе и выходе значения в диапазоне [0, 1]
- */
-vec3 fromSRGB(vec3 c) {
-  float r = c.r > 0.04045 ? pow((c.r+0.055)/1.055, 2.4) : c.r / 12.92;
-  float g = c.g > 0.04045 ? pow((c.g+0.055)/1.055, 2.4) : c.g / 12.92;
-  float b = c.b > 0.04045 ? pow((c.b+0.055)/1.055, 2.4) : c.b / 12.92;
-  return vec3(r, g, b);
-}

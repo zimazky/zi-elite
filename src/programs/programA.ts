@@ -149,7 +149,7 @@ export class ProgramA {
     this.engine.gl.uniformMatrix4fv(
       this.uProjectMatrix, 
       false,
-      Mat4.perspectiveProjectMatrix(this.camera.viewAngle, aspect, 0.5, 1.01*500000.).getArray()
+      Mat4.perspectiveProjectMatrix(this.camera.viewAngle, aspect, 0.5, 1.01*this.camera.maxDistance).getArray()
     );
     //this.engine.gl.uniformMatrix4fv(projectMatrix, false, Mat4.orthoProjectMatrix(-1.,1.,-1.,1.,0.,60000.).getArray());
 
