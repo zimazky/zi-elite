@@ -189,7 +189,8 @@ void main(void) {
     }
     else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
-      vec3 nor = mix(nor_t.xyz, terrainNormal(pos).xyz, LvsR);
+      vec3 nor = nor_t.xyz;
+      //vec3 nor = mix(nor_t.xyz, terrainNormal(pos).xyz, LvsR);
       gNormalDepth = nor_t;//vec4(nor, t);
       vec3 lla = lonLatAlt(pos);
       vec3 zenith = terrainZenith(pos);

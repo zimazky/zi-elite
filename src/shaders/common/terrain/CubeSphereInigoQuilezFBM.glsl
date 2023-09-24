@@ -81,8 +81,8 @@ vec4 noised2(vec2 x, out vec4 dx, out vec4 dy) {
   float dxy = abcd*du.x*du.y;  // вторые производные d2/(dx dy) = d2/(dy dx)
   vec2 d1 = du*d2u; 
 
-  dx = vec4(d2.x, dxy, 0., d1.x);
-  dy = vec4(dxy, d2.y, 0., d1.y);
+  dx = vec4(d2.x, dxy, 0, d1.x);
+  dy = vec4(dxy, d2.y, 0, d1.y);
   return vec4(d1, 0, (a+(b-a)*u.x+(c-a)*u.y+abcd*u.x*u.y));
 }
 
@@ -108,19 +108,20 @@ vec4 fbmInigoQuilezOrig(vec2 p) {
   return vec4(-d.x, -d.y, 1, a);
 }
 
-// Генерация высоты с эррозией c производными и вычислением нормали (тест2)
+// Генерация высоты с эррозией и c вычислением нормали
 // возвращает
 // w - значение
 // xyz - частные производные
 vec4 fbmInigoQuilez(vec2 p) {
   float a = 0.0;
   float b = 1.0;
-  float fr = 1.0;
-  vec2 d = vec2(0);//ZERO_D;
+  vec2 d = vec2(0);
   vec4 g = ZERO_D, h = ZERO_D;
+  mat2 m = mat2(1,0,0,1);
+  //float dz = 1.;
   for( int i=0; i<11; i++ ) {
     vec4 tdx, tdy;
-    vec4 f = noised2(fr*p, tdx, tdy);
+    vec4 f = noised2(m*p, tdx, tdy);
     // определение деноминатора, определяющего эрозию
     g += tdx;
     h += tdy;
@@ -130,11 +131,13 @@ vec4 fbmInigoQuilez(vec2 p) {
     a += b*f.w/den;
     // накопление величин производных с учетом эрозии (в последнем члене вторые производные)
     // b*fr = 1.0 поэтому производные не масштабируются
-    d += f.xy/den - 2.*f.w*(g.w*g.xy+h.w*h.xy)/den2;
+    d += (f.xy/den - 2.*f.w*(g.w*g.xy+h.w*h.xy)/den2) * m;
     b *= 0.5;                     // уменьшение амплитуды следующей октавы
-    fr *= 2.0;                    // увеличение частоты следующей октавы
+    p = p * 2.0;                  // увеличение частоты следующей октавы
+    m = im2 * m;                  // вращение плоскости
+    //dz += b;
   }
-  return vec4(-d.x, -d.y, 2, a);
+  return vec4(-d, 2, a);
 }
 
 const float nScale = H_SCALE/W_SCALE;
@@ -145,29 +148,45 @@ vec4 height_d(vec3 r) {
   vec4 h_d;
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
-      vec3 s = r - r*(r.x-cubeRad)/r.x;
+      vec3 s = r - r*(absR.x-cubeRad)/absR.x;
       h_d = fbmInigoQuilez(s.yz/W_SCALE);
       h_d.xyz = vec3(h_d.z, nScale*h_d.xy); // x+
+      vec2 uv = s.yz/cubeRad;
+      float d = sqrt(dot(uv,uv)+1.);
+      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
+      h_d.yzx = h_d.yzx * m;
       if(r.x < 0.) h_d.x = -h_d.x; // x-
     }
     else {
-      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      vec3 s = r - r*(absR.z-cubeRad)/absR.z;
       h_d = fbmInigoQuilez(s.xy/W_SCALE);
       h_d.xyz = vec3(nScale*h_d.xy, h_d.z); // z+
+      vec2 uv = s.xy/cubeRad;
+      float d = sqrt(dot(uv,uv)+1.);
+      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
+      h_d.xyz = h_d.xyz * m;
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
   }
   else {
     if(absR.y > absR.z) {
-      vec3 s = r - r*(r.y-cubeRad)/r.y;
+      vec3 s = r - r*(absR.y-cubeRad)/absR.y;
       h_d = fbmInigoQuilez(s.xz/W_SCALE);
       h_d.xyz = vec3(nScale*h_d.x, h_d.z, nScale*h_d.y); // y+
+      vec2 uv = s.xz/cubeRad;
+      float d = sqrt(dot(uv,uv)+1.);
+      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
+      h_d.xzy = h_d.xzy * m;
       if(r.y < 0.) h_d.y = -h_d.y; // y-
     }
     else {
-      vec3 s = r - r*(r.z-cubeRad)/r.z;
+      vec3 s = r - r*(absR.z-cubeRad)/absR.z;
       h_d = fbmInigoQuilez(s.xy/W_SCALE);
       h_d.xyz = vec3(nScale*h_d.xy, h_d.z); // z+
+      vec2 uv = s.xy/cubeRad;
+      float d = sqrt(dot(uv,uv)+1.);
+      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
+      h_d.xyz = h_d.xyz * m;
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
   }
@@ -200,7 +219,7 @@ vec3 terrainFromCenter(vec3 p) {
 
 // Вычисление нормали под точкой
 vec3 terrainNormal(vec3 pos) {
-  vec2 eps = vec2(0.1, 0.);
+  vec2 eps = vec2(0.01, 0.);
   return normalize(vec3(
     terrainHeight(pos - eps.xyy) - terrainHeight(pos + eps.xyy),
     //terrainHeight(pos - eps.yxy) - terrainHeight(pos + eps.yxy),

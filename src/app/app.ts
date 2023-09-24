@@ -94,7 +94,9 @@ export default async function main() {
   
   // одна из предустановленных точек
   //let pos = new Vec3(2316,0,7696);
-  let pos = new Vec3(100,3000,100);
+  //let pos = new Vec3(100,3000,100);
+  let pos = new Vec3(450270.29149266565, 536246.0613676151, -83641.67299722403)
+  //359021.48294928856,"y":-135761.44854442962,"z":-263875.832753025
 
   //let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
   //let pos = new Vec3(127857.9675744353,-4410.132631224615,732644.718708906);
@@ -103,7 +105,7 @@ export default async function main() {
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
   let quat = Quaternion.ID;
-  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler, planet);
   const atm = new Atmosphere(planet);
