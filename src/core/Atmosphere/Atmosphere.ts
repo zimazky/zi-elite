@@ -35,8 +35,8 @@ export class Atmosphere {
   /** Коэффициент преломления воздуха */
   n: number = 1.00029;
   /** Длины волн трех цветов, составляющих базу цветового пространства */
-  rgbLambda: Vec3 = new Vec3(615e-9, 535e-9, 445e-9);
-  //rgbLambda: Vec3 = new Vec3(760e-9, 555e-9, 495e-9);
+  //rgbLambda: Vec3 = new Vec3(615e-9, 535e-9, 445e-9);
+  rgbLambda: Vec3 = new Vec3(760e-9, 555e-9, 495e-9);
   /** 
    * Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря,
    * определяют количество потерянной энергии при столкновении с одной частицей
@@ -62,11 +62,13 @@ export class Atmosphere {
     this.planetRadius2 = this.planetRadius*this.planetRadius;
     this.radius = planet.radius + 100000;
     this.radius2 = this.radius*this.radius;
+    /*
     this.betaRayleigh = new Vec3(
       this.computeBetaRayleigh(this.rgbLambda.x),
       this.computeBetaRayleigh(this.rgbLambda.y),
       this.computeBetaRayleigh(this.rgbLambda.z)
     );
+    */
   }
 
   /** 

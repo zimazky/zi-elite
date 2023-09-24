@@ -8,7 +8,7 @@ import ITerrainSampler from "./Terrain/ITerrainSampler";
 
 const KEY_C = 67;
 
-const skyAngle = 0.5*Math.PI;//*0.12; // угол наклона оси вращения небесной сферы относительно зенита
+const skyAngle = 0.25*Math.PI;//*0.12; // угол наклона оси вращения небесной сферы относительно зенита
 
 export class Sky {
   /** поворот небесного свода (плоскости млечного пути) относительно системы координат планеты (на момент t=0) */
@@ -112,7 +112,7 @@ export class Sky {
       .add(this.atm.scatteringRayleigh(pos, binormal1, sunDir).t)
       .add(this.atm.scatteringRayleigh(pos, binormal2, sunDir).t)
       .div(5.);
-    const sunIntensity = SUN_COLOR.mul(20.);
+    const sunIntensity = SUN_COLOR.mul(15.);
     const sky = sunIntensity.mulEl(skyDirScatter);
     return {sun, sky};
   }

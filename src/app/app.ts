@@ -94,7 +94,7 @@ export default async function main() {
   
   // одна из предустановленных точек
   //let pos = new Vec3(2316,0,7696);
-  let pos = new Vec3(2316,3000,7696);
+  let pos = new Vec3(100,3000,100);
 
   //let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
   //let pos = new Vec3(127857.9675744353,-4410.132631224615,732644.718708906);

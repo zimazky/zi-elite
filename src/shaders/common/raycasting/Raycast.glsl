@@ -53,20 +53,24 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
  *   tmin - начальное глубина рейтрейсинга
  *   tmax - максимальная глубина рейтрейсинга
  *   i - выходное значение количества циклов рейтрейсинга
+ *   возвращает
+ *   xyz - нормаль к поверхности
+ *   w - дистанция до точки пересечения
  */
-float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
+vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   float t = tmin;
   float altPrev = lonLatAlt(ro).z;
+  vec4 res = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   
   if(altPrev > MAX_TRN_ELEVATION) {
     vec3 r = uPlanetCenter - ro;
     float OT = dot(rd, r);
-    if(OT < 0.) return 1.01 * MAX_TERRAIN_DISTANCE; // луч уходит от планеты
+    if(OT < 0.) return res; // луч уходит от планеты
     float CO = length(r);
     float CT2 = CO*CO - OT*OT;
     float R = uPlanetRadius + MAX_TRN_ELEVATION;
     float R2 = R*R;
-    if(CT2 >= R2) return 1.01 * MAX_TERRAIN_DISTANCE; // луч не пересекается со сферой
+    if(CT2 >= R2) return res; // луч не пересекается со сферой
     float AT = sqrt(R2 - CT2);
     t = max(tmin, OT-AT);
   }
@@ -74,14 +78,15 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   for(i=0; i<600; i++) {
     vec3 pos = ro + t*rd;
     float alt = lonLatAlt(pos).z;
-    if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
+    if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
     altPrev = alt;
-    float h = alt - terrainHeight(pos);
-    if( abs(h)<(0.003*t) ) return t; // двоятся детали при большем значении
+    vec4 nor_h = terrainHeightNormal(pos);
+    float h = alt - nor_h.w;
+    if( abs(h)<(0.0003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
-    if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;
+    if(t>tmax) return res;
   }
-  return t;
+  return res; // ПРОВЕРИТЬ
 }
 #endif
 

@@ -59,6 +59,13 @@ layout (location = 1) out vec4 gAlbedo;
 #endif
 
 // ----------------------------------------------------------------------------
+// Модуль определения функций биома
+// ----------------------------------------------------------------------------
+#ifndef BIOME_MODULE
+#include "src/shaders/common/Biome/Biome.glsl";
+#endif
+
+// ----------------------------------------------------------------------------
 // Модуль определения функций отображения карты
 // ----------------------------------------------------------------------------
 #ifndef MAP_MODULE
@@ -171,19 +178,22 @@ void main(void) {
 
   vec3 col = vec3(0);
   int raycastIterations = 0;
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   }
   else {
-    float t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
-    if(t >= MAX_TERRAIN_DISTANCE) {
+    vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+    if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
       gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
     else {
-      vec3 pos = uCameraPosition + t*rd;
-      vec3 nor = terrainNormal(pos);
-      gNormalDepth = vec4(nor, t);
-      col = terrainColor(pos, nor).rgb;
+      vec3 pos = uCameraPosition + nor_t.w*rd;
+      vec3 nor = mix(nor_t.xyz, terrainNormal(pos).xyz, LvsR);
+      gNormalDepth = nor_t;//vec4(nor, t);
+      vec3 lla = lonLatAlt(pos);
+      vec3 zenith = terrainZenith(pos);
+      col = biomeColor(lla, dot(nor, zenith)).rgb;
     }
   }
 
