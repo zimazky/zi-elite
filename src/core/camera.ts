@@ -153,7 +153,7 @@ export class Camera {
     const rn = this.tSampler.zenith(this.position);
     this.ir = rn;
     
-    let altitude = lla.z - hNormal.value - 10.;
+    let altitude = lla.z - hNormal.value - 7;
     if(altitude < 0) {
       // направление от центра планеты
       const VdotN = this.velocity.dot(rn);
@@ -164,7 +164,7 @@ export class Camera {
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
-    this.altitude = altitude + 10
+    this.altitude = altitude + 7
 
     // вращение
     const angularAcceleration = new Vec3(

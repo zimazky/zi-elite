@@ -108,18 +108,24 @@ vec4 fbmInigoQuilezOrig(vec2 p) {
   return vec4(-d.x, -d.y, 1, a);
 }
 
+
+const float distmax = 5000.;
+const float distmin = 50.;
+
 // Генерация высоты с эррозией и c вычислением нормали
 // возвращает
 // w - значение
 // xyz - частные производные
-vec4 fbmInigoQuilez(vec2 p) {
+vec4 fbmInigoQuilez(vec2 p, float dist) {
   float a = 0.0;
   float b = 1.0;
   vec2 d = vec2(0);
   vec4 g = ZERO_D, h = ZERO_D;
   mat2 m = mat2(1,0,0,1);
-  //float dz = 1.;
-  for( int i=0; i<11; i++ ) {
+  // число октав от расстояния (вблизи 16, в далеке 9)
+  float noct = 16. - (16.-9.)*pow(clamp((dist-distmin)/(distmax-distmin), 0., 1.),0.5);
+  float nfract = fract(noct);
+  for( int i=0; i<int(noct); i++ ) {
     vec4 tdx, tdy;
     vec4 f = noised2(m*p, tdx, tdy);
     // определение деноминатора, определяющего эрозию
@@ -135,13 +141,20 @@ vec4 fbmInigoQuilez(vec2 p) {
     b *= 0.5;                     // уменьшение амплитуды следующей октавы
     p = p * 2.0;                  // увеличение частоты следующей октавы
     m = im2 * m;                  // вращение плоскости
-    //dz += b;
   }
+  vec4 tdx, tdy;
+  vec4 f = noised2(m*p, tdx, tdy);
+  g += tdx;
+  h += tdy;
+  float den = (1. + square(g.w) + square(h.w))/nfract;
+  float den2 = den*den;
+  a += b*f.w/den;
+  d += (f.xy/den - 2.*f.w*(g.w*g.xy+h.w*h.xy)/den2) * m;
   return vec4(-d, 2, a);
 }
 
 const float nScale = H_SCALE/W_SCALE;
-vec4 height_d(vec3 r) {
+vec4 height_d(vec3 r, float dist) {
   // Размер куба на который проецируется вектор для позиционирования на кубосфере 
   float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
   vec3 absR = abs(r);
@@ -149,8 +162,17 @@ vec4 height_d(vec3 r) {
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
       vec3 s = r - r*(absR.x-cubeRad)/absR.x;
-      h_d = fbmInigoQuilez(s.yz/W_SCALE);
+      h_d = fbmInigoQuilez(s.yz/W_SCALE, dist);
       h_d.z /= nScale;
+      // Матрица преобразования нормалей из касательного пространства относительно сферы к объектному пространству
+      //  [    d    0  u/d ]
+      //  [    0    d  v/d ]
+      //  [ -d*u -d*v  1/d ]
+      //
+      // d = sqrt(u*u + v*v + 1)
+      // u,v - координаты на плоскостях куба в диапазоне (-1..1)
+      // u = sqrt(3)*x/R
+      // v = sqrt(3)*y/R
       vec2 uv = s.yz/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
@@ -160,7 +182,7 @@ vec4 height_d(vec3 r) {
     }
     else {
       vec3 s = r - r*(absR.z-cubeRad)/absR.z;
-      h_d = fbmInigoQuilez(s.xy/W_SCALE);
+      h_d = fbmInigoQuilez(s.xy/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
@@ -173,7 +195,7 @@ vec4 height_d(vec3 r) {
   else {
     if(absR.y > absR.z) {
       vec3 s = r - r*(absR.y-cubeRad)/absR.y;
-      h_d = fbmInigoQuilez(s.xz/W_SCALE);
+      h_d = fbmInigoQuilez(s.xz/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xz/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
@@ -184,7 +206,7 @@ vec4 height_d(vec3 r) {
     }
     else {
       vec3 s = r - r*(absR.z-cubeRad)/absR.z;
-      h_d = fbmInigoQuilez(s.xy/W_SCALE);
+      h_d = fbmInigoQuilez(s.xy/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
@@ -198,16 +220,16 @@ vec4 height_d(vec3 r) {
 }
 
 // Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-float terrainHeight(vec3 p) {
+float terrainHeight(vec3 p, float dist) {
   vec3 r = p - uPlanetCenter;
-  vec4 h_d = height_d(r);
+  vec4 h_d = height_d(r, dist);
   return h_d.w;
 }
 
 // Высота и нормаль на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-vec4 terrainHeightNormal(vec3 p) {
+vec4 terrainHeightNormal(vec3 p, float dist) {
   vec3 r = p - uPlanetCenter;
-  vec4 h_d = height_d(r);
+  vec4 h_d = height_d(r, dist);
   return h_d;
 }
 
@@ -222,13 +244,13 @@ vec3 terrainFromCenter(vec3 p) {
 }
 
 // Вычисление нормали под точкой
-vec3 terrainNormal(vec3 pos) {
+vec3 terrainNormal(vec3 pos, float dist) {
   vec2 eps = vec2(0.01, 0.);
   return normalize(vec3(
-    terrainHeight(pos - eps.xyy) - terrainHeight(pos + eps.xyy),
+    terrainHeight(pos - eps.xyy, dist) - terrainHeight(pos + eps.xyy, dist),
     //terrainHeight(pos - eps.yxy) - terrainHeight(pos + eps.yxy),
     2.*eps.x,
-    terrainHeight(pos - eps.yyx) - terrainHeight(pos + eps.yyx)
+    terrainHeight(pos - eps.yyx, dist) - terrainHeight(pos + eps.yyx, dist)
   ));
 }
 

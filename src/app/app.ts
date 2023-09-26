@@ -97,8 +97,8 @@ export default async function main() {
   const obj = JSON.parse(json);
   
   // одна из предустановленных точек
-  //let pos = new Vec3(2316,0,7696);
-  let pos = new Vec3(100,3000,100);
+  let pos = new Vec3(2316,0,7696);
+  //let pos = new Vec3(100,3000,100);
   //let pos = new Vec3(450270.29149266565, 536246.0613676151, -83641.67299722403)
   //let pos=new Vec3(359021.48294928856,-135761.44854442962,-263875.832753025)
 

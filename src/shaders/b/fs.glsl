@@ -149,7 +149,7 @@ float raycastSpheric(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
     float alt = lonLatAlt(pos).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
     altPrev = alt;
-    float h = alt - terrainHeight(pos);
+    float h = alt - terrainHeight(pos, t);
     if( abs(h)<(0.003*t) ) return t; // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;

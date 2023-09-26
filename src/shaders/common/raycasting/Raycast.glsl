@@ -37,7 +37,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
   for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
-    float h = pos.y - terrainHeight(pos);
+    float h = pos.y - terrainHeight(pos, t);
     if( abs(h)<(0.003*t) || t>tmax ) return t; // двоятся детали при большем значении
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;
@@ -74,19 +74,19 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
     float AT = sqrt(R2 - CT2);
     t = max(tmin, OT-AT);
   }
-  
+  vec4 nor_h;
   for(i=0; i<600; i++) {
     vec3 pos = ro + t*rd;
     float alt = lonLatAlt(pos).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
     altPrev = alt;
-    vec4 nor_h = terrainHeightNormal(pos);
+    nor_h = terrainHeightNormal(pos, t);
     float h = alt - nor_h.w;
     if( abs(h)<(0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return res;
   }
-  return res; // ПРОВЕРИТЬ
+  return t<1000. ? vec4(nor_h.xyz, t) : res;
 }
 #endif
 
@@ -102,7 +102,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
     float alt = lonLatAlt(p).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = alt - terrainHeight(p);
+    float h = alt - terrainHeight(p, t);
 	  res = min(res, cosA*h/t);
     if(res<-uSunDiscAngleSin) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
     t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени

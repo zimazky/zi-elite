@@ -190,7 +190,7 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
   LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
 
-  vec3 lunar = skycolor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
+  vec3 lunar = 2.*skycolor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
     + lightcolor*LdotN*shd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца или луны
     + uHeadLight*RdotN*lunar_lambert(kd, RdotN, RdotN)/(t*t)   // свет фар
     + uFlareLights[0]*F0dotN*lunar_lambert(kd, RdotN, F0dotN)/(fdist0sqr)  // свет 1-ой сигнальной ракеты
@@ -262,14 +262,14 @@ void main() {
     normal = normalDepthB.xzy*vec3(1, 1, -1);
     vec2 uv1 = uMapScale*vec2(1, 1./vAspectB)*(gl_FragCoord.xy/uResolution-0.5);
     posScreen = vec3(uv1.x, uv1.y, t);
-    ssao = 1.;//calcSSAOOrtho(posScreen, normal, rand, uTextureBNormalDepth, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
+    ssao = calcSSAOOrtho(posScreen, normal, rand, uTextureBNormalDepth, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
   }
   else {
     normal = vInverseTransformMat*normalDepthB.xyz;
     normal.z = -normal.z;
     posScreen = normalize(vRayScreen)*t;
     posScreen.z = -posScreen.z;
-    ssao = 1.;//calcSSAO(posScreen, normal, rand, uTextureBNormalDepth, 300.);
+    ssao = calcSSAO(posScreen, normal, rand, uTextureBNormalDepth, 300.);
   }
   //col = (uSSAOSamples[int(mod(0.1*gl_FragCoord.x,64.))]);
   //col = vec3(ssao*ssao);

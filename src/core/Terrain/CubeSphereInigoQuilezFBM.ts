@@ -53,6 +53,15 @@ export class CubeSphereInigoQuilezFBMTerrain implements ITerrainSampler {
         const s = r.sub(r.mul((absR.x-cubeRad)/absR.x))
         h_d = this._noise.fbm(s.yz.div(this.W_SCALE))
         h_d.diff.z /= this.nScale
+        // Матрица преобразования нормалей из касательного пространства относительно сферы к объектному пространству
+        //  [    d    0  u/d ]
+        //  [    0    d  v/d ]
+        //  [ -d*u -d*v  1/d ]
+        //
+        // d = sqrt(u*u + v*v + 1)
+        // u,v - координаты на плоскостях куба в диапазоне (-1..1)
+        // u = sqrt(3)*x/R
+        // v = sqrt(3)*y/R
         const uv = s.yz.div(cubeRad)
         const d = Math.sqrt(uv.dot(uv) + 1)
         const m = new Mat3(
