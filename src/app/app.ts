@@ -3,7 +3,7 @@ import { Camera } from 'src/core/camera';
 import { Engine, Renderbufer } from 'src/core/engine'
 import { Flare } from 'src/core/flare';
 import { initKeyBuffer } from 'src/shared/libs/keyboard';
-import { NoiseSampler } from 'src/core/noise';
+import { NoiseSampler } from 'src/core/Noise/NoiseSampler';
 import { Sky } from 'src/core/sky';
 import { Quaternion, Vec3 } from 'src/shared/libs/vectors';
 import { ProgramA } from 'src/programs/programA';
@@ -29,6 +29,8 @@ import { CubeSpherePyramidsTerrain } from 'src/core/Terrain/CubeSpherePyramids';
 import { FlatPyramidsTerrain } from 'src/core/Terrain/FlatPyramids';
 import Rand from 'src/shared/libs/Rand';
 import NoiseImg from 'src/core/Noise/NoiseImg';
+import { CubeSphereInigoQuilezFBMTerrain } from 'src/core/Terrain/CubeSphereInigoQuilezFBM';
+import { InigoQuilezFBMNoise } from 'src/core/Noise/InigoQuilezFBMNoise';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -86,7 +88,9 @@ export default async function main() {
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
   const planet = new Planet(500000, 9.81); //6371e3
-  const tSampler = new CubeSpherePyramidsTerrain(planet);
+  const nSampler = new NoiseSampler(grayNoiseImg);
+  const noise = new InigoQuilezFBMNoise(nSampler);
+  const tSampler = new CubeSphereInigoQuilezFBMTerrain(planet, noise);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -94,9 +98,9 @@ export default async function main() {
   
   // одна из предустановленных точек
   //let pos = new Vec3(2316,0,7696);
-  //let pos = new Vec3(100,3000,100);
-  let pos = new Vec3(450270.29149266565, 536246.0613676151, -83641.67299722403)
-  //359021.48294928856,"y":-135761.44854442962,"z":-263875.832753025
+  let pos = new Vec3(100,3000,100);
+  //let pos = new Vec3(450270.29149266565, 536246.0613676151, -83641.67299722403)
+  //let pos=new Vec3(359021.48294928856,-135761.44854442962,-263875.832753025)
 
   //let quat = new Quaternion(0,-0.9908125427905498,0,0.13524239368232574);
   //let pos = new Vec3(127857.9675744353,-4410.132631224615,732644.718708906);
@@ -105,7 +109,7 @@ export default async function main() {
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
   let quat = Quaternion.ID;
-  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler, planet);
   const atm = new Atmosphere(planet);
@@ -193,15 +197,19 @@ export default async function main() {
       const heightB = shaderB.height.toFixed(0);
       const nxA = programA.numX.toFixed(0);
       const nyA = programA.numY.toFixed(0);
-      const lla = planet.lonLatAlt(camera.position);
+      const lla = tSampler.lonLatAlt(camera.position);
 
       divInfo.innerText = `dt: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)} ${width}x${height}
       shB: ${widthB}x${heightB} nA: ${nxA}x${nyA}
       v: ${v.toFixed(2)}m/s (${vkmph.toFixed(2)}km/h)
-      alt: ${camera.altitude.toFixed(2)} h: ${tSampler.height(camera.position).toFixed(2)}
+      alt: ${camera.altitude.toFixed(2)} h: ${camera.height.toFixed(2)}
       lat: ${grad(lla.x).toFixed(7)} lon: ${grad(lla.y).toFixed(7)}
       x: ${camera.position.x.toFixed(2)} y: ${camera.position.y.toFixed(2)} z: ${camera.position.z.toFixed(2)}
-      sun: ${sky.sunDiscColor.x.toFixed(2)} ${sky.sunDiscColor.y.toFixed(2)} ${sky.sunDiscColor.z.toFixed(2)}`;
+      sun: ${sky.sunDiscColor.x.toFixed(2)} ${sky.sunDiscColor.y.toFixed(2)} ${sky.sunDiscColor.z.toFixed(2)}
+      nx: ${camera.normal.x.toFixed(2)} ny: ${camera.normal.y.toFixed(2)} nz: ${camera.normal.z.toFixed(2)}
+      rx: ${camera.ir.x.toFixed(2)} ry: ${camera.ir.y.toFixed(2)} rz: ${camera.ir.z.toFixed(2)}
+      vx: ${camera.velocity.x.toFixed(2)} vy: ${camera.velocity.y.toFixed(2)} vz: ${camera.velocity.z.toFixed(2)}
+      `;
 
       infoRefreshTime = time + 0.5;
     }

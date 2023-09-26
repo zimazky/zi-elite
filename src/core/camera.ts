@@ -49,6 +49,11 @@ export class Camera {
   velocity: Vec3;
   angularSpeed: Vec3;
   altitude: number = 0;
+  height: number =0;
+  normal: Vec3 = Vec3.K;
+  /** Единичный вектор от центра планеты */
+  ir: Vec3 = Vec3.K;
+
   viewAngle: number;
   orientation: Quaternion;
   /** Максимальная дистанция отрисовки планеты, зависит от расстояния до планеты */
@@ -86,6 +91,7 @@ export class Camera {
 
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
+    /*
     const minStep = 1.;
     let res = 1.;
     let t = 0.1;
@@ -93,12 +99,14 @@ export class Camera {
     const cosA = Math.sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
     for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
-      if(this.tSampler.isHeightGreaterMax(p)) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
-      const h = this.tSampler.altitude(p);
+      const alt = this.tSampler.lonLatAlt(p).z;
+      if(alt > this.tSampler.MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
+      const h = alt - this.tSampler.height(p);
       res = Math.min(res, cosA*h/t);
       if(res < -SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
+    */
     return 0.;
   }
   
@@ -138,17 +146,25 @@ export class Camera {
 
     // не даем провалиться ниже поверхности
 
-    const altitude = this.tSampler.altitude(this.position) - 2.;
+    const lla = this.tSampler.lonLatAlt(this.position);
+    const hNormal = this.tSampler.heightNormal(this.position);
+    this.height = hNormal.value;
+    this.normal = hNormal.diff;
+    const rn = this.tSampler.zenith(this.position);
+    this.ir = rn;
+    
+    let altitude = lla.z - hNormal.value - 10.;
     if(altitude < 0) {
       // направление от центра планеты
-      const rn = this.tSampler.zenith(this.position);
-      this.velocity.subMutable(rn.mul(this.velocity.dot(rn)));
+      const VdotN = this.velocity.dot(rn);
+      if(VdotN < 0) this.velocity.subMutable(rn.mul(VdotN));
       this.position.subMutable(rn.mul(altitude));
+      altitude = 0;
     }
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
-    this.altitude = this.tSampler.altitude(this.position);
+    this.altitude = altitude + 10
 
     // вращение
     const angularAcceleration = new Vec3(

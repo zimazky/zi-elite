@@ -3,11 +3,8 @@ import { Vec2, Vec3 } from 'src/shared/libs/vectors'
 import { Planet } from 'src/core/planet'
 
 import ITerrainSampler from './ITerrainSampler'
+import { AutoDiff3 } from 'src/shared/libs/AutoDiff'
 
-/** масштаб по высоте */
-const H_SCALE = 1100.
-/** максимальная высота ландшафта */
-const MAX_TRN_ELEVATION = H_SCALE
 
 function pyramid(x: Vec2) {
   const f = Vec2.ONE.subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE).abs());
@@ -18,23 +15,39 @@ function pyramid(x: Vec2) {
 export class SphericalPyramidsTerrain implements ITerrainSampler {
   private _planet: Planet
 
+  H_SCALE = 1100.
+  W_SCALE = 1500.
+  MAX_TRN_ELEVATION = this.H_SCALE
+
   constructor(planet: Planet) {
     this._planet = planet
   }
 
+  lonLatAlt(p: Vec3): Vec3 {
+    const r = p.sub(this._planet.center);
+    const phi = Math.atan2(r.y, r.x);
+    const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
+    const alt = r.length() - this._planet.radius;
+    return new Vec3(phi, theta, alt);
+  }
+
   isHeightGreaterMax(p: Vec3): boolean {
-    const lla = this._planet.lonLatAlt(p)
-    return lla.z > MAX_TRN_ELEVATION
+    const lla = this.lonLatAlt(p)
+    return lla.z > this.MAX_TRN_ELEVATION
   }
 
   altitude(p: Vec3): number {
-    const lla = this._planet.lonLatAlt(p)
-    return lla.z - H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+    const lla = this.lonLatAlt(p)
+    return lla.z - this.H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
   }
 
   height(p: Vec3): number {
-    const lla = this._planet.lonLatAlt(p)
-    return H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+    const lla = this.lonLatAlt(p)
+    return this.H_SCALE*pyramid(lla.xy.mul(360./Math.PI))
+  }
+  
+  heightNormal(p: Vec3): AutoDiff3 {
+    return new AutoDiff3(this.height(p), this.normal(p))
   }
 
   zenith(p: Vec3): Vec3 {

@@ -3,13 +3,7 @@ import { Vec2, Vec3 } from 'src/shared/libs/vectors'
 import { Planet } from 'src/core/planet'
 
 import ITerrainSampler from './ITerrainSampler'
-
-/** масштаб по высоте */
-const H_SCALE = 1100.
-/** масштаб по горизонтали */
-const W_SCALE = 1500.
-/** максимальная высота ландшафта */
-const MAX_TRN_ELEVATION = H_SCALE
+import { AutoDiff3 } from 'src/shared/libs/AutoDiff'
 
 function pyramid(x: Vec2) {
   const f = Vec2.ONE.subMutable(x.fract().mulMutable(2).subMutable(Vec2.ONE).abs());
@@ -20,16 +14,28 @@ function pyramid(x: Vec2) {
 export class FlatPyramidsTerrain implements ITerrainSampler {
   private _planet: Planet
 
+  H_SCALE = 1100.
+  W_SCALE = 1500.
+  MAX_TRN_ELEVATION = this.H_SCALE
+
   constructor(planet: Planet) {
     this._planet = planet
   }
 
+  lonLatAlt(p: Vec3): Vec3 {
+    return p.xzy
+  }
+
   isHeightGreaterMax(p: Vec3): boolean {
-    return p.y > MAX_TRN_ELEVATION
+    return p.y > this.MAX_TRN_ELEVATION
   }
 
   height(p: Vec3): number {
-    return H_SCALE*pyramid(p.xz.div(W_SCALE))
+    return this.H_SCALE*pyramid(p.xz.div(this.W_SCALE))
+  }
+
+  heightNormal(p: Vec3): AutoDiff3 {
+    return new AutoDiff3(this.height(p), this.normal(p))
   }
 
   altitude(p: Vec3): number {

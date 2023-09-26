@@ -150,21 +150,23 @@ vec4 height_d(vec3 r) {
     if(absR.x > absR.z) {
       vec3 s = r - r*(absR.x-cubeRad)/absR.x;
       h_d = fbmInigoQuilez(s.yz/W_SCALE);
-      h_d.xyz = vec3(h_d.z, nScale*h_d.xy); // x+
+      h_d.z /= nScale;
       vec2 uv = s.yz/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.yzx = h_d.yzx * m;
+      h_d.xyz = h_d.xyz * m;
+      h_d.xyz = h_d.zxy; // x+
       if(r.x < 0.) h_d.x = -h_d.x; // x-
     }
     else {
       vec3 s = r - r*(absR.z-cubeRad)/absR.z;
       h_d = fbmInigoQuilez(s.xy/W_SCALE);
-      h_d.xyz = vec3(nScale*h_d.xy, h_d.z); // z+
+      h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
       h_d.xyz = h_d.xyz * m;
+      //h_d.xyz = h_d.xyz; // z+
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
   }
@@ -172,21 +174,23 @@ vec4 height_d(vec3 r) {
     if(absR.y > absR.z) {
       vec3 s = r - r*(absR.y-cubeRad)/absR.y;
       h_d = fbmInigoQuilez(s.xz/W_SCALE);
-      h_d.xyz = vec3(nScale*h_d.x, h_d.z, nScale*h_d.y); // y+
+      h_d.z /= nScale;
       vec2 uv = s.xz/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.xzy = h_d.xzy * m;
+      h_d.xyz = h_d.xyz * m;
+      h_d.xyz = h_d.xzy; // y+
       if(r.y < 0.) h_d.y = -h_d.y; // y-
     }
     else {
       vec3 s = r - r*(absR.z-cubeRad)/absR.z;
       h_d = fbmInigoQuilez(s.xy/W_SCALE);
-      h_d.xyz = vec3(nScale*h_d.xy, h_d.z); // z+
+      h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
       h_d.xyz = h_d.xyz * m;
+      //h_d.xyz = h_d.xyz; // z+
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
   }

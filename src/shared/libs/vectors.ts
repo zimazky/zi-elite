@@ -228,6 +228,49 @@ export class Vec4 implements IVectors<Vec4> {
   get zwx(): Vec3 { return new Vec3(this.z, this.w, this.x) }
 
 
+  set xy(v: Vec2) {this.x = v.x; this.y = v.y }
+  set yx(v: Vec2) {this.y = v.x; this.x = v.y }
+  set xz(v: Vec2) {this.x = v.x; this.z = v.y }
+  set zx(v: Vec2) {this.z = v.x; this.x = v.y }
+  set yz(v: Vec2) {this.y = v.x; this.z = v.y }
+  set zy(v: Vec2) {this.z = v.x; this.y = v.y }
+
+  set xw(v: Vec2) { this.x = v.x; this.w = v.y }
+  set wx(v: Vec2) { this.w = v.x; this.x = v.y }
+  set yw(v: Vec2) { this.y = v.x; this.w = v.y }
+  set wy(v: Vec2) { this.w = v.x; this.y = v.y }
+  set zw(v: Vec2) { this.z = v.x; this.w = v.y }
+  set wz(v: Vec2) { this.w = v.x; this.z = v.y }
+
+  set xyz(v: Vec3) { this.x=v.x; this.y=v.y; this.z=v.z }
+  set xzy(v: Vec3) { this.x=v.x; this.z=v.y; this.y=v.z }
+  set yzx(v: Vec3) { this.y=v.x; this.z=v.y; this.x=v.z }
+  set yxz(v: Vec3) { this.y=v.x; this.x=v.y; this.z=v.z }
+  set zxy(v: Vec3) { this.z=v.x; this.x=v.y; this.y=v.z }
+  set zyx(v: Vec3) { this.z=v.x; this.y=v.y; this.x=v.z }
+
+  set xyw(v: Vec3) { this.x=v.x; this.y=v.y; this.w=v.z }
+  set xwy(v: Vec3) { this.x=v.x; this.w=v.y; this.y=v.z }
+  set ywx(v: Vec3) { this.y=v.x; this.w=v.y; this.x=v.z }
+  set yxw(v: Vec3) { this.y=v.x; this.x=v.y; this.w=v.z }
+  set wxy(v: Vec3) { this.w=v.x; this.x=v.y; this.y=v.z }
+  set wyx(v: Vec3) { this.w=v.x; this.y=v.y; this.x=v.z }
+
+  set wyz(v: Vec3) { this.w=v.x; this.y=v.y; this.z=v.z }
+  set wzy(v: Vec3) { this.w=v.x; this.z=v.y; this.y=v.z }
+  set yzw(v: Vec3) { this.y=v.x; this.z=v.y; this.w=v.z }
+  set ywz(v: Vec3) { this.y=v.x; this.w=v.y; this.z=v.z }
+  set zwy(v: Vec3) { this.z=v.x; this.w=v.y; this.y=v.z }
+  set zyw(v: Vec3) { this.z=v.x; this.y=v.y; this.w=v.z }
+
+  set xwz(v: Vec3) { this.x=v.x; this.w=v.y; this.z=v.z }
+  set xzw(v: Vec3) { this.x=v.x; this.z=v.y; this.w=v.z }
+  set wzx(v: Vec3) { this.w=v.x; this.z=v.y; this.x=v.z }
+  set wxz(v: Vec3) { this.w=v.x; this.x=v.y; this.z=v.z }
+  set zxw(v: Vec3) { this.z=v.x; this.x=v.y; this.w=v.z }
+  set zwx(v: Vec3) { this.z=v.x; this.w=v.y; this.x=v.z }
+
+
   /** Представление в виде строки */
   toString(): string {
     return `(${this.x.toFixed(2)}, ${this.y.toFixed(2)}, ${this.z.toFixed(2)}, ${this.w.toFixed(2)})`;
@@ -861,6 +904,20 @@ export class Vec3 implements IVectors<Vec3> {
   get yyy(): Vec3 { return new Vec3(this.y, this.y, this.y) }
   get zzz(): Vec3 { return new Vec3(this.z, this.z, this.z) }
 
+  set xy(v: Vec2) {this.x = v.x; this.y = v.y }
+  set yx(v: Vec2) {this.y = v.x; this.x = v.y }
+  set xz(v: Vec2) {this.x = v.x; this.z = v.y }
+  set zx(v: Vec2) {this.z = v.x; this.x = v.y }
+  set yz(v: Vec2) {this.y = v.x; this.z = v.y }
+  set zy(v: Vec2) {this.z = v.x; this.y = v.y }
+
+  set xyz(v: Vec3) { this.x=v.x; this.y=v.y; this.z=v.z }
+  set xzy(v: Vec3) { this.x=v.x; this.z=v.y; this.y=v.z }
+  set yzx(v: Vec3) { this.y=v.x; this.z=v.y; this.x=v.z }
+  set yxz(v: Vec3) { this.y=v.x; this.x=v.y; this.z=v.z }
+  set zxy(v: Vec3) { this.z=v.x; this.x=v.y; this.y=v.z }
+  set zyx(v: Vec3) { this.z=v.x; this.y=v.y; this.x=v.z }
+
   /** Представление в строковом виде */
   toString(): string {
     return `(${this.x.toFixed(2)}, ${this.y.toFixed(2)}, ${this.z.toFixed(2)})`;
@@ -1232,6 +1289,9 @@ export class Vec2 implements IVectors<Vec2> {
   get yx(): Vec2 { return new Vec2(this.y, this.x) }
   get xx(): Vec2 { return new Vec2(this.x, this.x) }
   get yy(): Vec2 { return new Vec2(this.y, this.y) }
+
+  set xy(v: Vec2) {this.x = v.x; this.y = v.y }
+  set yx(v: Vec2) {this.y = v.x; this.x = v.y }
 
   /** Представление в строковом виде */
   toString(): string {

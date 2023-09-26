@@ -3,13 +3,7 @@ import { Vec2, Vec3 } from 'src/shared/libs/vectors'
 import { Planet } from 'src/core/planet'
 
 import ITerrainSampler from './ITerrainSampler'
-
-/** масштаб по высоте */
-const H_SCALE = 1100.
-/** масштаб по горизонтали */
-const W_SCALE = 1000.
-/** максимальная высота ландшафта */
-const MAX_TRN_ELEVATION = H_SCALE
+import { AutoDiff3 } from 'src/shared/libs/AutoDiff'
 
 const ONE_OVER_SQRT3 = 0.57735026918962576450914878050196
 
@@ -22,8 +16,20 @@ function pyramid(x: Vec2) {
 export class CubeSpherePyramidsTerrain implements ITerrainSampler {
   private _planet: Planet
 
+  H_SCALE = 1100.
+  W_SCALE = 1000.
+  MAX_TRN_ELEVATION = 1.9*this.H_SCALE
+
   constructor(planet: Planet) {
     this._planet = planet
+  }
+
+  lonLatAlt(p: Vec3): Vec3 {
+    const r = p.sub(this._planet.center);
+    const phi = Math.atan2(r.y, r.x);
+    const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
+    const alt = r.length() - this._planet.radius;
+    return new Vec3(phi, theta, alt);
   }
 
   pyramidOnCubeSphere(r: Vec3) {
@@ -55,21 +61,25 @@ export class CubeSpherePyramidsTerrain implements ITerrainSampler {
         else f = new Vec2(s.x, s.y) // z-
       }
     }
-    return pyramid(f.div(W_SCALE))
+    return pyramid(f.div(this.W_SCALE))
   }
   
   isHeightGreaterMax(p: Vec3): boolean {
-    const lla = this._planet.lonLatAlt(p)
-    return lla.z > MAX_TRN_ELEVATION
+    const lla = this.lonLatAlt(p)
+    return lla.z > this.MAX_TRN_ELEVATION
   }
 
   height(p: Vec3): number {
     const r = p.sub(this._planet.center)
-    return H_SCALE * this.pyramidOnCubeSphere(r)
+    return this.H_SCALE * this.pyramidOnCubeSphere(r)
+  }
+  
+  heightNormal(p: Vec3): AutoDiff3 {
+    return new AutoDiff3(this.height(p), this.normal(p))
   }
 
   altitude(p: Vec3): number {
-    const lla = this._planet.lonLatAlt(p)
+    const lla = this.lonLatAlt(p)
     return lla.z - this.height(p)
   }
 
