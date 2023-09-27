@@ -194,18 +194,78 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     // корректировка дальности пересечения с поверхностью с учетом переопределения начальной точки
     rayLen -= d;
   }
-/*
+
   // Расчет расстояния до тени планеты
-  float BO = dot(ld, start);
-  float BO2 = BO*BO;
-  float AS = sqrt(r2-BO2)-uPlanetRadius;
-  float RdotL = dot(rd,ld);
-  float AX = AS/sqrt(1.-RdotL*RdotL);
-  float AD = sqrt(AS*AS+BO2);
-  if((AX-AD)*BO > 0.) { // проверка на попадание в теневую часть
-    rayLen = min(rayLen, AX);
+  //
+  // (1) r^2 - dot(ld, r)^2 < R^2 – условие попадания точки в цилиндр тени планеты
+  // (2) dot(ld, r) < 0 – условие что точка за планетой, в тени
+  // r - произвольный вектор относительно центра планеты
+  // ld - единичный вектор-направление на солнце
+  // R - радиус планеты
+  //
+  // Граница цилиндра:
+  // dot(OA+rd*t,OA+rd*t) - dot(ld,OA+rd*t)^2 = R^2        (3)
+  // r = OA+rd*t, OA = ro-planetCenter
+  // t - длина луча из камеры до границы тени
+  //
+  // dot(OA+rd*t,OA+rd*t) =
+  // = OAx^2 + 2*OAx*rdx*t + rdx^2*t^2 + OAy^2 + 2*OAy*rdy*t + rdy^2*t^2 + OAz^2 + 2*OAz*rdz*t + rdz^2*t^2 =
+  // = OA^2 + t^2 + 2*dot(rd,OA)*t
+  //
+  // dot(ld,OA+rd*t) = 
+  // = ldx*(OAx + rdx*t) + ldy*(OAy + rdy*t) + ldz*(OAz + rdz*t) =
+  // = ldx*OAx + ldx*rdx*t + ldy*OAy + ldy*rdy*t + ldz*OAz + ldz*rdz*t =
+  // = dot(ld,OA) + dot(ld,rd)*t
+  //
+  // Подставляем в (3)
+  // OA^2 + t^2 + 2*dot(rd,OA)*t – (dot(ld,OA) + dot(ld,rd)*t)^2 = R^2
+  //
+  // OA^2 + t^2 + 2*dot(rd,OA)*t – (dot(ld,OA)^2 + 2*dot(ld,OA)*dot(ld,rd)*t + dot(ld,rd)^2*t^2) = R^2
+  //
+  // t^2*(1 - dot(ld,rd)^2) + t*2*(dot(rd,OA) - dot(ld,OA)*dot(ld,rd)) + (OA^2 - R^2 - dot(ld,OA)^2) = 0
+  //
+  // Квадратное уравнение с коэффициентами:
+  // a = 1 - dot(ld,rd)^2
+  // b = 2*(dot(rd,OA) - dot(ld,OA)*dot(ld,rd))
+  // c = OA^2 - R^2 - dot(ld,OA)^2
+  //
+  // Если a = 0 луч параллелен направлению на солнце и не пересекает тень
+  // Дискриминант:
+  // D = b^2-4ac
+  // Если D<0, то луч уходит мимо цилиндра тени
+  // 
+  // Два корня:
+  // t1 = 0.5*(-b + sqrt(D))/a
+  // t2 = 0.5*(-b - sqrt(D))/a
+  // Из них выбираем меньший положительный
+  // Проверяем на условие, что точка за планетой по отношению к солнцу
+  // dot(ld, OA+rd*t) < 0
+  
+  vec3 OA = start;
+  float LdotRd = dot(ld,rd);
+  if(LdotRd < 1.) {
+    // луч не параллелен направлению на солнце
+    float a = 1. - LdotRd*LdotRd;
+    float LdotOA = dot(ld,OA);
+    float b = 2.*(dot(rd,OA) - LdotOA*LdotRd);
+    float c = dot(OA,OA) - PLANET_RADIUS_SQR - LdotOA*LdotOA;
+    float D = b*b - 4.*a*c;
+    if(D >= 0.) {
+      // луч пересекает цилиндр тени
+      float sqrtD = sqrt(D);
+      vec2 t12 = 0.5*(vec2(-b)+vec2(sqrtD,-sqrtD))/a;
+      float t = min(t12.x, t12.y);
+      t = t<0. ? max(t12.x, t12.y) : t;
+      if(t > 0.) {
+        // луч пересекает цилиндр тени впереди
+        float LdotR = dot(ld, OA+rd*t);
+        // за планетой
+        if(LdotR < 0. && t < rayLen) rayLen = t;
+      }
+    }
   }
-*/
+
+
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
   // Для рассеяния Ми g принимают 0,76 ... 0,999.

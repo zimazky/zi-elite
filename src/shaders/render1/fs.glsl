@@ -157,8 +157,8 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 l
   float amb = clamp(0.5+0.5*dot(nor,zenith), 0., 1.);
   vec3 light = light1;
   float LdotZ = dot(zenith, light1);
-  vec3 lightcolor = texture(uTextureSunColor, vec2((LdotZ+1.)/2., 0.5)).xyz;//uSunDiscColor;
-  vec3 skycolor = texture(uTextureSkyColor, vec2((LdotZ+1.)/2., 0.5)).xyz;
+  vec3 lightcolor = texture(uTextureSunColor, 0.5*vec2((LdotZ+1.), 0.5)).xyz;//uSunDiscColor;
+  vec3 skycolor = texture(uTextureSkyColor, 0.5*vec2((LdotZ+1.), 0.5)).xyz;
   if(LdotZ < 0.) {
     light = light2;
     lightcolor = uMoonDiscColor;
