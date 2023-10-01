@@ -183,7 +183,8 @@ void main(void) {
     gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   }
   else {
-    vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations);
+    vec2 uv;
+    vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations, uv);
     if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
       gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
@@ -194,7 +195,7 @@ void main(void) {
       gNormalDepth = nor_t;//vec4(nor, t);
       vec3 lla = lonLatAlt(pos);
       vec3 zenith = terrainZenith(pos);
-      col = biomeColor(lla, dot(nor, zenith)).rgb;
+      col = biomeColor(lla, dot(nor, zenith), uv).rgb;
     }
   }
 

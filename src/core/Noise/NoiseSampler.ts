@@ -44,10 +44,10 @@ export class NoiseSampler {
     const u = new Vec2(3.,3.).subMutable(f.mul(2.)).mulElMutable(f).mulElMutable(f); //f*f*(3.0-2.0*f);
     const du = new Vec2(1.,1.).subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
 
-    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.)) * 2. - 1.;
+    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
   
     return new AutoDiff2(
       a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y,
@@ -73,10 +73,10 @@ export class NoiseSampler {
     const u = new Vec2(3.,3.).subMutable(f.mul(2.)).mulElMutable(f).mulElMutable(f); //f*f*(3.0-2.0*f);
     const du = new Vec2(1.,1.).subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
 
-    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.)) * 2. - 1.;
-    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.)) * 2. - 1.;
+    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
 
     const abcd = a-b-c+d;
 

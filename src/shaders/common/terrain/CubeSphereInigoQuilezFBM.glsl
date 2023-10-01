@@ -47,10 +47,10 @@ vec3 noised(vec2 x) {
   vec2 du = 6.0*f*(1.0-f);
 
   vec2 p = floor(x);
-  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x * 2. - 1.;
-  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x * 2. - 1.;
-  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x * 2. - 1.;
-  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x * 2. - 1.;
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
 
   return vec3((a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y),
                du*(u.yx*(a-b-c+d) + vec2(b,c) - a));
@@ -70,10 +70,10 @@ vec4 noised2(vec2 x, out vec4 dx, out vec4 dy) {
   vec2 du = 6.0*f*(1.0-f);
 
   vec2 p = floor(x);
-  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x * 2. - 1.;
-  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x * 2. - 1.;
-  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x * 2. - 1.;
-  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x * 2. - 1.;
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
 
   float abcd = a-b-c+d;
   vec2 d2u = u.yx*abcd + vec2(b,c) - a;
@@ -154,14 +154,21 @@ vec4 fbmInigoQuilez(vec2 p, float dist) {
 }
 
 const float nScale = H_SCALE/W_SCALE;
-vec4 height_d(vec3 r, float dist) {
-  // Размер куба на который проецируется вектор для позиционирования на кубосфере 
+// p - координаты точки
+// возвращает:
+// xyz - нормаль
+// w - высота
+// uv - текстурные координаты на кубе
+vec4 height_d(vec3 p, float dist, out vec2 uvCoord) {
+  // Размер куба на который проецируется вектор для позиционирования на кубосфере
   float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
+  vec3 r = p - uPlanetCenter;
   vec3 absR = abs(r);
   vec4 h_d;
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
-      vec3 s = r - r*(absR.x-cubeRad)/absR.x;
+      vec3 s = p - (uPlanetCenter + r*(absR.x-cubeRad)/absR.x);
+      uvCoord = s.yz;
       h_d = fbmInigoQuilez(s.yz/W_SCALE, dist);
       h_d.z /= nScale;
       // Матрица преобразования нормалей из касательного пространства относительно сферы к объектному пространству
@@ -181,7 +188,8 @@ vec4 height_d(vec3 r, float dist) {
       if(r.x < 0.) h_d.x = -h_d.x; // x-
     }
     else {
-      vec3 s = r - r*(absR.z-cubeRad)/absR.z;
+      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      uvCoord = s.xy;
       h_d = fbmInigoQuilez(s.xy/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
@@ -194,7 +202,8 @@ vec4 height_d(vec3 r, float dist) {
   }
   else {
     if(absR.y > absR.z) {
-      vec3 s = r - r*(absR.y-cubeRad)/absR.y;
+      vec3 s = p - (uPlanetCenter + r*(absR.y-cubeRad)/absR.y);
+      uvCoord = s.xz;
       h_d = fbmInigoQuilez(s.xz/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xz/cubeRad;
@@ -205,7 +214,8 @@ vec4 height_d(vec3 r, float dist) {
       if(r.y < 0.) h_d.y = -h_d.y; // y-
     }
     else {
-      vec3 s = r - r*(absR.z-cubeRad)/absR.z;
+      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      uvCoord = s.xy;
       h_d = fbmInigoQuilez(s.xy/W_SCALE, dist);
       h_d.z /= nScale;
       vec2 uv = s.xy/cubeRad;
@@ -221,15 +231,16 @@ vec4 height_d(vec3 r, float dist) {
 
 // Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
 float terrainHeight(vec3 p, float dist) {
-  vec3 r = p - uPlanetCenter;
-  vec4 h_d = height_d(r, dist);
+  //vec3 r = p - uPlanetCenter;
+  vec2 uv;
+  vec4 h_d = height_d(p, dist, uv);
   return h_d.w;
 }
 
 // Высота и нормаль на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-vec4 terrainHeightNormal(vec3 p, float dist) {
-  vec3 r = p - uPlanetCenter;
-  vec4 h_d = height_d(r, dist);
+vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uv) {
+  //vec3 r = p - uPlanetCenter;
+  vec4 h_d = height_d(p, dist, uv);
   return h_d;
 }
 

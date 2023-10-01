@@ -137,9 +137,13 @@ out vec4 fragColor;
  *   mu - косинус угла между нормалью и направлением на камеру
  *   mu0 - косинус угла между нормалью и направлением на источник света
  */
+//vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
+//	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
+//	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
+//}
+
 vec3 lunar_lambert(vec3 omega, float mu, float mu_0) {
-	vec3 omega_0 = 244. * omega/(184.*omega + 61.);
-	return omega_0 * ( 0.5*omega*(1.+sqrt(mu*mu_0)) + .25/max(0.4, mu+mu_0) );
+	return omega;
 }
 
 

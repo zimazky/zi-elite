@@ -57,7 +57,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
  *   xyz - нормаль к поверхности
  *   w - дистанция до точки пересечения
  */
-vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
+vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
   float t = tmin;
   float altPrev = lonLatAlt(ro).z;
   vec4 res = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
@@ -75,12 +75,12 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
     t = max(tmin, OT-AT);
   }
   vec4 nor_h;
-  for(i=0; i<600; i++) {
+  for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     float alt = lonLatAlt(pos).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
     altPrev = alt;
-    nor_h = terrainHeightNormal(pos, t);
+    nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
     if( abs(h)<(0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
