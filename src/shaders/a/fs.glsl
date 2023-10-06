@@ -1,6 +1,6 @@
 #version 300 es
 
-precision mediump float;
+precision highp float;
 
 /**
  * Шейдер для формирования буфера с данными глубины на основании

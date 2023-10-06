@@ -82,7 +82,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     altPrev = alt;
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
-    if( abs(h)<(0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    if( abs(h)<max(0.1,0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return res;
   }
@@ -90,7 +90,16 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
 }
 #endif
 
-// функция определения затененности
+/** 
+ * Функция определения затененности солнечного света
+ *   ro - положение точки, для которой определяется затенение
+ *   rd - направление луча из точки в направлении солнца
+ *   //tmin - начальное глубина рейтрейсинга
+ *   //tmax - максимальная глубина рейтрейсинга
+ *   возвращает значение от 0 до 1, 0 - тень, 1 - на свету
+ *   i - количество итераций
+ *   t - дистанция до точки пересечения
+ */
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
   float res = 1.;
