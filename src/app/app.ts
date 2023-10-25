@@ -139,7 +139,8 @@ export default async function main() {
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, [
-      {format: WebGL2RenderingContext.RGBA32F},
+      {format: WebGL2RenderingContext.R32F},
+      {format: WebGL2RenderingContext.RGBA16F},
       {format: WebGL2RenderingContext.RGBA16F}
     ],
     //2195, 1131, 2,

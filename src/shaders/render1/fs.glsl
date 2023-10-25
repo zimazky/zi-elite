@@ -36,8 +36,10 @@ uniform vec3 uFlareLights[2];
 
 /** Текстура программы A */
 uniform sampler2D uTextureADepth;
-/** Нормали и глубина программы B */
-uniform sampler2D uTextureBNormalDepth;
+/** Глубина программы B */
+uniform sampler2D uTextureBDepth;
+/** Нормали программы B */
+uniform sampler2D uTextureBNormal;
 /** Значения альбедо программы B */
 uniform sampler2D uTextureBAlbedo;
 /** Нормали и глубина программы C */
@@ -224,8 +226,10 @@ void main() {
   vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
   vec4 albedoB = texture(uTextureBAlbedo, uv);
-  vec4 normalDepthB = texture(uTextureBNormalDepth, uv);
-  vec4 normalDepthC = texture(uTextureCNormalDepth, uv);
+  vec3 normalB = texture(uTextureBNormal, uv).xyz;
+  float depthB = texture(uTextureBDepth, uv).x;
+  vec4 normalDepthB = vec4(normalB, depthB);
+  //vec4 normalDepthC = texture(uTextureCNormalDepth, uv);
 
 #ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
@@ -266,14 +270,14 @@ void main() {
     normal = normalDepthB.xzy*vec3(1, 1, -1);
     vec2 uv1 = uMapScale*vec2(1, 1./vAspectB)*(gl_FragCoord.xy/uResolution-0.5);
     posScreen = vec3(uv1.x, uv1.y, t);
-    ssao = calcSSAOOrtho(posScreen, normal, rand, uTextureBNormalDepth, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
+    ssao = calcSSAOOrtho(posScreen, normal, rand, uTextureBDepth, 2.*vec2(1, vAspectB)*k/uMapScale, 300.);
   }
   else {
     normal = vInverseTransformMat*normalDepthB.xyz;
     normal.z = -normal.z;
     posScreen = normalize(vRayScreen)*t;
     posScreen.z = -posScreen.z;
-    ssao = calcSSAO(posScreen, normal, rand, uTextureBNormalDepth, 300.);
+    ssao = calcSSAO(posScreen, normal, rand, uTextureBDepth, 300.);
   }
   //col = (uSSAOSamples[int(mod(0.1*gl_FragCoord.x,64.))]);
   //col = vec3(ssao*ssao);
