@@ -36,6 +36,11 @@ vec3 lonLatAlt(vec3 p) {
   return vec3(phi, theta, alt);
 }
 
+float terrainAlt(vec3 p) {
+  vec3 r = p - uPlanetCenter;
+  return length(r) - uPlanetRadius;
+}
+
 const float nScale = H_SCALE/W_SCALE;
 // p - координаты точки
 // dist - дистанция от камеры до точки
