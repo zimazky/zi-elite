@@ -13,10 +13,11 @@ export const MAP_VIEW = 1;
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;
 
-const THRUST = 11.; // ускорение двигателя м/с2
-const AIR_DRAG_FACTOR = 58.; // коэффициент сопротивления воздуха 1/с
-const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR); // вектор сопротивления по осям
-const ANGLE_DELTA = Math.PI/180.;
+const THRUST = 11. // ускорение двигателя м/с2
+const AIR_DRAG_FACTOR = 58. // коэффициент сопротивления воздуха 1/с
+const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR) // вектор сопротивления по осям
+const ANGLE_DELTA = Math.PI/180.
+const MIN_ALTITUDE = 2 // минимальная высота над поверхностью
 
 const KEY_SHIFT = 16;
 const KEY_CTRL = 17;
@@ -152,7 +153,7 @@ export class Camera {
     const rn = this.tSampler.zenith(this.position);
     this.ir = rn;
     
-    let altitude = lla.z - hNormal.value - 7;
+    let altitude = lla.z - hNormal.value - MIN_ALTITUDE;
     if(altitude < 0) {
       // направление от центра планеты
       const VdotN = this.velocity.dot(rn);
@@ -163,7 +164,7 @@ export class Camera {
     // вычисление изменения положения камеры
     this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
-    this.altitude = altitude + 7
+    this.altitude = altitude + MIN_ALTITUDE
 
     // вращение
     const angularAcceleration = new Vec3(

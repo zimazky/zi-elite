@@ -49,10 +49,11 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = pos.y - nor_h.w;
     if( abs(h)<max(0.1, 0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    t += 0.2*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return res;
   }
-  return vec4(nor_h.xyz, t);
+  return t<1000. ? vec4(nor_h.xyz, t) : res;
+  //return vec4(nor_h.xyz, t);
 }
 
 #else

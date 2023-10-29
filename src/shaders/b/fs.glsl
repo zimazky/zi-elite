@@ -97,7 +97,6 @@ void main(void) {
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
-    //gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   }
   else {
     vec2 uv;
@@ -105,7 +104,6 @@ void main(void) {
     if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
       gNormal = -rd;
       gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
-      //gNormalDepth = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
     }
     else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
@@ -113,7 +111,6 @@ void main(void) {
       //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
       gNormal = nor;
       gDepth = nor_t.w;
-      //gNormalDepth = nor_t;//vec4(nor, t);
       vec3 lla = lonLatAlt(pos);
       vec3 zenith = terrainZenith(pos);
       col = biomeColor(lla, dot(nor, zenith), uv).rgb;
