@@ -91,7 +91,7 @@ export class Camera {
 
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
-    /*
+    
     const minStep = 1.;
     let res = 1.;
     let t = 0.1;
@@ -106,7 +106,6 @@ export class Camera {
       if(res < -SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
       t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
-    */
     return 0.;
   }
   

@@ -48,8 +48,8 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return res;
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = pos.y - nor_h.w;
-    if( abs(h)<(0.003*t) || t>tmax ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    if( abs(h)<max(0.1, 0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return res;
   }
   return vec4(nor_h.xyz, t);

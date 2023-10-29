@@ -55,7 +55,7 @@ vec4 noised2(vec2 x, out vec4 dx, out vec4 dy) {
   float abcd = a-b-c+d;
   vec2 u2 = abcd * u.yx + vec2(b,c) - a;
   vec2 d1 = u2 * du;                // первые производные
-  vec2 d2 = u2 * 6.0*(1.0-2.0*f);   // вторые производные d2/(dx dx) d2/(dy dy)
+  vec2 d2 = u2 * (6. - 12.*f);      // вторые производные d2/(dx dx) d2/(dy dy)
   float d2xy = abcd * du.x * du.y;  // вторые производные d2/(dx dy) = d2/(dy dx)
 
   dx = vec4(d2.x, d2xy, 0, d1.x);

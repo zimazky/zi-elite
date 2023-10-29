@@ -56,12 +56,16 @@ vec4 terrainFbm(vec2 p, float dist) {
   float noct = 16. - (16.-9.)*pow(clamp((dist-distmin)/(distmax-distmin), 0., 1.),0.5);
   float nfract = fract(noct);
   vec4 tdx, tdy, f;
+  //vec4 den = ONE_D;
   for( int i=0; i<10/*int(noct)*/; i++ ) {
     f = noised2(m*p, tdx, tdy);
     // определение деноминатора, определяющего эрозию
+    tdx.xyz *= b;
+    tdy.xyz *= b;
     g += tdx;
     h += tdy;
     vec4 den = ONE_D + square_d(g) + square_d(h);
+    //den += square_d(tdx) + square_d(tdy);
     f = div_d(f, den);
     // накопление значения высоты
     a += b * f.w;

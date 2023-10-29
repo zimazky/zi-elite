@@ -110,7 +110,7 @@ void main(void) {
     else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
       vec3 nor = nor_t.xyz;
-      if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
+      //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
       gNormal = nor;
       gDepth = nor_t.w;
       //gNormalDepth = nor_t;//vec4(nor, t);
