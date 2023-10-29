@@ -71,7 +71,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
  */
 vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
   float t = tmin;
-  float altPrev = lonLatAlt(ro).z;
+  float altPrev = terrainAlt(ro);
   vec4 res = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
   
   if(altPrev > MAX_TRN_ELEVATION) {
@@ -89,7 +89,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
   vec4 nor_h;
   for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
-    float alt = lonLatAlt(pos).z;
+    float alt = terrainAlt(pos);
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
     altPrev = alt;
     nor_h = terrainHeightNormal(pos, t, uv);
@@ -116,12 +116,12 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float minStep = clamp(0.01*dis,10.,500.);
   float res = 1.;
   t = 0.01*dis;
-  float altPrev = lonLatAlt(ro).z;
+  float altPrev = terrainAlt(ro);
   for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-    float alt = lonLatAlt(p).z;
+    float alt = terrainAlt(p);
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
     float h = alt - terrainHeight(p, t);
 	  res = min(res, cosA*h/t);

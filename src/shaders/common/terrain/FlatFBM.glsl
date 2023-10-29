@@ -33,6 +33,8 @@ const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная выс�
 // z - высота над поверхностью (координата y)
 vec3 lonLatAlt(vec3 p) { return p.xzy; }
 
+float terrainAlt(vec3 p) { return p.y; }
+
 // Единичный вектор направленный в зенит
 vec3 terrainZenith(vec3 p) { return vec3(0, 1, 0); }
 
