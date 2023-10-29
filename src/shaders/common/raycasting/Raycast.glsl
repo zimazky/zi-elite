@@ -16,8 +16,8 @@
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "src/shaders/common/terrain/FlatFBM.glsl";
-//include "src/shaders/common/terrain/CubeSphereFBM.glsl";
+//include "src/shaders/common/terrain/FlatFBM.glsl";
+#include "src/shaders/common/terrain/CubeSphereFBM.glsl";
 #endif
 
 
@@ -87,7 +87,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     t = max(tmin, OT-AT);
   }
   vec4 nor_h;
-  for(i=0; i<300; i++) {
+  for(i=0; i<400; i++) {
     vec3 pos = ro + t*rd;
     float alt = lonLatAlt(pos).z;
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
@@ -95,7 +95,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
     if( abs(h)<max(0.1,0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    t += 0.5*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    t += 0.2*h; // на тонких краях могут быть артефакты при большом коэффициенте
     if(t>tmax) return res;
   }
   return t<1000. ? vec4(nor_h.xyz, t) : res;

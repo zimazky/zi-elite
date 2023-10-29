@@ -9,7 +9,7 @@ uniform float uPlanetRadius;
 // Положение центра планеты
 uniform vec3 uPlanetCenter;
 
-const float W_SCALE = 2000.; // масштаб по горизонтали
+const float W_SCALE = 3000.; // масштаб по горизонтали
 const float H_SCALE = 1100.; // масштаб по высоте
 const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная высота
 
@@ -17,7 +17,7 @@ const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная выс�
 // Модуль расчета фрактального шума
 // ----------------------------------------------------------------------------
 #ifndef FBMNOISE_MODULE
-#include "src/shaders/common/Noise/FbmRidged.glsl";
+#include "src/shaders/common/Noise/FbmRidged2.glsl";
 //include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
 #endif
 

@@ -87,7 +87,7 @@ export default async function main() {
   const nSampler = new NoiseSampler(grayNoiseImg);
   //const noise = new InigoQuilezFBMNoise(nSampler);
   const noise = new RidgedFbmNoise(nSampler);
-  const tSampler = new FlatFbmTerrain(planet, noise);
+  const tSampler = new CubeSphereFbmTerrain(planet, noise);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
