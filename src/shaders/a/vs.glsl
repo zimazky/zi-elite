@@ -23,7 +23,7 @@ uniform mat3 uTransformMatrix;
 uniform vec3 uPositionDelta;
 
 /** Текстура NormalDepth предыдущего кадра */
-uniform sampler2D uTextureBNormalDepth;
+uniform sampler2D uTextureBDepth;
 /** Текстура Albedo предыдущего кадра */
 //uniform sampler2D uTextureRenderColor;
 
@@ -39,18 +39,18 @@ void main() {
   vec2 uv = 0.5*(vec2(1.)+aVertexPosition.xy);
 
   //vTextureRenderColor = texture(uTextureRenderColor, uv).w;
-  float buf = texture(uTextureBNormalDepth, uv).w;
+  float buf = texture(uTextureBDepth, uv).x;
 
   // находим мнинмальную глубину по 9-ти точкам (коррекция на разрывах глубины)
-  float wmin = texture(uTextureBNormalDepth, uv+vec2(duv.x, 0)).w;
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv-vec2(duv.x, 0)).w);
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv+vec2(0, duv.y)).w);
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv-vec2(0, duv.y)).w);
+  float wmin = texture(uTextureBDepth, uv+vec2(duv.x, 0)).x;
+  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(duv.x, 0)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(0, duv.y)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(0, duv.y)).x);
 
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv+vec2(duv.x, duv.y)).w);
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv+vec2(-duv.x, -duv.y)).w);
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv+vec2(duv.x, -duv.y)).w);
-  wmin = min(wmin, texture(uTextureBNormalDepth, uv+vec2(-duv.x, duv.y)).w);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, duv.y)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, -duv.y)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, -duv.y)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, duv.y)).x);
 
   buf = min(buf, wmin);
   vTextureBDepth = buf;

@@ -24,13 +24,9 @@ import { ObjDoc } from 'src/core/loadobj';
 import { ProgramC } from 'src/programs/programC/programC';
 import { Planet } from 'src/core/planet';
 import { grad } from 'src/shared/libs/mathutils';
-import { SphericalPyramidsTerrain } from 'src/core/Terrain/SphericalPyramids';
-import { CubeSpherePyramidsTerrain } from 'src/core/Terrain/CubeSpherePyramids';
-import { FlatPyramidsTerrain } from 'src/core/Terrain/FlatPyramids';
-import Rand from 'src/shared/libs/Rand';
-import NoiseImg from 'src/core/Noise/NoiseImg';
-import { CubeSphereInigoQuilezFBMTerrain } from 'src/core/Terrain/CubeSphereInigoQuilezFBM';
-import { InigoQuilezFBMNoise } from 'src/core/Noise/InigoQuilezFBMNoise';
+import { RidgedFbmNoise } from 'src/core/Noise/RidgedFbmNoise';
+import { CubeSphereFbmTerrain } from 'src/core/Terrain/CubeSphereFbm';
+import { FlatFbmTerrain } from 'src/core/Terrain/FlatFbm';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -89,8 +85,9 @@ export default async function main() {
   
   const planet = new Planet(500000, 9.81); //6371e3
   const nSampler = new NoiseSampler(grayNoiseImg);
-  const noise = new InigoQuilezFBMNoise(nSampler);
-  const tSampler = new CubeSphereInigoQuilezFBMTerrain(planet, noise);
+  //const noise = new InigoQuilezFBMNoise(nSampler);
+  const noise = new RidgedFbmNoise(nSampler);
+  const tSampler = new FlatFbmTerrain(planet, noise);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';
   console.log('localStorage', json);
@@ -139,7 +136,8 @@ export default async function main() {
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, [
-      {format: WebGL2RenderingContext.RGBA32F},
+      {format: WebGL2RenderingContext.R32F},
+      {format: WebGL2RenderingContext.RGBA16F},
       {format: WebGL2RenderingContext.RGBA16F}
     ],
     //2195, 1131, 2,

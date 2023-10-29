@@ -2,23 +2,28 @@
 
 uniform sampler2D uTextureGrayNoise;
 
-// value noise, and its analytical derivatives
-vec3 noised(vec2 x) {
+// расчет гладкого шума value noise с первыми производными
+// возвращает 
+// w - значение шума
+// xy - первые производные
+vec4 noised(vec2 x) {
   vec2 f = fract(x);
   vec2 u = f*f*(3.0-2.0*f);
   vec2 du = 6.0*f*(1.0-f);
 
   vec2 p = floor(x);
-  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
 
-  return vec3((a+(b-a)*u.x+(c-a)*u.y+(a-b-c+d)*u.x*u.y),
-               du*(u.yx*(a-b-c+d) + vec2(b,c) - a));
+  float abcd = a-b-c+d;
+  vec2 u2 = abcd * u.yx + vec2(b,c) - a;
+  vec2 d1 = u2 * du;                // первые производные
+  return vec4(d1, 0, abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a);
 }
 
-// расчет гладкого шума с первой и второй производной
+// расчет гладкого шума value noise с первой и второй производной
 // dx.w - производная по x
 // dx.xy - вторые производные по x и y
 // dy.w - производная по y
@@ -32,20 +37,30 @@ vec4 noised2(vec2 x, out vec4 dx, out vec4 dy) {
   vec2 du = 6.0*f*(1.0-f);
 
   vec2 p = floor(x);
-  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
-  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;// * 2. - 1.;
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
+
+  // f = (a-b-c+d)*(x*x*(3-2*x))*(y*y*(3-2*y)) + (b-a)*(x*x*(3-2*x)) + (c-a)*(y*y*(3-2*y)) + a 
+  //   = abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a
+  //
+  // df/dx = ((a-b-c+d)*(3-2*y)*y^2 + b-a) * 6*x*(1-x) = (abcd*u.y + b-a) * du.x
+  // df/dy = ((a-b-c+d)*(3-2*x)*x^2 + c-a) * 6*y*(1-y) = (abcd*u.x + c-a) * du.y
+  //
+  // d2f/dx2 = ((a-b-c+d)*(3-2*y)*y^2 + b-a) * 6*(1-2*x) = (abcd*u.y + b-a) * 6*(1-2*x)
+  // d2f/dy2 = ((a-b-c+d)*(3-2*x)*x^2 + c-a) * 6*(1-2*y) = (abcd*u.x + c-a) * 6*(1-2*y)
+  // d2f/dxdy = (a-b-c+d) * 6*y*(1-y) * 6*x*(1-x) = abcd * du.x * du.y
 
   float abcd = a-b-c+d;
-  vec2 d2u = u.yx*abcd + vec2(b,c) - a;
-  vec2 d2 = d2u * 6.0*(1.0-2.0*f);  // вторые производные d2/(dx dx) d2/(dy dy)
-  float dxy = abcd*du.x*du.y;  // вторые производные d2/(dx dy) = d2/(dy dx)
-  vec2 d1 = du*d2u; 
+  vec2 u2 = abcd * u.yx + vec2(b,c) - a;
+  vec2 d1 = u2 * du;                // первые производные
+  vec2 d2 = u2 * (6. - 12.*f);      // вторые производные d2/(dx dx) d2/(dy dy)
+  float d2xy = abcd * du.x * du.y;  // вторые производные d2/(dx dy) = d2/(dy dx)
 
-  dx = vec4(d2.x, dxy, 0, d1.x);
-  dy = vec4(dxy, d2.y, 0, d1.y);
-  return vec4(d1, 0, (a+(b-a)*u.x+(c-a)*u.y+abcd*u.x*u.y));
+  dx = vec4(d2.x, d2xy, 0, d1.x);
+  dy = vec4(d2xy, d2.y, 0, d1.y);
+  return vec4(d1, 0, abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a);
 }
 
 /*

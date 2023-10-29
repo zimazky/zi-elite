@@ -128,8 +128,9 @@ export class ProgramRender {
   init(shader: Renderbufer, blueNoiseImg: TexImageSource, milkywayImg: TexImageSource, constellationImg: TexImageSource, grayNoiseImg: TexImageSource) {
     // привязка текстуры из шейдеров A и B
     this.engine.setRenderedTexture(shader.program, this.shaderA.fbTextures[0], 'uTextureADepth');
-    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uTextureBNormalDepth');
-    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uTextureBAlbedo');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[0], 'uTextureBDepth');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[1], 'uTextureBNormal');
+    this.engine.setRenderedTexture(shader.program, this.shaderB.fbTextures[2], 'uTextureBAlbedo');
     //this.engine.setRenderedTexture(shader.program, this.shaderC.fbTextures[0], 'uNormalDepthProgramC');
 
     this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);

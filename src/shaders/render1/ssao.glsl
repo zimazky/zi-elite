@@ -43,7 +43,7 @@ float calcSSAO(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, float r
     vec2 ts = t*s.xy;
     vec2 offset = vec2(0.5)+0.5*ts;
 
-    float sampleDepth = s.z*texture(depthTexture, offset).w/length(s);
+    float sampleDepth = s.z*texture(depthTexture, offset).x/length(s);
     if(abs(ts.x)>1. || abs(ts.y)>1.) {
       sampleDepth = MAX_TERRAIN_DISTANCE;
     }
@@ -77,7 +77,7 @@ float calcSSAOOrtho(vec3 pos, vec3 normal, vec3 rand, sampler2D depthTexture, ve
     vec2 ts = scale*s.xy;
     vec2 offset = vec2(0.5)+0.5*ts;
 
-    float sampleDepth = texture(depthTexture, offset).w;
+    float sampleDepth = texture(depthTexture, offset).x;
     if(abs(ts.x)>1. || abs(ts.y)>1.) {
       sampleDepth = MAX_TRN_ELEVATION;
     }

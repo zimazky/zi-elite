@@ -16,7 +16,8 @@
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-#include "src/shaders/common/terrain/CubeSphereInigoQuilezFBM.glsl";
+#include "src/shaders/common/terrain/FlatFBM.glsl";
+//include "src/shaders/common/terrain/CubeSphereFBM.glsl";
 #endif
 
 
@@ -28,21 +29,31 @@
  *   tmin - начальное глубина рейтрейсинга
  *   tmax - максимальная глубина рейтрейсинга
  *   i - выходное значение количества циклов рейтрейсинга
+ *   uv - выходное значение текстурные координаты на плоскости
+ *   возвращает
+ *   xyz - нормаль к поверхности
+ *   w - дистанция до точки пересечения
  */
-float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
+vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
   float t = tmin;
+  uv = ro.xz;
+  vec4 res = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
+
   float d = ro.y - MAX_TRN_ELEVATION;
   if(d >= 0.) t = clamp(-d/rd.y, t, tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
 
+  vec4 nor_h;
   for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
-    if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return 1.01 * MAX_TERRAIN_DISTANCE;
-    float h = pos.y - terrainHeight(pos, t);
-    if( abs(h)<(0.003*t) || t>tmax ) return t; // двоятся детали при большем значении
-    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
-    if(t>tmax) return 1.01 * MAX_TERRAIN_DISTANCE;
+    if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return res;
+    nor_h = terrainHeightNormal(pos, t, uv);
+    float h = pos.y - nor_h.w;
+    if( abs(h)<max(0.1, 0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    t += 0.2*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    if(t>tmax) return res;
   }
-  return t;
+  return t<1000. ? vec4(nor_h.xyz, t) : res;
+  //return vec4(nor_h.xyz, t);
 }
 
 #else
@@ -53,6 +64,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
  *   tmin - начальное глубина рейтрейсинга
  *   tmax - максимальная глубина рейтрейсинга
  *   i - выходное значение количества циклов рейтрейсинга
+ *   uv - выходное значение текстурные координаты на сфере
  *   возвращает
  *   xyz - нормаль к поверхности
  *   w - дистанция до точки пересечения
@@ -105,7 +117,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float res = 1.;
   t = 0.01*dis;
   float altPrev = lonLatAlt(ro).z;
-  for(i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+  for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали

@@ -43,7 +43,6 @@ export default interface ITerrainSampler {
    * @param p - координаты точки в системе координат камеры
    */
   heightNormal(p: Vec3): AutoDiff3
-
   /** 
    * Функция определения вектора направления на зенит 
    * @param p - координаты точки в системе координат камеры
