@@ -16,7 +16,7 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
   private _planet: Planet
   private _noise: IFbmNoise
 
-  W_SCALE = 3000
+  W_SCALE = 2000
   H_SCALE = 1100
   MAX_TRN_ELEVATION = 1.9*this.H_SCALE
   nScale = this.H_SCALE/this.W_SCALE
