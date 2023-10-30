@@ -48,22 +48,6 @@ export class Planet {
 
 
   }
-/*
-  // Перевод декартовых координат точки в сферические координаты относительно центра планеты
-  // Начало декартовых координат совпадает с точкой 0,0,0 на сфере
-  // Ось x 
-  // Возвращается:
-  // x - долгота
-  // y - широта
-  // z - высота над поверхностью сферы
-  lonLatAlt(p: Vec3): Vec3 {
-    const r = p.sub(this.center);
-    const phi = Math.atan2(r.y, r.x);
-    const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
-    const alt = r.length() - this.radius;
-    return new Vec3(phi, theta, alt);
-  }
-*/
   /** 
    * Функция определения пересечения луча с планетой
    *   ro - положение камеры

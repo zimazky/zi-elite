@@ -42,7 +42,7 @@ export class Flare {
       this.position.addMutable(this.velocity.mul(timeDelta));
       this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
       // если упала на поверхность, то погасла
-      const alt = this.camera.tSampler.lonLatAlt(this.position).z;
+      const alt = this.camera.tSampler.altitude(this.position);
       const height = alt - this.camera.tSampler.height(this.position);
       if(height < 0) {
         this.isVisible = false;

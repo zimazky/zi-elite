@@ -100,7 +100,7 @@ export class Camera {
     const cosA = Math.sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
     for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
-      const alt = this.tSampler.lonLatAlt(p).z;
+      const alt = this.tSampler.altitude(p);
       if(alt > this.tSampler.MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
       const h = alt - this.tSampler.height(p);
       res = Math.min(res, cosA*h/t);
@@ -146,14 +146,14 @@ export class Camera {
 
     // не даем провалиться ниже поверхности
 
-    const lla = this.tSampler.lonLatAlt(this.position);
+    const alt = this.tSampler.altitude(this.position);
     const hNormal = this.tSampler.heightNormal(this.position);
     this.height = hNormal.value;
     this.normal = hNormal.diff;
     const rn = this.tSampler.zenith(this.position);
     this.ir = rn;
     
-    let altitude = lla.z - hNormal.value - MIN_ALTITUDE;
+    let altitude = alt - hNormal.value - MIN_ALTITUDE;
     if(altitude < 0) {
       // направление от центра планеты
       const VdotN = this.velocity.dot(rn);
