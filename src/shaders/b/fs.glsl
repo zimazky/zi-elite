@@ -111,9 +111,10 @@ void main(void) {
       //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
       gNormal = nor;
       gDepth = nor_t.w;
-      vec3 lla = lonLatAlt(pos);
+      //vec3 lla = lonLatAlt(pos);
+      float alt = terrainAlt(pos);
       vec3 zenith = terrainZenith(pos);
-      col = biomeColor(lla, dot(nor, zenith), uv).rgb;
+      col = biomeColor(dot(nor, zenith), uv, alt).rgb;
     }
   }
 
