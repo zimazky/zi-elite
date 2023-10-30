@@ -32,6 +32,7 @@ export class FlatFbmTerrain implements ITerrainSampler {
    * z - высота над поверхностью сферы
    */
   lonLatAlt(p: Vec3): Vec3 { return p.xzy }
+  altitude(p: Vec3): number { return p.y }
 
   private _height_d(pos: Vec3) {
     const h_d = this._noise.fbm(pos.xz.div(this.W_SCALE))
@@ -39,15 +40,9 @@ export class FlatFbmTerrain implements ITerrainSampler {
     return new AutoDiff3(this.H_SCALE*h_d.value, h_d.diff.xzy.normalize())
   }
     
-  isHeightGreaterMax(p: Vec3): boolean { return p.y > this.MAX_TRN_ELEVATION }
+  height(p: Vec3): number { return this._height_d(p).value }
 
-  height(p: Vec3): number {
-    return this._height_d(p).value
-  }
-
-  heightNormal(p: Vec3): AutoDiff3 {
-    return this._height_d(p)
-  }
+  heightNormal(p: Vec3): AutoDiff3 { return this._height_d(p) }
 
   zenith(p: Vec3): Vec3 { return Vec3.J }
 

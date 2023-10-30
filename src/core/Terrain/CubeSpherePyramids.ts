@@ -20,9 +20,7 @@ export class CubeSpherePyramidsTerrain implements ITerrainSampler {
   W_SCALE = 1000.
   MAX_TRN_ELEVATION = 1.9*this.H_SCALE
 
-  constructor(planet: Planet) {
-    this._planet = planet
-  }
+  constructor(planet: Planet) { this._planet = planet }
 
   lonLatAlt(p: Vec3): Vec3 {
     const r = p.sub(this._planet.center);
@@ -30,6 +28,11 @@ export class CubeSpherePyramidsTerrain implements ITerrainSampler {
     const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
     const alt = r.length() - this._planet.radius;
     return new Vec3(phi, theta, alt);
+  }
+
+  altitude(p: Vec3): number {
+    const r = p.sub(this._planet.center)
+    return r.length() - this._planet.radius
   }
 
   pyramidOnCubeSphere(r: Vec3) {
@@ -64,32 +67,16 @@ export class CubeSpherePyramidsTerrain implements ITerrainSampler {
     return pyramid(f.div(this.W_SCALE))
   }
   
-  isHeightGreaterMax(p: Vec3): boolean {
-    const lla = this.lonLatAlt(p)
-    return lla.z > this.MAX_TRN_ELEVATION
-  }
-
   height(p: Vec3): number {
     const r = p.sub(this._planet.center)
     return this.H_SCALE * this.pyramidOnCubeSphere(r)
   }
   
-  heightNormal(p: Vec3): AutoDiff3 {
-    return new AutoDiff3(this.height(p), this.normal(p))
-  }
+  heightNormal(p: Vec3): AutoDiff3 { return new AutoDiff3(this.height(p), this.normal(p)) }
 
-  altitude(p: Vec3): number {
-    const lla = this.lonLatAlt(p)
-    return lla.z - this.height(p)
-  }
+  zenith(p: Vec3): Vec3 { return p.sub(this._planet.center).normalizeMutable() }
 
-  zenith(p: Vec3): Vec3 {
-    return p.sub(this._planet.center).normalizeMutable()
-  }
-
-  fromCenter(p: Vec3) {
-    return p.sub(this._planet.center)
-  }
+  fromCenter(p: Vec3) { return p.sub(this._planet.center) }
   
   normal(p: Vec3) {
     const eps = 0.1

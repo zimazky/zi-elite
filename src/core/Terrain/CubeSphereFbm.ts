@@ -9,9 +9,8 @@ import { IFbmNoise } from '../Noise/IFbmNoise'
 const ONE_OVER_SQRT3 = 0.57735026918962576450914878050196
 
 /** 
- * Генератор ландшафта в виде fbm с эрозией пирамид на кубосфере 
- * Алгоритм взят у Inigo Quilez 
-*/
+ * Генератор ландшафта в виде fbm value noise на кубосфере 
+ */
 export class CubeSphereFbmTerrain implements ITerrainSampler {
   private _planet: Planet
   private _noise: IFbmNoise
@@ -41,6 +40,11 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
     const theta = Math.atan2(Math.sqrt(r.x*r.x + r.y*r.y), r.z);
     const alt = r.length() - this._planet.radius;
     return new Vec3(phi, theta, alt);
+  }
+
+  altitude(p: Vec3): number {
+    const r = p.sub(this._planet.center)
+    return r.length() - this._planet.radius
   }
 
   private _height_d(r: Vec3) {
@@ -121,15 +125,9 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
         if(r.z < 0.) h_d.diff.z = -h_d.diff.z; // z-
       }
     }
-    //return new AutoDiff3(this.MAX_TRN_ELEVATION, r.normalize())
     return new AutoDiff3(this.H_SCALE*h_d.value, h_d.diff.normalize())
   }
     
-  isHeightGreaterMax(p: Vec3): boolean {
-    const lla = this.lonLatAlt(p)
-    return lla.z > this.MAX_TRN_ELEVATION
-  }
-
   height(p: Vec3): number {
     const r = p.sub(this._planet.center)
     return this._height_d(r).value
@@ -140,13 +138,9 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
     return this._height_d(r)
   }
 
-  zenith(p: Vec3): Vec3 {
-    return p.sub(this._planet.center).normalizeMutable()
-  }
+  zenith(p: Vec3): Vec3 { return p.sub(this._planet.center).normalizeMutable() }
 
-  fromCenter(p: Vec3) {
-    return p.sub(this._planet.center)
-  }
+  fromCenter(p: Vec3) { return p.sub(this._planet.center) }
   
   normal(p: Vec3) {
     const eps = 0.01

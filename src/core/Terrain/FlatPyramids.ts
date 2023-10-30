@@ -18,37 +18,19 @@ export class FlatPyramidsTerrain implements ITerrainSampler {
   W_SCALE = 1500.
   MAX_TRN_ELEVATION = this.H_SCALE
 
-  constructor(planet: Planet) {
-    this._planet = planet
-  }
+  constructor(planet: Planet) { this._planet = planet }
 
-  lonLatAlt(p: Vec3): Vec3 {
-    return p.xzy
-  }
+  lonLatAlt(p: Vec3): Vec3 { return p.xzy }
 
-  isHeightGreaterMax(p: Vec3): boolean {
-    return p.y > this.MAX_TRN_ELEVATION
-  }
+  height(p: Vec3): number { return this.H_SCALE*pyramid(p.xz.div(this.W_SCALE)) }
 
-  height(p: Vec3): number {
-    return this.H_SCALE*pyramid(p.xz.div(this.W_SCALE))
-  }
+  heightNormal(p: Vec3): AutoDiff3 { return new AutoDiff3(this.height(p), this.normal(p)) }
 
-  heightNormal(p: Vec3): AutoDiff3 {
-    return new AutoDiff3(this.height(p), this.normal(p))
-  }
+  altitude(p: Vec3): number { return p.y }
 
-  altitude(p: Vec3): number {
-    return p.y - this.height(p)
-  }
+  zenith(p: Vec3): Vec3 { return Vec3.J }
 
-  zenith(p: Vec3): Vec3 {
-    return Vec3.J
-  }
-
-  fromCenter(p: Vec3) {
-    return new Vec3(0, p.y+this._planet.radius, 0)
-  }
+  fromCenter(p: Vec3) { return new Vec3(0, p.y+this._planet.radius, 0) }
 
   normal(p: Vec3) {
     const eps = 0.1
