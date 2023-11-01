@@ -96,9 +96,6 @@ export class Sky {
     const zenith = Vec3.J; // зенит в направлении оси Y
     const pos = new Vec3(0,100,0); // положение для которого рассчитываем цвета
     const sunDir = new Vec3(Math.sqrt(1-cosTheta*cosTheta), cosTheta, 0);
-    //if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
-    const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
-    const sun = sunDirScatter.t.mulEl(SUN_COLOR).addMutable(sunDirScatter.i.mulEl(SUN_COLOR)).safeNormalize().mulMutable(2.);
 
     const oneDivSqrt2 = 1./Math.sqrt(2.);
     // светимость неба по 5-ти точкам
@@ -114,6 +111,11 @@ export class Sky {
       .div(5.);
     const sunIntensity = SUN_COLOR.mul(15.);
     const sky = sunIntensity.mulEl(skyDirScatter);
+
+    if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
+    const sunDirScatter = this.atm.scattering(pos, sunDir, sunDir);
+    const sun = sunDirScatter.t.mulEl(SUN_COLOR).addMutable(sunDirScatter.i.mulEl(SUN_COLOR)).safeNormalize().mulMutable(2.);
+
     return {sun, sky};
   }
 

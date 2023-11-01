@@ -167,11 +167,13 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 s
   // цвет солнца и неба в зависимости от высоты солнца из предварительно рассчитанной текстуры
   vec3 lightcolor = texture(uTextureSunColor, colorIndex).xyz;
   vec3 skycolor = texture(uTextureSkyColor, colorIndex).xyz;
-  if(LdotZ < 0.) {
+  
+  if(LdotZ < -15.*uSunDiscAngleSin) {
     // включаем свет луны, если солнце зашло
     light = moondir;
     lightcolor = uMoonDiscColor;
   }
+  
   //vec3 hal = normalize(light-rd);
 
   float LdotN = dot(light, nor);
@@ -188,11 +190,12 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 s
   fd1 /= sqrt(fdist1sqr);
   float F1dotN = clamp(dot(fd1, nor), 0., 1.);
 
-  float xmin = 6.*uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
+  float xmin = uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
   float shd = 0.;
-  if(LdotN>-xmin) {
-    shd = softPlanetShadow(pos, light);
-    if(shd>0.001) shd *= softShadow(pos, light, t, shadowIterations, shadowDistance);
+  if(LdotN > -xmin) {
+    //shd = softPlanetShadow(pos, light);
+    //if(shd>0.01) shd *= softShadow(pos, light, t, shadowIterations, shadowDistance);
+    shd = softShadow(pos, light, t, shadowIterations, shadowDistance);
     if(shd>=1.) shadowDistance = 2.*MAX_TERRAIN_DISTANCE;
   }
   float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);

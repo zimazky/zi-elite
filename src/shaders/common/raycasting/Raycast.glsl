@@ -113,20 +113,19 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
  *   t - дистанция до точки пересечения
  */
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
-  float minStep = clamp(0.01*dis,10.,500.);
   float res = 1.;
-  t = 0.01*dis;
+  t = 0.0001*dis;
   float altPrev = terrainAlt(ro);
   for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
+    float alt = terrainAlt(p);
+    if(alt > altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
+    float h = alt - terrainHeight(p, t);
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-    float alt = terrainAlt(p);
-    if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = alt - terrainHeight(p, t);
 	  res = min(res, cosA*h/t);
-    if(res<-uSunDiscAngleSin) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    t += max(minStep, abs(0.7*h)); // коэффициент устраняет полосатость при плавном переходе тени
+    if(res < -uSunDiscAngleSin) return 0.;
+    t += max(5., abs(0.6*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
   return 0.;
 }

@@ -342,12 +342,14 @@ float planetIntersection(vec3 ro, vec3 rd) {
   *   1. - если солнце полностью видно
   */
 float softPlanetShadow(vec3 ro, vec3 rd) {
-  vec3 pos = terrainFromCenter(ro);//ro - uPlanetCenter;
-  //vec3 pos = vec3(0, ro.y+uPlanetRadius, 0);
-
-  float OT = dot(pos, rd); // расстояния вдоль луча до точки минимального расстояния до центра планеты
-  float CT = sqrt(dot(pos, pos) - OT*OT); // минимальное расстоянии от луча до центра планеты
-  if(OT>0.) return 1.;
-  float d = (uPlanetRadius-CT)/OT;
+  vec3 pos = terrainFromCenter(ro);
+  float OT = dot(pos, rd); // расстояние в обратном направлении луча до точки минимального расстояния до центра планеты
+  if(OT > 0.) return 1.; // луч к солнцу уходит выше планеты
+  float OT2 = OT*OT;
+  float CT = sqrt(dot(pos, pos) - OT2); // минимальное расстоянии от луча до центра планеты
+  float d = 0.;
+  float a = CT - uPlanetRadius;
+  float b = sqrt(a*a + OT2);
+  if(b > 0.001) d = a/b;
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, d);
 }
