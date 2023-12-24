@@ -55,10 +55,9 @@ vec4 height_d(vec3 pos, float dist, out vec2 uv) {
   return vec4(normalize(h_d.xzy), H_SCALE*h_d.w);
 }
 
-float terrainHeight(vec3 pos, float dist) {
-  vec2 uv;
-  vec4 h_d = height_d(pos, dist, uv);
-  return h_d.w;
+float terrainHeight(vec3 pos) {
+  float h = terrainFbmLight(pos.xz/W_SCALE);
+  return h*H_SCALE;
 }
 
 vec4 terrainHeightNormal(vec3 pos, float dist, out vec2 uv) {
@@ -70,8 +69,8 @@ vec4 terrainHeightNormal(vec3 pos, float dist, out vec2 uv) {
 vec3 terrainNormal(vec3 pos, float dist) {
   vec2 eps = vec2(0.01, 0.);
   return normalize(vec3(
-    terrainHeight(pos - eps.xyy, dist) - terrainHeight(pos + eps.xyy, dist),
+    terrainHeight(pos - eps.xyy) - terrainHeight(pos + eps.xyy),
     2.*eps.x,
-    terrainHeight(pos - eps.yyx, dist) - terrainHeight(pos + eps.yyx, dist)
+    terrainHeight(pos - eps.yyx) - terrainHeight(pos + eps.yyx)
   ));
 }

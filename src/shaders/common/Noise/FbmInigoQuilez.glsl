@@ -51,7 +51,7 @@ vec4 terrainFbm(vec2 p, float dist) {
   vec4 a = ZERO_D;
   vec4 g = ZERO_D, h = ZERO_D;
   mat2 m = mat2(1);
-  // число октав от расстояния (вблизи 16, в далеке 9)
+  // число октав от расстояния (вблизи 16, в далеке 6)
   float noct = 16. - (16.-6.)*pow(clamp((dist-distmin)/(distmax-distmin), 0., 1.),0.29);
   float nfract = fract(noct);
   vec4 tdx, tdy, f;
@@ -78,4 +78,20 @@ vec4 terrainFbm(vec2 p, float dist) {
   a += nfract*b*div_d(f, den);
   
   return vec4(-a.xy, 1, a.w);
+}
+
+
+// Генерация высоты с эррозией без нормали
+float terrainFbmLight(vec2 p) {
+  float a = 0.0;
+  float b = 1.0;
+  vec2  d = vec2(0.0);
+  for(int i=0; i<9; i++) {
+    vec4 f = noised(p);
+    d += f.xy;
+    a += b*f.w/(1.+dot(d,d));
+    b *= 0.5;
+    p = im2*p*2.;
+  }
+  return a;
 }
