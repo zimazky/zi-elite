@@ -42,7 +42,7 @@ export class NoiseSampler {
     //vec2 u = f*f*f*(f*(f*6.0-15.0)+10.0);
     //vec2 du = 30.0*f*f*(f*(f-2.0)+1.0);
     const u = new Vec2(3.,3.).subMutable(f.mul(2.)).mulElMutable(f).mulElMutable(f); //f*f*(3.0-2.0*f);
-    const du = new Vec2(1.,1.).subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
+    const du = Vec2.ONE.subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
 
     const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
     const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
@@ -65,35 +65,38 @@ export class NoiseSampler {
    */
   noiseD2(x: Vec2): [n: AutoDiff2, dx: AutoDiff2, dy: AutoDiff2] {
 
-    const p = x.floor();
-    const f = x.copy().subMutable(p); // fract(x)
+    const p = x.floor()
+    const f = x.copy().subMutable(p) // fract(x)
 
     //vec2 u = f*f*f*(f*(f*6.0-15.0)+10.0);
     //vec2 du = 30.0*f*f*(f*(f-2.0)+1.0);
     const u = new Vec2(3.,3.).subMutable(f.mul(2.)).mulElMutable(f).mulElMutable(f); //f*f*(3.0-2.0*f);
-    const du = new Vec2(1.,1.).subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
+    const du = Vec2.ONE.subMutable(f).mulElMutable(f).mulMutable(6.); //6.0*f*(1.0-f);
 
-    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
-    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));// * 2. - 1.;
-    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
-    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.));// * 2. - 1.;
+    const a = this.getSample(new Vec2(0.5,0.5).addMutable(p).divMutable(256.));
+    const b = this.getSample(new Vec2(1.5,0.5).addMutable(p).divMutable(256.));
+    const c = this.getSample(new Vec2(0.5,1.5).addMutable(p).divMutable(256.));
+    const d = this.getSample(new Vec2(1.5,1.5).addMutable(p).divMutable(256.));
 
-    const abcd = a-b-c+d;
+    // f = (a-b-c+d)*(x*x*(3-2*x))*(y*y*(3-2*y)) + (b-a)*(x*x*(3-2*x)) + (c-a)*(y*y*(3-2*y)) + a 
+    //   = abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a
+    //
+    // df/dx = ((a-b-c+d)*(3-2*y)*y^2 + b-a) * 6*x*(1-x) = (abcd*u.y + b-a) * du.x
+    // df/dy = ((a-b-c+d)*(3-2*x)*x^2 + c-a) * 6*y*(1-y) = (abcd*u.x + c-a) * du.y
+    //
+    // d2f/dx2 = ((a-b-c+d)*(3-2*y)*y^2 + b-a) * 6*(1-2*x) = (abcd*u.y + b-a) * 6*(1-2*x)
+    // d2f/dy2 = ((a-b-c+d)*(3-2*x)*x^2 + c-a) * 6*(1-2*y) = (abcd*u.x + c-a) * 6*(1-2*y)
+    // d2f/dxdy = (a-b-c+d) * 6*y*(1-y) * 6*x*(1-x) = abcd * du.x * du.y
 
-    // d2u = u.yx*abcd + vec2(b,c) - a
-    const d2u = u.yx.mul(abcd).addMutable(new Vec2(b-a, c-a));
-
-    // d2 = d2u * 6.0*(1.0-2.0*f)
-    const d2 = d2u.mul(6).mulElMutable(Vec2.ONE.subMutable(f.mul(2)));  // вторые производные d2/(dx dx) d2/(dy dy)
-
-    const dxy = abcd*du.x*du.y;  // вторые производные d2/(dx dy) = d2/(dy dx)
-
-    const d1 = du.mulEl(d2u); 
-  
-    const dx = new AutoDiff2(d1.x, new Vec2(d2.x, dxy));
-    const dy = new AutoDiff2(d1.y, new Vec2(dxy, d2.y));
-    const n = new AutoDiff2(a+(b-a)*u.x+(c-a)*u.y+abcd*u.x*u.y, d1);
-    return [n, dx, dy];
+    const abcd = a-b-c+d
+    const u2 = u.yx.mul(abcd).addMutable(new Vec2(b-a,c-a))
+    const d1 = u2.mulEl(du)                                   // первые производные
+    const d2 = u2.mulEl(new Vec2(6,6).subMutable(f.mul(12)))  // вторые производные d2/(dx dx) d2/(dy dy)
+    const d2xy = abcd * du.x * du.y                           // вторые производные d2/(dx dy) = d2/(dy dx)
+    
+    const dx = new AutoDiff2(d1.x, new Vec2(d2.x, d2xy))
+    const dy = new AutoDiff2(d1.y, new Vec2(d2xy, d2.y))
+    const n = new AutoDiff2(abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a, d1)
+    return [n, dx, dy]
   }
-  
 }

@@ -73,7 +73,7 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
           new Vec3(0, d, uv.y/d),
           new Vec3(-d*uv.x, -d*uv.y, 1./d)
         )
-        h_d.diff = m.mulVecLeft(h_d.diff)
+        h_d.diff = m.mulVec(h_d.diff)
         h_d.diff.xyz = h_d.diff.zxy // x+
         if(r.x < 0.) h_d.diff.x = -h_d.diff.x; // x-
       }
@@ -88,7 +88,7 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
           new Vec3(0, d, uv.y/d),
           new Vec3(-d*uv.x, -d*uv.y, 1./d)
         )
-        h_d.diff = m.mulVecLeft(h_d.diff)
+        h_d.diff = m.mulVec(h_d.diff)
         //h_d.xyz = h_d.xyz; // z+
         if(r.z < 0.) h_d.diff.z = -h_d.diff.z // z-
       }
@@ -105,7 +105,7 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
           new Vec3(0, d, uv.y/d),
           new Vec3(-d*uv.x, -d*uv.y, 1./d)
         )
-        h_d.diff = m.mulVecLeft(h_d.diff)
+        h_d.diff = m.mulVec(h_d.diff)
         h_d.diff.xyz = h_d.diff.xzy // y+
         if(r.y < 0.) h_d.diff.y = -h_d.diff.y // y-
       }
@@ -120,7 +120,7 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
           new Vec3(0, d, uv.y/d),
           new Vec3(-d*uv.x, -d*uv.y, 1./d)
         )
-        h_d.diff = m.mulVecLeft(h_d.diff)
+        h_d.diff = m.mulVec(h_d.diff)
         //h_d.xyz = h_d.xyz; // z+
         if(r.z < 0.) h_d.diff.z = -h_d.diff.z; // z-
       }

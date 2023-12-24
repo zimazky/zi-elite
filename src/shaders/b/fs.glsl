@@ -93,7 +93,7 @@ void main(void) {
 
   vec3 col = vec3(0);
   int raycastIterations = 0;
-  float LvsR = step(0.8, gl_FragCoord.x/uResolution.x);
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
@@ -108,7 +108,7 @@ void main(void) {
     else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
       vec3 nor = nor_t.xyz;
-      //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
+      if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
       gNormal = nor;
       gDepth = nor_t.w;
       //vec3 lla = lonLatAlt(pos);

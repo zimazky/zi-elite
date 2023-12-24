@@ -27,6 +27,7 @@ import { grad } from 'src/shared/libs/mathutils';
 import { RidgedFbmNoise } from 'src/core/Noise/RidgedFbmNoise';
 import { CubeSphereFbmTerrain } from 'src/core/Terrain/CubeSphereFbm';
 import { FlatFbmTerrain } from 'src/core/Terrain/FlatFbm';
+import { InigoQuilezFBMNoise } from 'src/core/Noise/InigoQuilezFBMNoise';
 
 //-----------------------------------------------------------------------------
 // TODO: 
@@ -85,8 +86,8 @@ export default async function main() {
   
   const planet = new Planet(500000, 9.81); //6371e3
   const nSampler = new NoiseSampler(grayNoiseImg);
-  //const noise = new InigoQuilezFBMNoise(nSampler);
-  const noise = new RidgedFbmNoise(nSampler);
+  const noise = new InigoQuilezFBMNoise(nSampler);
+  //const noise = new RidgedFbmNoise(nSampler);
   const tSampler = new CubeSphereFbmTerrain(planet, noise);
 
   const json = localStorage.getItem('ziEliteData') ?? '{}';

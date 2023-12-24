@@ -89,15 +89,22 @@ interface IMatrixes<TMat, TVec> {
   /** Иммутабельное деление на скаляр */
   div(n: number): TMat;
 
-  /** Иммутабельное произведение матриц */
+  /**
+   * Иммутабельное произведение на матрицу
+   * (правило: строка на столбец)
+  */
   mulMat(m: TMat): TMat;
-  /** Иммутабельное произведение матриц слева */
+  /** Иммутабельное произведение на матрицу слева */
   mulMatLeft(m: TMat): TMat;
-  /** Иммутабельное произведение матрицы на вектор справа */
+  /** 
+   * Иммутабельное произведение матрицы на вектор справа
+   * (правило: строка на столбец)
+   *  */
   mulVec(v: TVec): TVec;
   /** 
    * Иммутабельное произведение транспонированного вектора на матрицу
    * (произведение матрицы на вектор слева) 
+   * (правило: строка на столбец)
    * */
   mulVecLeft(v: TVec): TVec;
   /** Получить компоненты в виде массива */
@@ -357,10 +364,24 @@ export class Vec4 implements IVectors<Vec4> {
 }
 
 /****************************************************************************** 
- * Класс четырехмерной матрицы 
+ * Класс четырехмерной матрицы
+ * У матрицы можно выделить строки i, j, k, l   и   столбцы cx, cy, cz, cw
+ * При преобразовании в массив, заполняется по строкам
+ *          x   y   z   w
+ *       i a00 a01 a02 a03
+ *       j a04 a05 a06 a07
+ *       k a08 a09 a10 a11
+ *       l a12 a13 a14 a15  
  * */
 export class Mat4 implements IMatrixes<Mat4, Vec4> {
-  i: Vec4; j: Vec4; k: Vec4; l: Vec4;
+  /** Строка i */
+  i: Vec4
+  /** Строка j */
+  j: Vec4
+  /** Строка k */
+  k: Vec4
+  /** Строка l */
+  l: Vec4;
 
   constructor(i: Vec4, j: Vec4, k: Vec4, l: Vec4) {
     this.i = i.copy(); this.j = j.copy(); this.k = k.copy(); this.l = l.copy();
@@ -632,7 +653,9 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
   get cz(): Vec4 { return new Vec4(this.i.z, this.j.z, this.k.z, this.l.z); }
   /** Вектор-столбец w матрицы */
   get cw(): Vec4 { return new Vec4(this.i.w, this.j.w, this.k.w, this.l.w); }
-  
+  /** Строковое представление */
+  toString() { `i:${this.i}, j:${this.j}, k:${this.k}, l:${this.l}` }
+
   /** Получить коэффициенты масштабирования из матрицы преобразования */
   getScalingVec3(): Vec3 {
     return new Vec3(
@@ -796,17 +819,7 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
 
   div(n: number): Mat4 { return this.copy().divMutable(n); }
 
-  // tested
   mulMat(m: Mat4): Mat4 {
-    return new Mat4(
-      new Vec4(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i), this.cw.dot(m.i)),
-      new Vec4(this.cx.dot(m.j), this.cy.dot(m.j), this.cz.dot(m.j), this.cw.dot(m.j)),
-      new Vec4(this.cx.dot(m.k), this.cy.dot(m.k), this.cz.dot(m.k), this.cw.dot(m.k)),
-      new Vec4(this.cx.dot(m.l), this.cy.dot(m.l), this.cz.dot(m.l), this.cw.dot(m.l))
-    );
-  }
-
-  mulMatLeft(m: Mat4): Mat4 {
     return new Mat4(
       new Vec4(this.i.dot(m.cx), this.i.dot(m.cy), this.i.dot(m.cz), this.i.dot(m.cw)),
       new Vec4(this.j.dot(m.cx), this.j.dot(m.cy), this.j.dot(m.cz), this.j.dot(m.cw)),
@@ -815,11 +828,18 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     );
   }
 
-  mulVec(v: Vec4): Vec4 {
-    return new Vec4(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v), this.cw.dot(v));
+  mulMatLeft(m: Mat4): Mat4 {
+    return new Mat4(
+      new Vec4(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i), this.cw.dot(m.i)),
+      new Vec4(this.cx.dot(m.j), this.cy.dot(m.j), this.cz.dot(m.j), this.cw.dot(m.j)),
+      new Vec4(this.cx.dot(m.k), this.cy.dot(m.k), this.cz.dot(m.k), this.cw.dot(m.k)),
+      new Vec4(this.cx.dot(m.l), this.cy.dot(m.l), this.cz.dot(m.l), this.cw.dot(m.l))
+    );
   }
+  
+  mulVec(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.l.dot(v)); }
 
-  mulVecLeft(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.l.dot(v)); }
+  mulVecLeft(v: Vec4): Vec4 { return new Vec4(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v), this.cw.dot(v)); }
 
   getArray(): number[] {
     return [
@@ -1058,6 +1078,8 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
   static get ID() { return new Mat3(Vec3.I, Vec3.J, Vec3.K) };
   /** Получить нулевую матрицу */
   static get ZERO() { return new Mat3(Vec3.ZERO, Vec3.ZERO, Vec3.ZERO) };
+  /** Получить матрицу со случайными элементами */
+  static get RAND() { return new Mat3(Vec3.RAND, Vec3.RAND, Vec3.RAND) };
 
   /** Получить матрицу из массива чисел */
   static fromArray([
@@ -1124,7 +1146,9 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
   get cy(): Vec3 { return new Vec3(this.i.y, this.j.y, this.k.y); }
   /** Получить z-столбец */
   get cz(): Vec3 { return new Vec3(this.i.z, this.j.z, this.k.z); }
-  
+  /** Строковое представление */
+  toString() { return `i:${this.i}, j:${this.j}, k:${this.k}` }
+
   /** Получить коэффициенты масштабирования из матрицы преобразования */
   getScaling(): Vec3 {
     return new Vec3(
@@ -1221,26 +1245,24 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
 
   mulMat(m: Mat3): Mat3 {
     return new Mat3(
-      new Vec3(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i)),
-      new Vec3(this.cx.dot(m.j), this.cy.dot(m.j), this.cz.dot(m.j)),
-      new Vec3(this.cx.dot(m.k), this.cy.dot(m.k), this.cz.dot(m.k))
-    );
-  }
-
-  mulMatLeft(m: Mat3): Mat3 {
-    return new Mat3(
       new Vec3(this.i.dot(m.cx), this.i.dot(m.cy), this.i.dot(m.cz)),
       new Vec3(this.j.dot(m.cx), this.j.dot(m.cy), this.j.dot(m.cz)),
       new Vec3(this.k.dot(m.cx), this.k.dot(m.cy), this.k.dot(m.cz))
     );
   }
 
-  mulVec(v: Vec3): Vec3 {
-    return new Vec3(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v));
+  mulMatLeft(m: Mat3): Mat3 {
+    return new Mat3(
+      new Vec3(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i)),
+      new Vec3(this.cx.dot(m.j), this.cy.dot(m.j), this.cz.dot(m.j)),
+      new Vec3(this.cx.dot(m.k), this.cy.dot(m.k), this.cz.dot(m.k))
+    );
   }
 
-  mulVecLeft(v: Vec3): Vec3 { return new Vec3(this.i.dot(v), this.j.dot(v), this.k.dot(v)); }
+  mulVec(v: Vec3): Vec3 { return new Vec3(this.i.dot(v), this.j.dot(v), this.k.dot(v)); }
 
+  mulVecLeft(v: Vec3): Vec3 { return new Vec3(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v)); }
+  
   getArray(): number[] {
     return [
       this.i.x, this.i.y, this.i.z,
@@ -1377,11 +1399,19 @@ export class Vec2 implements IVectors<Vec2> {
 }
 
 /****************************************************************************** 
- * Класс двумерной матрицы 
+ * Класс двумерной матрицы
+ *         x   y
+ *      i a00 a01
+ *      j a02 a03
  * */
 export class Mat2 implements IMatrixes<Mat2, Vec2> {
   i: Vec2; j: Vec2;
 
+  /**
+   * 
+   * @param i - вектор-строка i
+   * @param j - вектор-строка j
+   */
   constructor(i: Vec2, j: Vec2) {
     this.i = i.copy(); this.j = j.copy();
   }
@@ -1393,6 +1423,8 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
   static get ID() { return new Mat2(Vec2.I, Vec2.J) };
   /** Получить нулевую матрицу */
   static get ZERO() { return new Mat2(Vec2.ZERO, Vec2.ZERO) };
+  /** Получить матрицу со случайными элементами */
+  static get RAND() { return new Mat2(Vec2.RAND, Vec2.RAND) };
 
   /** Получить матрицу из массива чисел */
   static fromArray([a00, a01, a10, a11]: [number, number, number, number] | Float32Array): Mat2 { 
@@ -1417,6 +1449,8 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
   get cx(): Vec2 { return new Vec2(this.i.x, this.j.x); }
   /** Получить у столбец */
   get cy(): Vec2 { return new Vec2(this.i.y, this.j.y); }
+  /** Представление в строковом виде */
+  toString() { return `(i:${this.i}, j:${this.j})` }
 
   // --------------------------------------------------------------------------
   // Методы интерфейса
@@ -1465,24 +1499,22 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
 
   mulMat(m: Mat2): Mat2 {
     return new Mat2(
-      new Vec2(this.cx.dot(m.i), this.cy.dot(m.i)),
-      new Vec2(this.cx.dot(m.j), this.cy.dot(m.j))
-    );
-  }
-
-  mulMatLeft(m: Mat2): Mat2 {
-    return new Mat2(
       new Vec2(this.i.dot(m.cx), this.i.dot(m.cy)),
       new Vec2(this.j.dot(m.cx), this.j.dot(m.cy))
     );
   }
 
-  mulVec(v: Vec2): Vec2 {
-    return new Vec2(this.cx.dot(v), this.cy.dot(v));
+  mulMatLeft(m: Mat2): Mat2 {
+    return new Mat2(
+      new Vec2(this.cx.dot(m.i), this.cy.dot(m.i)),
+      new Vec2(this.cx.dot(m.j), this.cy.dot(m.j))
+    );
   }
 
-  mulVecLeft(v: Vec2): Vec2 { return new Vec2(this.i.dot(v), this.j.dot(v)); }
+  mulVec(v: Vec2): Vec2 { return new Vec2(this.i.dot(v), this.j.dot(v)); }
 
+  mulVecLeft(v: Vec2): Vec2 { return new Vec2(this.cx.dot(v), this.cy.dot(v)); }
+  
   getArray(): number[] { return [this.i.x, this.i.y, this.j.x, this.j.y]; }
 
   getFloat32Array(): Float32Array { return new Float32Array(this.getArray()); }
