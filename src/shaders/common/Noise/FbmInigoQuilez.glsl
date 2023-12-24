@@ -38,7 +38,7 @@ vec4 fbmInigoQuilezOrig(vec2 p) {
 }
 */
 
-const float distmax = 5000.;
+const float distmax = 20000.;
 const float distmin = 50.;
 const mat2 im2 = mat2(0.8, -0.6, 0.6, 0.8);
 
@@ -52,10 +52,10 @@ vec4 terrainFbm(vec2 p, float dist) {
   vec4 g = ZERO_D, h = ZERO_D;
   mat2 m = mat2(1);
   // число октав от расстояния (вблизи 16, в далеке 9)
-  //float noct = 16. - (16.-9.)*pow(clamp((dist-distmin)/(distmax-distmin), 0., 1.),0.5);
-  //float nfract = fract(noct);
+  float noct = 16. - (16.-6.)*pow(clamp((dist-distmin)/(distmax-distmin), 0., 1.),0.29);
+  float nfract = fract(noct);
   vec4 tdx, tdy, f;
-  for( int i=0; i<12/*int(noct)*/; i++ ) {
+  for( int i=0; i<int(noct); i++ ) {
     f = noised2(m*p, tdx, tdy);
     // коррекция производных гладкого шума из-за наличия множителя у аргумента функции
     f.xy *= m;
@@ -69,7 +69,6 @@ vec4 terrainFbm(vec2 p, float dist) {
     b *= 0.5;                  // уменьшение амплитуды следующей октавы
     m = im2 * m * 2.;          // вращение плоскости с одновременным увеличением частоты следующей октавы
   }
-  /*
   // добавление дробной части октавы
   f = noised2(m*p, tdx, tdy);
   f.xy *= m;
@@ -77,6 +76,6 @@ vec4 terrainFbm(vec2 p, float dist) {
   g += tdx; h += tdy;
   vec4 den = ONE_D + (square_d(g) + square_d(h));
   a += nfract*b*div_d(f, den);
-  */
+  
   return vec4(-a.xy, 1, a.w);
 }
