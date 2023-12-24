@@ -17,8 +17,8 @@ const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная выс�
 // Модуль расчета фрактального шума
 // ----------------------------------------------------------------------------
 #ifndef FBMNOISE_MODULE
-#include "src/shaders/common/Noise/FbmRidged2.glsl";
-//include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
+//include "src/shaders/common/Noise/FbmRidged2.glsl";
+#include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
 #endif
 
 

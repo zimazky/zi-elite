@@ -16,8 +16,8 @@
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-//include "src/shaders/common/terrain/CubeSphereFBM.glsl";
-#include "src/shaders/common/terrain/FlatFBM.glsl";
+#include "src/shaders/common/terrain/CubeSphereFBM.glsl";
+//include "src/shaders/common/terrain/FlatFBM.glsl";
 #endif
 
 
