@@ -2,6 +2,23 @@
 
 uniform sampler2D uTextureGrayNoise;
 
+
+// расчет гладкого шума value noise без производных
+float noise(vec2 x) {
+  vec2 f = fract(x);
+  vec2 u = f*f*(3.0-2.0*f);
+
+  vec2 p = floor(x);
+  float a = textureLod(uTextureGrayNoise, (p+vec2(0.5,0.5))/256.0, 0.0 ).x;
+  float b = textureLod(uTextureGrayNoise, (p+vec2(1.5,0.5))/256.0, 0.0 ).x;
+  float c = textureLod(uTextureGrayNoise, (p+vec2(0.5,1.5))/256.0, 0.0 ).x;
+  float d = textureLod(uTextureGrayNoise, (p+vec2(1.5,1.5))/256.0, 0.0 ).x;
+
+  float abcd = a-b-c+d;
+  return abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a;
+}
+
+
 // расчет гладкого шума value noise с первыми производными
 // возвращает 
 // w - значение шума
@@ -62,6 +79,7 @@ vec4 noised2(vec2 x, out vec4 dx, out vec4 dy) {
   dy = vec4(d2xy, d2.y, 0, d1.y);
   return vec4(d1, 0, abcd*u.x*u.y + (b-a)*u.x + (c-a)*u.y + a);
 }
+
 
 /*
 vec4 noised(vec3 x) {

@@ -17,8 +17,8 @@ const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная выс�
 // Модуль расчета фрактального шума
 // ----------------------------------------------------------------------------
 #ifndef FBMNOISE_MODULE
-#include "src/shaders/common/Noise/FbmRidged2.glsl";
-//include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
+//include "src/shaders/common/Noise/FbmRidged2.glsl";
+#include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
 #endif
 
 
@@ -119,12 +119,38 @@ vec4 height_d(vec3 p, float dist, out vec2 uvCoord) {
   return vec4(normalize(h_d.xyz), H_SCALE*h_d.w);
 }
 
+float height(vec3 p) {
+  // Размер куба на который проецируется вектор для позиционирования на кубосфере
+  float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
+  vec3 r = p - uPlanetCenter;
+  vec3 absR = abs(r);
+  float h;
+  if(absR.x > absR.y) {
+    if(absR.x > absR.z) {
+      vec3 s = p - (uPlanetCenter + r*(absR.x-cubeRad)/absR.x);
+      h = terrainFbmLight(s.yz/W_SCALE);
+    }
+    else {
+      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      h = terrainFbmLight(s.xy/W_SCALE);
+    }
+  }
+  else {
+    if(absR.y > absR.z) {
+      vec3 s = p - (uPlanetCenter + r*(absR.y-cubeRad)/absR.y);
+      h = terrainFbmLight(s.xz/W_SCALE);
+    }
+    else {
+      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      h = terrainFbmLight(s.xy/W_SCALE);
+    }
+  }
+  return H_SCALE*h;
+}
+
 // Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-float terrainHeight(vec3 p, float dist) {
-  //vec3 r = p - uPlanetCenter;
-  vec2 uv;
-  vec4 h_d = height_d(p, dist, uv);
-  return h_d.w;
+float terrainHeight(vec3 p) {
+  return height(p);
 }
 
 // Высота и нормаль на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
@@ -148,9 +174,9 @@ vec3 terrainFromCenter(vec3 p) {
 vec3 terrainNormal(vec3 pos, float dist) {
   vec2 eps = vec2(0.01, 0.);
   return normalize(vec3(
-    terrainHeight(pos - eps.xyy, dist) - terrainHeight(pos + eps.xyy, dist),
+    terrainHeight(pos - eps.xyy) - terrainHeight(pos + eps.xyy),
     //terrainHeight(pos - eps.yxy, dist) - terrainHeight(pos + eps.yxy, dist),
     2.*eps.x,
-    terrainHeight(pos - eps.yyx, dist) - terrainHeight(pos + eps.yyx, dist)
+    terrainHeight(pos - eps.yyx) - terrainHeight(pos + eps.yyx)
   ));
 }

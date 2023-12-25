@@ -93,7 +93,7 @@ void main(void) {
 
   vec3 col = vec3(0);
   int raycastIterations = 0;
-  float LvsR = step(0.8, gl_FragCoord.x/uResolution.x);
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = 1.01 * MAX_TERRAIN_DISTANCE;

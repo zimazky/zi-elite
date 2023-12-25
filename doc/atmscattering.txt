@@ -1,0 +1,165 @@
+struct app2vert {  float4 VPos    : POSITION;
+// model space vertex position
+  float4 VWeight : BLENDWEIGHT; 	// weights for skinning (u,1-u)
+  float4 Norm    : NORMAL;		// model space vertex normal
+  float4 PCol    : COLOR0;		// primary color (diffuse)
+  float4 SCol    : COLOR1;		// seconary color (specular)
+  float4 PSize   : PSIZE0;		// point size
+  float4 Tex0    : TEXCOORD0;		// texture coordinate set 0
+  float4 Tex1    : TEXCOORD1;		// texture coordinate set 1
+  float4 Tex2    : TEXCOORD2;     // texture coordinate set 2
+  float4 Tex3    : TEXCOORD3;     // texture coordinate set 3
+  float4 Tex4    : TEXCOORD4;     // texture coordinate set 4
+  float4 Tex5    : TEXCOORD5;     // texture coordinate set 5
+  float4 Tex6    : TEXCOORD6;     // texture coordinate set 6
+  float4 Tex7    : TEXCOORD7;     // texture coordinate set 7
+};
+
+struct vert2frag{
+  float4 HPos    : POSITION;      // homogeneous clip space postion
+  float4 PCol    : COLOR0;        // primary (diffuse) color
+  float4 SCol    : COLOR1;        // secondary (specular) color
+  float4 Tex0    : TEXCOORD0;     // texture coordinate set 0
+  float4 Tex1    : TEXCOORD1;     // texture coordinate set 1
+  float4 Tex2    : TEXCOORD2;     // texture coordinate set 2
+  float4 Tex3    : TEXCOORD3;     // texture coordinate set 3
+  float4 Tex4    : TEXCOORD4;     // texture coordinate set 4
+  float4 Tex5    : TEXCOORD5;     // texture coordinate set 5
+  float4 Tex6    : TEXCOORD6;     // texture coordinate set 6
+  float4 Tex7    : TEXCOORD7;     // texture coordinate set 7
+};
+
+struct atmosphereShaderResults{
+  float3 LIn, FEx, sunColorEx;
+  float  lenRayViewerVertex;
+  };
+#define ambientLight float4(0.1,0.1,0.25,0)
+#define globalBlend 0.8
+#define cloudDiffuseShadow 0.5
+#define cloudSpecularShadow 0.8
+#define planetSpecularExponent 16
+#define planetSpecularLuminance 0.4
+
+/**********************************************************************************************/
+/****************************************   HELPER ROUTINES   *********************************/
+/**********************************************************************************************/
+
+float2 IntersectionLineSphere(float3 p, float3 r, float rad2){
+  // Compute intersections of line p+l*r with sphere around 0 with radius sqrt(rad2)
+  // Return the three stretch factors (l1,l2,(l1+l2)/2) with l1<=l2
+  float  d = dot(r,r);
+  float  pSQR = - dot(r, p) / d;
+  float  qSQR = (dot(p,p) - rad2) / d;
+  d = pSQR*pSQR-qSQR;
+  if (d<0) d=0;
+  else d=sqrt(d);
+  return float2(pSQR-d,pSQR+d);
+  }
+
+/**********************************************************************************************/
+
+atmosphereShaderResults AtmosphereShader(float3 vertexObject, float3 rayViewerVertex, float3 lightObjectNormalized, float3 atmConstants,
+                                         float3 betaSum, float3 constBetaR, float3 fBetaM, float3 sunColor, float3 clampVal){
+  atmosphereShaderResults OUT;
+  // constBetaR = 3.0f/(16*3.1415927f) * betaR
+  // fBetaM = (1-gHG)*(1-gHG) / (4*PI) * betaM
+  // betaSum = betaR+betaM
+  // atmConstants = (gHG, 1+gHG*gHG, radius2)
+  // Compute how far light needs to travel through the atmosphere from the vertex to us
+  // Compute l such that vertexObject + l * (viewerObject-vertexObject) = sphere around 0 with radius sqrt(atmConstants.z)
+  OUT.lenRayViewerVertex = length(rayViewerVertex);
+  float2 lEye = clamp(IntersectionLineSphere(vertexObject, -rayViewerVertex, atmConstants.z), clampVal.x, clampVal.y);
+  // mid = point next to the planet center along eye ray
+  // The distance to the viewer needs to be clipped!
+  float3 mid = vertexObject - rayViewerVertex * clamp((lEye.x+lEye.y)*0.5f, 1-clampVal.z/OUT.lenRayViewerVertex, 1);
+  float3 density = exp(-2 * (length(mid)-1) / (sqrt(atmConstants.z)-1));
+  // Compute sun color  // The attenuation length is computed from the intersection of
+  // mid + l * lightObjectNormalized = sphere around 0 with radius sqrt(atmConstants.z)
+  float2 lSun = IntersectionLineSphere(mid, lightObjectNormalized, atmConstants.z);
+  float  distSunInAtm = clamp(lSun.y,0,1);
+  OUT.sunColorEx = sunColor * exp(-betaSum * density * distSunInAtm);
+  // Compute attenuation and color of inscattered light
+  float  cosTheta   = dot(lightObjectNormalized, rayViewerVertex) / OUT.lenRayViewerVertex;
+  OUT.FEx           = exp(-betaSum * density * OUT.lenRayViewerVertex * (lEye.y-lEye.x));
+  float  betaDiv    = atmConstants.y-2.0f*atmConstants.x*cosTheta;
+  float3 betaRTheta = constBetaR * (1.0f+cosTheta*cosTheta);
+  float3 betaMTheta = fBetaM / (betaDiv*sqrt(betaDiv));
+  OUT.LIn            = 20.0f * (betaRTheta+betaMTheta) / betaSum * OUT.sunColorEx;
+  return OUT;
+  }
+  
+/**********************************************************************************************/
+
+float ComputeFineCoarseBlendWeight(float nVert, float2 tCoords, float4 stBorders, float2 alphaMinMax){
+  float2 stCoords = nVert*tCoords.yx;  // yx since the texture coordinates are (t,s) and not (s,t)
+  float alpha= saturate(1-( stCoords.x-stBorders.x)*0.1);   // Left
+  alpha = max(alpha, saturate(1-( stCoords.y-stBorders.y)*0.1));  // Bottom
+  alpha = max(alpha, saturate(1-(stBorders.z- stCoords.x)*0.1));  // Right
+  alpha = max(alpha, saturate(1-(stBorders.w- stCoords.y)*0.1));  // Top
+  alpha = clamp(alpha, alphaMinMax.x, alphaMinMax.y);
+  return alpha;
+  }
+
+/**********************************************************************************************/
+
+float3 ComputeLightInTangentSpace(float3 lightObjectNormalized, float3 p){
+  float3 binormal = float3(0,1e-6,1);
+  float3 tangent = normalize(cross(binormal, p));
+  binormal = cross(p, tangent);
+  return float3(dot(lightObjectNormalized, p),
+                dot(lightObjectNormalized, tangent),
+                dot(lightObjectNormalized, binormal));
+  }
+  
+/**********************************************************************************************/
+/*******************************   PLANET GLOBAL + ATMOSPHERE   *******************************/
+/**********************************************************************************************/
+
+vert2frag mainPlanetGlobalAtmVertex(app2vert IN,            
+			// Light and viewer in object coordinates
+            uniform float3 lightObjectNormalized,
+			uniform float3 viewerObject,
+			uniform float3 vertexTransformBias,
+            // Atmosphere scattering
+            uniform float3 constBetaR, uniform float3 fBetaM, uniform float3 betaSum,
+			uniform float3 atmConstants, uniform float3 sunColor,
+			// Transform matrix
+            uniform float4x4 objectToWindowMatrix){
+  vert2frag OUT;
+  IN.VPos.xyz *= IN.Tex0.x;
+  // Compute the homogeneous vertex position
+  OUT.HPos = mul(objectToWindowMatrix, float4(IN.VPos.xyz-vertexTransformBias,1));
+  // Position on sphere * height
+  // Convert light to tangent space
+  float3 lightTangentNormalized = ComputeLightInTangentSpace(lightObjectNormalized, IN.VPos.xyz);
+  // Compute atmosphere stuff
+  float3 rayViewerVertex = IN.VPos.xyz - viewerObject;
+  atmosphereShaderResults atmRes =
+     AtmosphereShader(IN.VPos.xyz, rayViewerVertex, lightObjectNormalized, atmConstants,
+                     betaSum, constBetaR, fBetaM, sunColor, float3(0,1,1e5));
+  // Copy texture coordinates
+  OUT.Tex0     = IN.VPos;  // Global texture coordinates for cube map
+  OUT.Tex2.xyz = atmRes.sunColorEx;  // Sun color (needed for specular lighting)
+  OUT.Tex4.xyz = reflect(rayViewerVertex, IN.VPos.xyz);  // Reflected vector
+  OUT.Tex5.xyz = lightObjectNormalized;          // Light vector
+  OUT.Tex6.xyz = lightTangentNormalized;          // Light vector
+  OUT.Tex7.xyz = atmRes.FEx;                    // Extinction factor
+  OUT.SCol.xyz = atmRes.LIn * (1-atmRes.FEx);        // Inscatter color  return OUT;
+  }
+  
+/**********************************************************************************************/
+
+float4 mainPlanetGlobalAtmFragment(vert2frag IN,
+                     uniform samplerCUBE globalMap : TEXUNIT0,
+					 uniform samplerCUBE normalMap : TEXUNIT1) : COLOR{
+    float3 lightObjectNormalized  = IN.Tex5.xyz;
+	float3 lightTangentNormalized = IN.Tex6.xyz;
+	float4 globalTex = texCUBE(globalMap, IN.Tex0.xyz);
+	float4 normalVec = texCUBE(normalMap, IN.Tex0.xyz).xywz;
+	normalVec.yz = 2*normalVec.yz-1;
+	normalVec.x  = sqrt(1 - normalVec.y*normalVec.y - normalVec.z*normalVec.z);
+    float4 diffuseLight = ambientLight + saturate(dot(normalVec.xyz, lightTangentNormalized));
+	float specularLight = pow(saturate(dot(normalize(IN.Tex4.xyz), lightObjectNormalized)), 16);
+    return (globalTex*diffuseLight + IN.Tex2*specularLight*normalVec.w) * IN.Tex7 + IN.SCol;
+}
+

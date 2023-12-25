@@ -16,8 +16,8 @@
 // Модуль определения функций генерации ландшафта
 // ----------------------------------------------------------------------------
 #ifndef TERR_MODULE
-//include "src/shaders/common/terrain/FlatFBM.glsl";
 #include "src/shaders/common/terrain/CubeSphereFBM.glsl";
+//include "src/shaders/common/terrain/FlatFBM.glsl";
 #endif
 
 
@@ -120,7 +120,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
 	  vec3 p = ro + t*rd;
     float alt = terrainAlt(p);
     if(alt > altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
-    float h = alt - terrainHeight(p, t);
+    float h = alt - terrainHeight(p);
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
 	  res = min(res, cosA*h/t);
