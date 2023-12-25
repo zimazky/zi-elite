@@ -125,7 +125,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
 	  res = min(res, cosA*h/t);
     if(res < -uSunDiscAngleSin) return 0.;
-    t += max(5., abs(0.6*h)); // коэффициент устраняет полосатость при плавном переходе тени
+    t += max(20., abs(0.8*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return 0.;
+  return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
 }
