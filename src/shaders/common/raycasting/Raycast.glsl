@@ -73,7 +73,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
   float t = tmin;
   float altPrev = terrainAlt(ro);
   vec4 res = vec4(-rd, 1.01 * MAX_TERRAIN_DISTANCE);
-  
+
   if(altPrev > MAX_TRN_ELEVATION) {
     vec3 r = uPlanetCenter - ro;
     float OT = dot(rd, r);
@@ -87,20 +87,36 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     t = max(tmin, OT-AT);
   }
   vec4 nor_h;
-  for(i=0; i<400; i++) {
+  for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     float alt = terrainAlt(pos);
     if(alt>altPrev && alt>=MAX_TRN_ELEVATION) return res;
     altPrev = alt;
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
-    if( abs(h)<max(0.1,0.003*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    t += 0.2*h; // на тонких краях могут быть артефакты при большом коэффициенте
-    if(t>tmax) return res;
+    if( abs(h)<max(0.04,0.002*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+    //if(t>tmax) return res;
   }
-  return t<1000. ? vec4(nor_h.xyz, t) : res;
+  return t<7000. ? vec4(nor_h.xyz, t) : res;
 }
 #endif
+
+/*
+float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
+  float t = tmin;
+  float d = ro.y - MAX_TRN_ELEVATION;
+  if(d >= 0.) t = clamp(-d/rd.y, t, tmax); // поиск стартовой точки, если камера выше поверхности максимальной высоты гор
+
+  for(i=0; i<300; i++) {
+    vec3 pos = ro + t*rd;
+    if(pos.y>ro.y && pos.y>MAX_TRN_ELEVATION) return tmax + 1.;
+    float h = pos.y - terrainM(pos.xz);
+    if( abs(h)<(0.003*t) || t>tmax ) break; // двоятся детали при большем значении
+    t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
+  }
+  return t;
+*/
 
 /** 
  * Функция определения затененности солнечного света

@@ -21,7 +21,6 @@ const float MAX_TRN_ELEVATION = 1.9*H_SCALE; // максимальная выс�
 #include "src/shaders/common/Noise/FbmInigoQuilez.glsl";
 #endif
 
-
 // Перевод декартовых координат точки в сферические координаты относительно центра планеты
 // Начало декартовых координат совпадает с точкой 0,0,0 на сфере
 // Возвращается:
@@ -41,7 +40,10 @@ float terrainAlt(vec3 p) {
   return length(r) - uPlanetRadius;
 }
 
-const float nScale = H_SCALE/W_SCALE;
+const float nScale = W_SCALE/H_SCALE;
+const float oneOverWScale = 1./W_SCALE;
+
+// Высота и нормаль на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
 // p - координаты точки
 // dist - дистанция от камеры до точки
 // uv - выходное значение текстурных кординат
@@ -49,18 +51,18 @@ const float nScale = H_SCALE/W_SCALE;
 // xyz - нормаль
 // w - высота
 // uv - текстурные координаты на кубе
-vec4 height_d(vec3 p, float dist, out vec2 uvCoord) {
+vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
   // Размер куба на который проецируется вектор для позиционирования на кубосфере
-  float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
+  float invCubeRad = SQRT3/uPlanetRadius;
   vec3 r = p - uPlanetCenter;
   vec3 absR = abs(r);
   vec4 h_d;
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
-      vec3 s = p - (uPlanetCenter + r*(absR.x-cubeRad)/absR.x);
+      vec3 s = r/(absR.x*invCubeRad);
       uvCoord = s.yz;
-      h_d = terrainFbm(s.yz/W_SCALE, dist);
-      h_d.z /= nScale;
+      h_d = terrainFbm(s.yz*oneOverWScale, dist);
+      h_d.z *= nScale;
       // Матрица преобразования нормалей из касательного пространства относительно сферы к объектному пространству
       //  [    d    0  u/d ]
       //  [    0    d  v/d ]
@@ -70,48 +72,56 @@ vec4 height_d(vec3 p, float dist, out vec2 uvCoord) {
       // u,v - координаты на плоскостях куба в диапазоне (-1..1)
       // u = sqrt(3)*x/R
       // v = sqrt(3)*y/R
-      vec2 uv = s.yz/cubeRad;
+      vec2 uv = s.yz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
-      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.xyz = h_d.xyz * m;
+      vec3 uvdivd = vec3(uv,1)/d;
+      vec2 uvmuld = -uv*d;
+      mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
+      h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.zxy; // x+
       if(r.x < 0.) h_d.x = -h_d.x; // x-
     }
     else {
-      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      vec3 s = r/(absR.z*invCubeRad);
       uvCoord = s.xy;
-      h_d = terrainFbm(s.xy/W_SCALE, dist);
-      h_d.z /= nScale;
-      vec2 uv = s.xy/cubeRad;
+      h_d = terrainFbm(s.xy*oneOverWScale, dist);
+      h_d.z *= nScale;
+      vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
-      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.xyz = h_d.xyz * m;
+      vec3 uvdivd = vec3(uv,1)/d;
+      vec2 uvmuld = uv*d;
+      mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
+      h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
   }
   else {
     if(absR.y > absR.z) {
-      vec3 s = p - (uPlanetCenter + r*(absR.y-cubeRad)/absR.y);
+      vec3 s = r/(absR.y*invCubeRad);
       uvCoord = s.xz;
-      h_d = terrainFbm(s.xz/W_SCALE, dist);
-      h_d.z /= nScale;
-      vec2 uv = s.xz/cubeRad;
+      h_d = terrainFbm(s.xz*oneOverWScale, dist);
+      h_d.z *= nScale;
+      vec2 uv = s.xz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
-      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.xyz = h_d.xyz * m;
+      vec3 uvdivd = vec3(uv,1)/d;
+      vec2 uvmuld = uv*d;
+      mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
+      h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.xzy; // y+
       if(r.y < 0.) h_d.y = -h_d.y; // y-
     }
     else {
-      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
+      vec3 s = r/(absR.z*invCubeRad);
       uvCoord = s.xy;
-      h_d = terrainFbm(s.xy/W_SCALE, dist);
-      h_d.z /= nScale;
-      vec2 uv = s.xy/cubeRad;
+      h_d = terrainFbm(s.xy*oneOverWScale, dist);
+      h_d.z *= nScale;
+      vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
-      mat3 m = mat3(d, 0, uv.x/d, 0, d, uv.y/d, -d*uv.x, -d*uv.y, 1./d);
-      h_d.xyz = h_d.xyz * m;
+      vec3 uvdivd = vec3(uv,1)/d;
+      vec2 uvmuld = uv*d;
+      mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
+      h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
       if(r.z < 0.) h_d.z = -h_d.z; // z-
     }
@@ -119,7 +129,8 @@ vec4 height_d(vec3 p, float dist, out vec2 uvCoord) {
   return vec4(normalize(h_d.xyz), H_SCALE*h_d.w);
 }
 
-float height(vec3 p) {
+// Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
+float terrainHeight(vec3 p) {
   // Размер куба на который проецируется вектор для позиционирования на кубосфере
   float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
   vec3 r = p - uPlanetCenter;
@@ -127,37 +138,25 @@ float height(vec3 p) {
   float h;
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
-      vec3 s = p - (uPlanetCenter + r*(absR.x-cubeRad)/absR.x);
-      h = terrainFbmLight(s.yz/W_SCALE);
+      vec3 s = r*cubeRad/absR.x;
+      h = terrainFbmLight(s.yz*oneOverWScale);
     }
     else {
-      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
-      h = terrainFbmLight(s.xy/W_SCALE);
+      vec3 s = r*cubeRad/absR.z;
+      h = terrainFbmLight(s.xy*oneOverWScale);
     }
   }
   else {
     if(absR.y > absR.z) {
-      vec3 s = p - (uPlanetCenter + r*(absR.y-cubeRad)/absR.y);
-      h = terrainFbmLight(s.xz/W_SCALE);
+      vec3 s = r*cubeRad/absR.y;
+      h = terrainFbmLight(s.xz*oneOverWScale);
     }
     else {
-      vec3 s = p - (uPlanetCenter + r*(absR.z-cubeRad)/absR.z);
-      h = terrainFbmLight(s.xy/W_SCALE);
+      vec3 s = r*cubeRad/absR.z;
+      h = terrainFbmLight(s.xy*oneOverWScale);
     }
   }
   return H_SCALE*h;
-}
-
-// Высота на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-float terrainHeight(vec3 p) {
-  return height(p);
-}
-
-// Высота и нормаль на кубосфере в зависимости от декартовых координат точки проецируемой отвесно на сферу 
-vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uv) {
-  //vec3 r = p - uPlanetCenter;
-  vec4 h_d = height_d(p, dist, uv);
-  return h_d;
 }
 
 // Единичный вектор направленный в зенит

@@ -256,7 +256,9 @@ void main() {
 
 #ifndef RAYCAST_ITERATIONS_VIEW
 #ifdef TEST_VIEW
-  col = render(uCameraPosition, t, rd, normalB, col, 1., uSunDirection, uMoonDirection);
+  //if(t>MAX_TERRAIN_DISTANCE) col = vec3(0);
+  //else
+    col = render(uCameraPosition, t, rd, normalB, col, 1., uSunDirection, uMoonDirection);
 #else //TEST_VIEW
 
   uint mframe = uFrame - 1024u * (uFrame/1024u);
@@ -338,7 +340,7 @@ void main() {
   sundot *= sundot;
   col += 0.2*uCameraInShadow*uSunDiscColor*sundot;
   // тональная компрессия с экспозицией
-  col = vec3(1.) - exp(-col * exposure);
+  //col = vec3(1.) - exp(-col * exposure);
 
 #endif //TEST_VIEW
 

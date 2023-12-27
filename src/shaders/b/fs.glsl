@@ -120,7 +120,7 @@ void main(void) {
 
   #ifdef RAYCAST_ITERATIONS_VIEW
   // Для вывода числа итераций рейтрейсинга
-  col = vec3(raycastIterations)/600.;
+  col = vec3(raycastIterations)/300.;
   #endif
   gAlbedo = vec4(col, 1);
 }

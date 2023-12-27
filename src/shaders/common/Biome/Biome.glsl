@@ -27,7 +27,7 @@ vec4 grassAlbedo2 = vec4(pow(vec3(0.2498, 0.2509, 0.1176), vec3(2.2)), 1.);
 vec4 lightRockAlbedo = vec4(0.6*pow(vec3(0.5725, 0.4667, 0.4392), vec3(2.2)), 1.);
 vec4 darkRockAlbedo = vec4(0.8*pow(vec3(0.3843, 0.2901, 0.2784), vec3(2.2)), 1.);
 //vec4 sandAlbedo = 5.*1.7*vec4(0.09, 0.081, 0.072, 1.);
-vec4 sandAlbedo = vec4(pow(vec3(0.59607843137, 0.50588235294, 0.49803921569), vec3(2.2)), 1.);
+vec4 sandAlbedo = vec4(pow(0.9*vec3(0.59607843137, 0.50588235294, 0.49803921569), vec3(2.2)), 1.);
 
 vec4 darkSandAlbedo = vec4(0.4*pow(vec3(0.43137254902, 0.34117647059, 0.360784313737), vec3(2.2)), 1.);//5.*vec4(0.030, 0.022, 0.010, 1.);
 //vec4 snowAlbedo = 5.*vec4(0.1798, 0.1885, 0.203, 1.);
@@ -40,7 +40,7 @@ vec4 darkSandAlbedo = vec4(0.4*pow(vec3(0.43137254902, 0.34117647059, 0.36078431
 //vec4 sandAlbedo = vec4(0.585, 0.482, 0.428, 1.);
 //vec4 darkSandAlbedo = vec4(0.150, 0.110, 0.050, 1.);
 //vec4 snowAlbedo = vec4(0.750, 0.940, 1.00, 1.);
-vec4 snowAlbedo = vec4(0.75, 0.80, 0.85, 1.);
+vec4 snowAlbedo = vec4(0.30, 0.30, 0.30, 1.);
 
 // определение цвета пикселя
 // norz - вертикальная составляющая нормали к поверхности

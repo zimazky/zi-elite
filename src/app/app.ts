@@ -108,7 +108,7 @@ export default async function main() {
   //let pos = Vec3.ZERO();
   //let pos = new Vec3(0,12000000,0);
   let quat = Quaternion.ID;
-  //if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
+  if(obj.position !== undefined) pos = new Vec3(obj.position.x, obj.position.y, obj.position.z);
   if(obj.orientation !== undefined) quat = new Quaternion(obj.orientation.x, obj.orientation.y, obj.orientation.z, obj.orientation.w);
   const camera = new Camera(pos, quat, tSampler, planet);
   const atm = new Atmosphere(planet);

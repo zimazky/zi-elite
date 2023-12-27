@@ -69,7 +69,7 @@ export class Sky {
   }
 
   loopCalculation(time: number, timeDelta: number) {
-    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.715+time/this.period));
+    this.orientation = Quaternion.fromAxisAngle(this.axis, -2.*Math.PI*(0.515+time/this.period));
     this.transformMat = Mat3.fromQuat(this.orientation.qmul(this.quat));
     this.sunDirection = this.orientation.rotate(this.sunDir).normalize();
     this.moonDirection = this.orientation.rotate(this.moonDir).normalize();
@@ -109,7 +109,7 @@ export class Sky {
       .add(this.atm.scatteringRayleigh(pos, binormal1, sunDir).t)
       .add(this.atm.scatteringRayleigh(pos, binormal2, sunDir).t)
       .div(5.);
-    const sunIntensity = SUN_COLOR.mul(15.);
+    const sunIntensity = SUN_COLOR.mul(10.);
     const sky = sunIntensity.mulEl(skyDirScatter);
 
     if(cosTheta < 0.) { sunDir.x = 1; sunDir.y = 0; }
