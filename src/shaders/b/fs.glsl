@@ -88,7 +88,7 @@ void main(void) {
   float t0 = 1.;
   #else //DEPTH_ERROR_VIEW
   // Нормальный режим, с испльзованием данных предыдущего кадра
-  float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).r;
+  float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).x;
   #endif //DEPTH_ERROR_VIEW
 
   vec3 col = vec3(0);
@@ -97,24 +97,19 @@ void main(void) {
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
+    col = vec3(1,0,0);
   }
   else {
     vec2 uv;
     vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations, uv);
-    if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
-      gNormal = -rd;
-      gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
-    }
-    else {
+    gNormal = nor_t.xyz;
+    gDepth = nor_t.w;
+    if(nor_t.w < MAX_TERRAIN_DISTANCE) {
       vec3 pos = uCameraPosition + nor_t.w*rd;
-      vec3 nor = nor_t.xyz;
       //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
-      gNormal = nor;
-      gDepth = nor_t.w;
-      //vec3 lla = lonLatAlt(pos);
       float alt = terrainAlt(pos);
       vec3 zenith = terrainZenith(pos);
-      col = biomeColor(dot(nor, zenith), uv, alt).rgb;
+      col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
     }
   }
 

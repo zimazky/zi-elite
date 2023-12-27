@@ -144,7 +144,7 @@ export default async function main() {
     ],
     //2195, 1131, 2,
     vshaderB, fshaderB,
-    (shader: Renderbufer) => {
+    (shader) => {
       programB.init(shader, grayNoiseImg);
     },
     (time: number, timeDelta: number) => {

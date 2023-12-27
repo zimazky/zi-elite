@@ -1,5 +1,7 @@
 #version 300 es
 
+precision highp float;
+
 /**
  * Шейдер рендеринга ландшафта.
  * Используется предварительная карта глубины, построенная на основании предыдущего кадра.
@@ -8,9 +10,9 @@
 /** Матрица вращения камеры */
 uniform mat3 uTransformMat;
 /** Угол обзора камеры по горизонтали */
-uniform highp float uCameraViewAngle;
+uniform float uCameraViewAngle;
 /** Разрешение фреймбуфера */
-uniform highp vec2 uResolution;
+uniform vec2 uResolution;
 
 in vec3 aVertexPosition;
 

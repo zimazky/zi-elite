@@ -1,12 +1,14 @@
 #version 300 es
 
+precision highp float;
+
 // разрешение экрана
-uniform mediump vec2 uResolution;
-uniform mediump vec2 uTextureBResolution;
+uniform vec2 uResolution;
+uniform vec2 uTextureBResolution;
 
 uniform mat3 uTransformMat;
 uniform mat3 uSkyTransformMat;
-uniform mediump float uCameraViewAngle;
+uniform float uCameraViewAngle;
 
 in vec3 aVertexPosition;
 

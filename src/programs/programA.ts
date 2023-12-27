@@ -18,6 +18,7 @@ export class ProgramA {
   uProjectMatrix: WebGLUniformLocation | null = null;
   uTransformMatrix: WebGLUniformLocation | null = null;
   uTransformMatrixPrev: WebGLUniformLocation | null = null;
+  uMaxDistance: WebGLUniformLocation | null = null;
 
   constructor(e: Engine, bInput: Framebuffer, c: Camera) {
     this.engine = e;
@@ -29,7 +30,7 @@ export class ProgramA {
 
   init(shader: Renderbufer) {
     // привязка текстуры gNormalDepth из шейдера B
-    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureBNormalDepth');
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureBDepth');
 
     // установка разрешения текстуры шейдера B
     const textureBResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureBResolution');
@@ -45,6 +46,7 @@ export class ProgramA {
     this.uTransformMatrixPrev = this.engine.gl.getUniformLocation(shader.program, 'uTransformMatrixPrev');
     this.uPositionDelta = this.engine.gl.getUniformLocation(shader.program, 'uPositionDelta');
     this.uCameraViewAngle = this.engine.gl.getUniformLocation(shader.program, 'uCameraViewAngle');
+    this.uMaxDistance = this.engine.gl.getUniformLocation(shader.program, 'uMaxDistance');
 
     // формирование координат вершин
     const vertices: number[] = [];
@@ -157,6 +159,7 @@ export class ProgramA {
     this.engine.gl.uniformMatrix3fv(this.uTransformMatrix, false, this.camera.transformMat.getArray());
     this.engine.gl.uniform3fv(this.uPositionDelta, this.camera.positionDelta.getArray());
     this.engine.gl.uniform1f(this.uCameraViewAngle, this.camera.viewAngle);
+    this.engine.gl.uniform1f(this.uMaxDistance, this.camera.maxDistance);
   }
 
 }

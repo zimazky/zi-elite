@@ -1,6 +1,6 @@
 #version 300 es
 
-precision mediump float;
+precision highp float;
 
 /** Разрешение экрана */
 uniform vec2 uResolution;
@@ -279,6 +279,7 @@ void main() {
   float sundot = clamp(dot(rd,uSunDirection),0.,1.);
   float moondot = clamp(dot(rd,uMoonDirection),0.,1.);
   if(t>MAX_TERRAIN_DISTANCE) {
+    
     // небо из текстуры
     col = 0.5*nightSky(normalize(vRaySky));
     // диск солнца
@@ -293,6 +294,8 @@ void main() {
     ResultScattering rs;
     rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.,1.,noise));
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
+    
+    //col = albedoB.rgb;
   }
   else {
     col = render(uCameraPosition, t, rd, normalB, col, ssao*ssao, uSunDirection, uMoonDirection);
