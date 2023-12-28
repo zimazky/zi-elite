@@ -75,7 +75,7 @@ vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
       vec2 uv = s.yz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
-      vec2 uvmuld = -uv*d;
+      vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.zxy; // x+
@@ -89,7 +89,7 @@ vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
       vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
-      vec2 uvmuld = uv*d;
+      vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
@@ -105,7 +105,7 @@ vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
       vec2 uv = s.xz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
-      vec2 uvmuld = uv*d;
+      vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.xzy; // y+
@@ -119,7 +119,7 @@ vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
       vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
-      vec2 uvmuld = uv*d;
+      vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
