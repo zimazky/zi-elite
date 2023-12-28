@@ -93,11 +93,10 @@ void main(void) {
 
   vec3 col = vec3(0);
   int raycastIterations = 0;
-  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
-    col = vec3(1,0,0);
   }
   else {
     vec2 uv;
@@ -106,7 +105,7 @@ void main(void) {
     gDepth = nor_t.w;
     if(nor_t.w < MAX_TERRAIN_DISTANCE) {
       vec3 pos = uCameraPosition + nor_t.w*rd;
-      //if(LvsR == 1.) nor = terrainNormal(pos, nor_t.w).xyz;
+      //if(LvsR == 1.) gNormal = terrainNormal(pos, nor_t.w).xyz;
       float alt = terrainAlt(pos);
       vec3 zenith = terrainZenith(pos);
       col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
