@@ -469,26 +469,7 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
       Vec4.L
     );
   }
-
-  /**
-   * НЕОБХОДИМО УБРАТЬ ФУНКЦИЮ
-   * Получить матрицу перспективной проекции
-   * @param fov - величина угла поля зрения по горизонтали в радианах
-   * @param aspect - соотношение сторон (ширина/высота)
-   * @param near - расстояние до ближней плоскости отсечения, должно быть больше 0
-   * @param far - расстояние до дальней плоскости отсечения, должно быть больше 0
-   * @returns матрица перспективной проекции
-   * @deprecated
-   */
-  static perspectiveProjectMatrix(fov: number, aspect: number, near: number, far: number): Mat4 {
-    return new Mat4(
-      new Vec4(1./Math.tan(0.5*fov), 0., 0., 0.),
-      new Vec4(0., aspect/Math.tan(0.5*fov), 0., 0.),
-      new Vec4(0., 0., -(far+near)/(far-near), -2.*far*near/(far-near)),
-      new Vec4(0., 0., -1., 0.)
-    );
-  }
-
+  
   /** Tested
    * Получить матрицу перспективной проекции OpenGL/WebGL
    * соответствующую области отсечения по z в интервале -1...1
@@ -503,7 +484,7 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     return new Mat4(
       new Vec4(f/aspect, 0, 0,                      0),
       new Vec4(0,        f, 0,                      0),
-      new Vec4(0,        0, -(far+near)/(far-near), -2.*far*near/(far-near)),
+      new Vec4(0,        0, -(far+near)/(far-near), -2*far*near/(far-near)),
       new Vec4(0,        0, -1,                     0)
     );
   }

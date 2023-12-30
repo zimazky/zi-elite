@@ -146,15 +146,13 @@ export class ProgramA {
   }
 
   update() {
-    // ПРАВИЛЬНО ОПРЕДЕЛЯТЬ МАТРИЦУ ПРОЕКЦИИ
     const aspect = this.bufferInput.width/this.bufferInput.height;
+    const fovy = 2*Math.atan(Math.tan(0.5*this.camera.viewAngle)/aspect);
     this.engine.gl.uniformMatrix4fv(
       this.uProjectMatrix, 
       false,
-      Mat4.perspectiveProjectMatrix(this.camera.viewAngle, aspect, 0.5, 1.01*this.camera.maxDistance).getArray()
+      Mat4.perspectiveGl(fovy, aspect, 1, 1.2*this.camera.maxDistance).getArray()
     );
-    //this.engine.gl.uniformMatrix4fv(projectMatrix, false, Mat4.orthoProjectMatrix(-1.,1.,-1.,1.,0.,60000.).getArray());
-
     this.engine.gl.uniformMatrix3fv(this.uTransformMatrixPrev, false, this.camera.transformMatPrev.getArray());
     this.engine.gl.uniformMatrix3fv(this.uTransformMatrix, false, this.camera.transformMat.getArray());
     this.engine.gl.uniform3fv(this.uPositionDelta, this.camera.positionDelta.getArray());

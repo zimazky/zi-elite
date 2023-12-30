@@ -69,6 +69,7 @@ void main() {
   buf = min(buf, wmin);
   buf = min(buf, uMaxDistance);
 
+  // TODO: Переделать везде длину луча на глубину z и использовать матрицу проекции для опеделения направляющего вектора
   float t = tan(0.5*uCameraViewAngle);
   vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
   vec3 pos = rd*buf;
@@ -79,10 +80,9 @@ void main() {
   vTextureBDepth = length(pos);
 
   // при движении назад по краям устанавливаем глубину 0
-  vec3 deltaPos = uPositionDelta*uTransformMatrix;
-  if(deltaPos.z > 0. && (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBDepth = 0.;
+  //vec3 deltaPos = uPositionDelta*uTransformMatrix;
+  if(/*deltaPos.z > 0. &&*/ (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBDepth = 0.;
 
-  //if(pos.z <= -5000.) pos *= -5000./pos.z;
-
+  // TODO: Правильно вычислять позицию, вектор не должен быть нулевым
   gl_Position = uProjectMatrix*vec4(pos, 1);
 }
