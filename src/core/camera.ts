@@ -31,6 +31,8 @@ const KEY_PLUS = 107;
 const KEY_MINUS = 109;
 const KEY_EQUAL = 187;
 const KEY_MINUS2 = 189;
+const KEY_A = 65;
+const KEY_D = 68;
 const KEY_W = 87;
 const KEY_S = 83;
 const KEY_M = 77;
@@ -56,6 +58,7 @@ export class Camera {
   ir: Vec3 = Vec3.K;
 
   viewAngle: number;
+  viewAnglePrev: number;
   orientation: Quaternion;
   /** Максимальная дистанция отрисовки планеты, зависит от расстояния до планеты */
   maxDistance: number = 500000;
@@ -84,6 +87,7 @@ export class Camera {
     this.angularSpeed = Vec3.ZERO;
     this.orientation = quaternion;
     this.viewAngle = 80.*Math.PI/180.;
+    this.viewAnglePrev = this.viewAngle;
     this.tSampler = t;
     this.screenMode = 0;
     this.mapMode = 0;
@@ -120,7 +124,7 @@ export class Camera {
   loopCalculation(time: number, timeDelta: number): void {
 
     const acceleration = new Vec3(
-      0.,
+      isKeyDown(KEY_D) - isKeyDown(KEY_A),
       0.,
       isKeyDown(KEY_S) - isKeyDown(KEY_W)
     );
@@ -132,9 +136,9 @@ export class Camera {
     this.transformMat = mdir;
 
     // ускорение тяги
-    this.velocity.addMutable(mdir.mulVecLeft(acceleration).mulMutable(THRUST*timeDelta));
+    this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
     // замедление от сопротивления воздуха
-    this.velocity.subMutable( mdir.mulVecLeft(mdir.mulVec(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
+    this.velocity.subMutable(mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
     // гравитация
     //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
     // экстренная остановка
@@ -185,6 +189,8 @@ export class Camera {
     this.orientation.normalizeMutable();
 
     this.direction = this.orientation.rotate(new Vec3(0.,0.,-1.));
+  
+    this.viewAnglePrev = this.viewAngle;
     // режим экрана
     if(isKeyPress(KEY_M)>0) this.screenMode = this.screenMode==FRONT_VIEW ? MAP_VIEW : FRONT_VIEW;
     if(this.screenMode==MAP_VIEW) {
@@ -192,7 +198,7 @@ export class Camera {
       if(isKeyPress(KEY_G)>0) this.mapMode ^= MAP_GRID;
       if(isKeyPress(KEY_H)>0) this.mapMode ^= MAP_HEIGHTS;
     }
-    else this.viewAngle += 0.01*(isKeyDown(KEY_MINUS)-isKeyDown(KEY_PLUS));
+    else this.viewAngle += 0.01*(isKeyDown(KEY_MINUS)+isKeyDown(KEY_MINUS2)-isKeyDown(KEY_PLUS)-isKeyDown(KEY_EQUAL));
 
     if(isKeyPress(KEY_L)>0) this.headLights = this.headLights==0 ? 100. : 0.;
 
