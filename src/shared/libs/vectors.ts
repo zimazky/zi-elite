@@ -2,11 +2,7 @@
 
 Модуль определения операций с векторами и матрицами 
 @author Andrey Zimatskiy
-@version 1.23.9.15
-
-
-Mat4.lookAt на тестах дает большое расхождение по сравнению с библиотекой gl-matrix
-Нужно проверить
+@version 1.23.12.30
 
 */
 
@@ -63,6 +59,8 @@ interface IVectors<T> {
   getArray(): number[];
   /** Получить компоненты в виде массива Float32Array */
   getFloat32Array(): Float32Array;
+  /** Строковое представление */
+  toString(): string;
 }
 
 interface IMatrixes<TMat, TVec> {
@@ -88,7 +86,6 @@ interface IMatrixes<TMat, TVec> {
   divMutable(n: number): TMat;
   /** Иммутабельное деление на скаляр */
   div(n: number): TMat;
-
   /**
    * Иммутабельное произведение на матрицу
    * (правило: строка на столбец)
@@ -107,10 +104,18 @@ interface IMatrixes<TMat, TVec> {
    * (правило: строка на столбец)
    * */
   mulVecLeft(v: TVec): TVec;
-  /** Получить компоненты в виде массива */
+  /**
+   * Получить компоненты в виде массива
+   * Для совместимости с графическими картами массив формируется по колонкам матрицы
+   *  */
   getArray(): number[];
-  /** Получить компоненты в виде массива Float32Array */
+  /**
+   * Получить компоненты в виде массива Float32Array
+   * Для совместимости с графическими картами массив формируется по колонкам матрицы
+   * */
   getFloat32Array(): Float32Array;
+  /** Строковое представление */
+  toString(): string;
 }
 
 
@@ -277,8 +282,6 @@ export class Vec4 implements IVectors<Vec4> {
   set zxw(v: Vec3) { this.z=v.x; this.x=v.y; this.w=v.z }
   set zwx(v: Vec3) { this.z=v.x; this.w=v.y; this.x=v.z }
 
-
-  /** Представление в виде строки */
   toString(): string {
     return `(${this.x.toFixed(2)}, ${this.y.toFixed(2)}, ${this.z.toFixed(2)}, ${this.w.toFixed(2)})`;
   }
@@ -287,10 +290,10 @@ export class Vec4 implements IVectors<Vec4> {
   // Методы интерфейса
 
   equals(v: Vec4): boolean {
-    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., this.x, v.x)
-    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., this.y, v.y)
-    && Math.abs(this.z-v.z)<=EPSILON*Math.max(1., this.z, v.z)
-    && Math.abs(this.w-v.w)<=EPSILON*Math.max(1., this.w, v.w);
+    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., Math.abs(this.x), Math.abs(v.x))
+    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., Math.abs(this.y), Math.abs(v.y))
+    && Math.abs(this.z-v.z)<=EPSILON*Math.max(1., Math.abs(this.z), Math.abs(v.z))
+    && Math.abs(this.w-v.w)<=EPSILON*Math.max(1., Math.abs(this.w), Math.abs(v.w));
   }
 
   addMutable(v: Vec4): Vec4 {
@@ -364,14 +367,14 @@ export class Vec4 implements IVectors<Vec4> {
 }
 
 /****************************************************************************** 
- * Класс четырехмерной матрицы
- * У матрицы можно выделить строки i, j, k, l   и   столбцы cx, cy, cz, cw
- * При преобразовании в массив, заполняется по строкам
+ * Класс четырехмерной матрицы.
+ * У матрицы можно выделить строки i, j, k, l и столбцы cx, cy, cz, cw.
+ * При преобразовании в массив и из массива, заполняется по колонкам.
  *          x   y   z   w
- *       i a00 a01 a02 a03
- *       j a04 a05 a06 a07
- *       k a08 a09 a10 a11
- *       l a12 a13 a14 a15  
+ *       i a00 a04 a08 a12
+ *       j a01 a05 a09 a13
+ *       k a02 a06 a10 a14
+ *       l a03 a07 a11 a15  
  * */
 export class Mat4 implements IMatrixes<Mat4, Vec4> {
   /** Строка i */
@@ -397,7 +400,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
   /** Получить матрицу со случайными элементами */
   static get RAND() { return new Mat4(Vec4.RAND, Vec4.RAND, Vec4.RAND, Vec4.RAND) };
 
-  /** Получить матрицу из массива чисел */
+  /**
+   * Получить матрицу из массива чисел.
+   * Для совместимости с графическими картами матрица заполняется по колонкам
+   * */
   static fromArray([
     a00, a01, a02, a03,
     a10, a11, a12, a13,
@@ -410,10 +416,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     number, number, number, number
   ] | Float32Array): Mat4 { 
     return new Mat4(
-      new Vec4(a00, a01, a02, a03),
-      new Vec4(a10, a11, a12, a13),
-      new Vec4(a20, a21, a22, a23),
-      new Vec4(a30, a31, a32, a33)
+      new Vec4(a00, a10, a20, a30),
+      new Vec4(a01, a11, a21, a31),
+      new Vec4(a02, a12, a22, a32),
+      new Vec4(a03, a13, a23, a33)
     );
   }
 
@@ -430,14 +436,14 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
    */
   static orthoGl(
     left: number, right: number, bottom: number, top: number, near: number, far: number): Mat4 {
-    const lr = 1. / (left - right);
-    const bt = 1. / (bottom - top);
-    const nf = 1. / (near - far);
+    const lr = 1 / (left - right);
+    const bt = 1 / (bottom - top);
+    const nf = 1 / (near - far);
     return new Mat4(
-      new Vec4(-2.*lr, 0., 0., 0.),
-      new Vec4(0., -2.*bt, 0., 0.),
-      new Vec4(0., 0., 2.*nf,  0.),
-      new Vec4((left+right)*lr, (top+bottom)*bt, (far+near)*nf, 1.)
+      new Vec4(-2*lr, 0, 0, (left+right)*lr),
+      new Vec4(0, -2*bt, 0, (top+bottom)*bt),
+      new Vec4(0, 0, 2*nf,  (far+near)*nf),
+      Vec4.L
     );
   }
   /** Tested
@@ -453,14 +459,14 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
    */
   static orthoDx(
     left: number, right: number, bottom: number, top: number, near: number, far: number): Mat4 {
-    const lr = 1. / (left - right);
-    const bt = 1. / (bottom - top);
-    const nf = 1. / (near - far);
+    const lr = 1 / (left - right);
+    const bt = 1 / (bottom - top);
+    const nf = 1 / (near - far);
     return new Mat4(
-      new Vec4(-2.*lr, 0., 0., 0.),
-      new Vec4(0., -2.*bt, 0., 0.),
-      new Vec4(0., 0., nf,  0.),
-      new Vec4((left+right)*lr, (top+bottom)*bt, near*nf, 1.)
+      new Vec4(-2*lr, 0, 0, (left+right)*lr),
+      new Vec4(0, -2*bt, 0, (top+bottom)*bt),
+      new Vec4(0, 0, nf, near*nf),
+      Vec4.L
     );
   }
 
@@ -483,8 +489,6 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     );
   }
 
-
-
   /** Tested
    * Получить матрицу перспективной проекции OpenGL/WebGL
    * соответствующую области отсечения по z в интервале -1...1
@@ -497,10 +501,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
   static perspectiveGl(fovy: number, aspect: number, near: number, far: number): Mat4 {
     const f = 1./Math.tan(0.5*fovy);
     return new Mat4(
-      new Vec4(f/aspect, 0., 0., 0.),
-      new Vec4(0., f, 0., 0.),
-      new Vec4(0., 0., -(far+near)/(far-near), -1.),
-      new Vec4(0., 0., -2.*far*near/(far-near), 0.)
+      new Vec4(f/aspect, 0, 0,                      0),
+      new Vec4(0,        f, 0,                      0),
+      new Vec4(0,        0, -(far+near)/(far-near), -2.*far*near/(far-near)),
+      new Vec4(0,        0, -1,                     0)
     );
   }
   /** Tested
@@ -522,10 +526,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
       e14 = far * near * nf;
     }
     return new Mat4(
-      new Vec4(f/aspect, 0., 0., 0.),
-      new Vec4(0., f, 0., 0.),
-      new Vec4(0., 0., e10, -1.),
-      new Vec4(0., 0., e14, 0.)
+      new Vec4(f/aspect, 0, 0, 0),
+      new Vec4(0, f, 0, 0),
+      new Vec4(0, 0, e10, e14),
+      new Vec4(0, 0, -1, 0)
     );
   }
   /** Tested
@@ -540,10 +544,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const right = up.cross(forward).normalize();
     const newup = forward.cross(right);
     return new Mat4(
-      new Vec4(right.x, newup.x, forward.x, 0),
-      new Vec4(right.y, newup.y, forward.y, 0),
-      new Vec4(right.z, newup.z, forward.z, 0),
-      new Vec4(-right.dot(from), -newup.dot(from), -forward.dot(from), 1.)
+      new Vec4(right.x, right.y, right.z, -right.dot(from)),
+      new Vec4(newup.x, newup.y, newup.z, -newup.dot(from)),
+      new Vec4(forward.x, forward.y, forward.z, -forward.dot(from)),
+      Vec4.L
     );
   } 
   /** Tested
@@ -558,13 +562,13 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const mc = 1 - c;
     const s = Math.sin(theta);
     return new Mat4(
-      new Vec4(a.x*a.x*mc+c, a.x*a.y*mc+a.z*s, a.x*a.z*mc-a.y*s, 0),
-      new Vec4(a.y*a.x*mc-a.z*s, a.y*a.y*mc+c, a.y*a.z*mc+a.x*s, 0),
-      new Vec4(a.z*a.x*mc+a.y*s, a.z*a.y*mc-a.x*s, a.z*a.z*mc+c, 0),
-      new Vec4(0, 0, 0, 1)
+      new Vec4(a.x*a.x*mc+c, a.y*a.x*mc-a.z*s, a.z*a.x*mc+a.y*s, 0),
+      new Vec4(a.x*a.y*mc+a.z*s, a.y*a.y*mc+c, a.z*a.y*mc-a.x*s, 0),
+      new Vec4(a.x*a.z*mc-a.y*s, a.y*a.z*mc+a.x*s, a.z*a.z*mc+c, 0),
+      Vec4.L
     );
   }
-  /** 
+  /** tested
    * Получить матрицу вращения из кватерниона
    * @param q - кватернион, определяющий вращение
    * */
@@ -582,12 +586,13 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const wy = q.w * y2;
     const wz = q.w * z2;
     return new Mat4(
-      new Vec4(1 - yy - zz, yx + wz, zx - wy, 0),
-      new Vec4(yx - wz, 1 - xx - zz, zy + wx, 0),
-      new Vec4(zx + wy, zy - wx, 1 - xx - yy, 0),
-      new Vec4(0, 0, 0, 1)
+      new Vec4(1 - yy - zz, yx - wz, zx + wy, 0),
+      new Vec4(yx + wz, 1 - xx - zz, zy - wx, 0),
+      new Vec4(zx - wy, zy + wx, 1 - xx - yy, 0),
+      Vec4.L
     );
   }
+
   /** 
    * Получить матрицу вида камеры по кватерниону и вектору положения
    * @param q - кватернион, определяющий вращение
@@ -606,16 +611,14 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const wx = q.w * x2;
     const wy = q.w * y2;
     const wz = q.w * z2;
-    const i = new Vec4(1 - yy - zz, yx + wz, zx - wy, 0);
-    const j = new Vec4(yx - wz, 1 - xx - zz, zy + wx, 0);
-    const k = new Vec4(zx + wy, zy - wx, 1 - xx - yy, 0);
-    const l = new Vec4(
-      - i.x*p.x - j.x*p.y - k.x*p.z,
-      - i.y*p.x - j.y*p.y - k.y*p.z,
-      - i.z*p.x - j.z*p.y - k.z*p.z,
-      1.
-    );
-    return new Mat4(i, j, k, l);
+    const i = new Vec4(1 - yy - zz, yx - wz, zx + wy, 0);
+    const j = new Vec4(yx + wz, 1 - xx - zz, zy - wx, 0);
+    const k = new Vec4(zx - wy, zy + wx, 1 - xx - yy, 0);
+
+    i.w = - i.x*p.x - j.x*p.y - k.x*p.z;
+    j.w = - i.y*p.x - j.y*p.y - k.y*p.z;
+    k.w = - i.z*p.x - j.z*p.y - k.z*p.z;
+    return new Mat4(i, j, k, Vec4.L);
   }
   /** 
    * Получить матрицу модели по кватерниону и вектору положения
@@ -635,11 +638,10 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const wx = q.w * x2;
     const wy = q.w * y2;
     const wz = q.w * z2;
-    const i = new Vec4(1 - yy - zz, yx + wz, zx - wy, 0);
-    const j = new Vec4(yx - wz, 1 - xx - zz, zy + wx, 0);
-    const k = new Vec4(zx + wy, zy - wx, 1 - xx - yy, 0);
-    const l = new Vec4(p.x, p.y, p.z, 1.);
-    return new Mat4(i, j, k, l);
+    const i = new Vec4(1 - yy - zz, yx - wz, zx + wy, p.x);
+    const j = new Vec4(yx + wz, 1 - xx - zz, zy - wx, p.y);
+    const k = new Vec4(zx - wy, zy + wx, 1 - xx - yy, p.z);
+    return new Mat4(i, j, k, Vec4.L);
   }
 
   // --------------------------------------------------------------------------
@@ -654,24 +656,31 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
   /** Вектор-столбец w матрицы */
   get cw(): Vec4 { return new Vec4(this.i.w, this.j.w, this.k.w, this.l.w); }
   /** Строковое представление */
-  toString() { `i:${this.i}, j:${this.j}, k:${this.k}, l:${this.l}` }
+  toString() { return `i:${this.i}, j:${this.j}, k:${this.k}, l:${this.l}` }
 
-  /** Получить коэффициенты масштабирования из матрицы преобразования */
+  /** tested
+   * Получить коэффициенты масштабирования матрицы преобразования
+   */
   getScalingVec3(): Vec3 {
     return new Vec3(
-      Math.hypot(this.i.x, this.i.y, this.i.z),
-      Math.hypot(this.j.x, this.j.y, this.j.z), 
-      Math.hypot(this.k.x, this.k.y, this.k.z)
+      Math.hypot(this.i.x, this.j.x, this.k.x),
+      Math.hypot(this.i.y, this.j.y, this.k.y), 
+      Math.hypot(this.i.z, this.j.z, this.k.z)
     );
   }
 
-  /** Получить коэффициенты масштабирования из матрицы преобразования */
+  /** tested
+   * Получить составляющую матрицу вращения матрицы преобразования
+   */
   getRotationMat3(): Mat3 {
+    const q = this.getQuaternion();
+    return Mat3.fromQuat(q);
+/*
     return new Mat3(
-      new Vec3(this.i.x, this.i.y, this.i.z).normalizeMutable(),
-      new Vec3(this.j.x, this.j.y, this.j.z).normalizeMutable(), 
-      new Vec3(this.k.x, this.k.y, this.k.z).normalizeMutable()
-    );
+      new Vec3(this.i.x, this.j.x, this.k.x).normalizeMutable(),
+      new Vec3(this.i.y, this.j.y, this.k.y).normalizeMutable(), 
+      new Vec3(this.i.z, this.j.z, this.k.z).normalizeMutable()
+    ); */
   }
 
   /** Tested
@@ -683,13 +692,13 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     const isy = 1 / scaling.y;
     const isz = 1 / scaling.z;
     const sm11 = this.i.x * isx;
-    const sm12 = this.i.y * isy;
-    const sm13 = this.i.z * isz;
-    const sm21 = this.j.x * isx;
+    const sm12 = this.j.x * isy;
+    const sm13 = this.k.x * isz;
+    const sm21 = this.i.y * isx;
     const sm22 = this.j.y * isy;
-    const sm23 = this.j.z * isz;
-    const sm31 = this.k.x * isx;
-    const sm32 = this.k.y * isy;
+    const sm23 = this.k.y * isz;
+    const sm31 = this.i.z * isx;
+    const sm32 = this.j.z * isy;
     const sm33 = this.k.z * isz;
     const trace = sm11 + sm22 + sm33;
     var S = 0;
@@ -710,18 +719,31 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     return new Quaternion((sm31 + sm13)/S, (sm23 + sm32)/S, 0.25*S, (sm12 - sm21)/S);
   }
 
-  /**
+  /** tested
+   * Масштабирование матрицы на трехмерный вектор
+   */
+  scale(v: Vec3): Mat4 {
+    return new Mat4(
+      new Vec4(this.i.x*v.x, this.i.y*v.y, this.i.z*v.z, this.i.w),
+      new Vec4(this.j.x*v.x, this.j.y*v.y, this.j.z*v.z, this.j.w),
+      new Vec4(this.k.x*v.x, this.k.y*v.y, this.k.z*v.z, this.k.w),
+      new Vec4(this.l.x*v.x, this.l.y*v.y, this.l.z*v.z, this.l.w)
+    )
+  }
+
+  /** tested
    * Операция перемещения над матрицей на данный вектор смещения
    * @param v - вектор смещения
    */
   translate(v: Vec3): Mat4 {
     const a = this.copy();
-    a.l.x += a.i.x * v.x + a.j.x * v.y + a.k.x * v.z;
-    a.l.y += a.i.y * v.x + a.j.y * v.y + a.k.y * v.z;
-    a.l.z += a.i.z * v.x + a.j.z * v.y + a.k.z * v.z;
+    a.i.w += a.i.x * v.x + a.i.y * v.y + a.i.z * v.z;
+    a.j.w += a.j.x * v.x + a.j.y * v.y + a.j.z * v.z;
+    a.k.w += a.k.x * v.x + a.k.y * v.y + a.k.z * v.z;
+    a.l.w += a.l.x * v.x + a.l.y * v.y + a.l.z * v.z;
     return a;
   }
-  /**
+  /** tested
    * Получить матрицу после операции вращения над текущей матрицей
    * @param axis - ось вращения
    * @param rad - угол поворота
@@ -744,24 +766,29 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
 
     return new Mat4(
       new Vec4(
-        this.i.x*b00 + this.j.x*b01 + this.k.x*b02,
-        this.i.y*b00 + this.j.y*b01 + this.k.y*b02,
-        this.i.z*b00 + this.j.z*b01 + this.k.z*b02,
-        this.i.w*b00 + this.j.w*b01 + this.k.w*b02
+        this.i.x*b00 + this.i.y*b01 + this.i.z*b02,
+        this.i.x*b10 + this.i.y*b11 + this.i.z*b12,
+        this.i.x*b20 + this.i.y*b21 + this.i.z*b22,
+        this.i.w
       ),
       new Vec4(
-        this.i.x*b10 + this.j.x*b11 + this.k.x*b12,
-        this.i.y*b10 + this.j.y*b11 + this.k.y*b12,
-        this.i.z*b10 + this.j.z*b11 + this.k.z*b12,
-        this.i.w*b10 + this.j.w*b11 + this.k.w*b12
+        this.j.x*b00 + this.j.y*b01 + this.j.z*b02,
+        this.j.x*b10 + this.j.y*b11 + this.j.z*b12,
+        this.j.x*b20 + this.j.y*b21 + this.j.z*b22,
+        this.j.w
       ),
       new Vec4(
-        this.i.x*b20 + this.j.x*b21 + this.k.x*b22,
-        this.i.y*b20 + this.j.y*b21 + this.k.y*b22,
-        this.i.z*b20 + this.j.z*b21 + this.k.z*b22,
-        this.i.w*b20 + this.j.w*b21 + this.k.w*b22
+        this.k.x*b00 + this.k.y*b01 + this.k.z*b02,
+        this.k.x*b10 + this.k.y*b11 + this.k.z*b12,
+        this.k.x*b20 + this.k.y*b21 + this.k.z*b22,
+        this.k.w
       ),
-      this.l.copy()
+      new Vec4(
+        this.l.x*b00 + this.l.y*b01 + this.l.z*b02,
+        this.l.x*b10 + this.l.y*b11 + this.l.z*b12,
+        this.l.x*b20 + this.l.y*b21 + this.l.z*b22,
+        this.l.w
+      )
     );
   }
 
@@ -819,6 +846,7 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
 
   div(n: number): Mat4 { return this.copy().divMutable(n); }
 
+  // tested
   mulMat(m: Mat4): Mat4 {
     return new Mat4(
       new Vec4(this.i.dot(m.cx), this.i.dot(m.cy), this.i.dot(m.cz), this.i.dot(m.cw)),
@@ -828,6 +856,7 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     );
   }
 
+  // tested
   mulMatLeft(m: Mat4): Mat4 {
     return new Mat4(
       new Vec4(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i), this.cw.dot(m.i)),
@@ -837,16 +866,18 @@ export class Mat4 implements IMatrixes<Mat4, Vec4> {
     );
   }
   
+  // tested
   mulVec(v: Vec4): Vec4 { return new Vec4(this.i.dot(v), this.j.dot(v), this.k.dot(v), this.l.dot(v)); }
 
+  // tested
   mulVecLeft(v: Vec4): Vec4 { return new Vec4(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v), this.cw.dot(v)); }
 
   getArray(): number[] {
     return [
-      this.i.x, this.i.y, this.i.z, this.i.w,
-      this.j.x, this.j.y, this.j.z, this.j.w,
-      this.k.x, this.k.y, this.k.z, this.k.w,
-      this.l.x, this.l.y, this.l.z, this.l.w,
+      this.i.x, this.j.x, this.k.x, this.l.x,
+      this.i.y, this.j.y, this.k.y, this.l.y,
+      this.i.z, this.j.z, this.k.z, this.l.z,
+      this.i.w, this.j.w, this.k.w, this.l.w,
     ]
   }
 
@@ -976,9 +1007,9 @@ export class Vec3 implements IVectors<Vec3> {
   // Методы интерфейса
 
   equals(v: Vec3): boolean {
-    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., this.x, v.x)
-    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., this.y, v.y)
-    && Math.abs(this.z-v.z)<=EPSILON*Math.max(1., this.z, v.z)
+    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., Math.abs(this.x), Math.abs(v.x))
+    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., Math.abs(this.y), Math.abs(v.y))
+    && Math.abs(this.z-v.z)<=EPSILON*Math.max(1., Math.abs(this.z), Math.abs(v.z))
   }
 
   addMutable(v: Vec3): Vec3 {
@@ -1065,7 +1096,12 @@ export class Vec3 implements IVectors<Vec3> {
  * Класс трехмерной матрицы 
  * */
 export class Mat3 implements IMatrixes<Mat3, Vec3> {
-  i: Vec3; j: Vec3; k: Vec3;
+  /** Строка i */
+  i: Vec3;
+  /** Строка j */
+  j: Vec3;
+  /** Строка k */
+  k: Vec3;
 
   constructor(i: Vec3, j: Vec3, k: Vec3) {
     this.i = i.copy(); this.j = j.copy(); this.k = k.copy();
@@ -1081,7 +1117,10 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
   /** Получить матрицу со случайными элементами */
   static get RAND() { return new Mat3(Vec3.RAND, Vec3.RAND, Vec3.RAND) };
 
-  /** Получить матрицу из массива чисел */
+  /** 
+   * Получить матрицу из массива чисел
+   * Для совместимости с графическими картами матрица заполняется по колонкам
+   * */
   static fromArray([
     a00, a01, a02,
     a10, a11, a12,
@@ -1092,13 +1131,13 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
     number, number, number
   ] | Float32Array): Mat3 { 
     return new Mat3(
-      new Vec3(a00, a01, a02),
-      new Vec3(a10, a11, a12),
-      new Vec3(a20, a21, a22)
+      new Vec3(a00, a10, a20),
+      new Vec3(a01, a11, a21),
+      new Vec3(a02, a12, a22)
     );
   }
 
-    /**
+  /** tested
    * Получить матрицу вращения
    * @param axis - ось вращения
    * @param theta - угол поворота
@@ -1110,13 +1149,15 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
       const mc = 1 - c;
       const s = Math.sin(theta);
       return new Mat3(
-        new Vec3(a.x*a.x*mc+c, a.x*a.y*mc+a.z*s, a.x*a.z*mc-a.y*s),
-        new Vec3(a.y*a.x*mc-a.z*s, a.y*a.y*mc+c, a.y*a.z*mc+a.x*s),
-        new Vec3(a.z*a.x*mc+a.y*s, a.z*a.y*mc-a.x*s, a.z*a.z*mc+c)
+        new Vec3(a.x*a.x*mc+c, a.y*a.x*mc-a.z*s, a.z*a.x*mc+a.y*s),
+        new Vec3(a.x*a.y*mc+a.z*s, a.y*a.y*mc+c, a.z*a.y*mc-a.x*s),
+        new Vec3(a.x*a.z*mc-a.y*s, a.y*a.z*mc+a.x*s, a.z*a.z*mc+c)
       );
     }
   
-    /** Получить матрицу вращения из кватерниона */
+    /** tested
+     * Получить матрицу вращения из кватерниона
+     */
     static fromQuat(q: Quaternion): Mat3 {
       const x2 = q.x + q.x;
       const y2 = q.y + q.y;
@@ -1131,9 +1172,9 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
       const wy = q.w * y2;
       const wz = q.w * z2;
       return new Mat3(
-        new Vec3(1 - yy - zz, yx + wz, zx - wy),
-        new Vec3(yx - wz, 1 - xx - zz, zy + wx),
-        new Vec3(zx + wy, zy - wx, 1 - xx - yy)
+        new Vec3(1 - yy - zz, yx - wz, zx + wy),
+        new Vec3(yx + wz, 1 - xx - zz, zy - wx),
+        new Vec3(zx - wy, zy + wx, 1 - xx - yy)
       );
     }
 
@@ -1149,16 +1190,18 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
   /** Строковое представление */
   toString() { return `i:${this.i}, j:${this.j}, k:${this.k}` }
 
-  /** Получить коэффициенты масштабирования из матрицы преобразования */
+  /** tested
+   * Получить коэффициенты масштабирования из матрицы преобразования
+   */
   getScaling(): Vec3 {
     return new Vec3(
-      Math.hypot(this.i.x, this.i.y, this.i.z),
-      Math.hypot(this.j.x, this.j.y, this.j.z), 
-      Math.hypot(this.k.x, this.k.y, this.k.z)
+      Math.hypot(this.i.x, this.j.x, this.k.x),
+      Math.hypot(this.i.y, this.j.y, this.k.y), 
+      Math.hypot(this.i.z, this.j.z, this.k.z)
     );
   }
 
-  /**
+  /** tested
    * Получить кватернион из матрицы преобразования
    */
   getQuaternion(): Quaternion {
@@ -1167,13 +1210,13 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
     const isy = 1 / scaling.y;
     const isz = 1 / scaling.z;
     const sm11 = this.i.x * isx;
-    const sm12 = this.i.y * isy;
-    const sm13 = this.i.z * isz;
-    const sm21 = this.j.x * isx;
+    const sm12 = this.j.x * isy;
+    const sm13 = this.k.x * isz;
+    const sm21 = this.i.y * isx;
     const sm22 = this.j.y * isy;
-    const sm23 = this.j.z * isz;
-    const sm31 = this.k.x * isx;
-    const sm32 = this.k.y * isy;
+    const sm23 = this.k.y * isz;
+    const sm31 = this.i.z * isx;
+    const sm32 = this.j.z * isy;
     const sm33 = this.k.z * isz;
     const trace = sm11 + sm22 + sm33;
     var S = 0;
@@ -1243,6 +1286,7 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
 
   div(n: number): Mat3 { return this.copy().divMutable(n); }
 
+  // tested
   mulMat(m: Mat3): Mat3 {
     return new Mat3(
       new Vec3(this.i.dot(m.cx), this.i.dot(m.cy), this.i.dot(m.cz)),
@@ -1251,6 +1295,7 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
     );
   }
 
+  // tested
   mulMatLeft(m: Mat3): Mat3 {
     return new Mat3(
       new Vec3(this.cx.dot(m.i), this.cy.dot(m.i), this.cz.dot(m.i)),
@@ -1259,15 +1304,17 @@ export class Mat3 implements IMatrixes<Mat3, Vec3> {
     );
   }
 
+  // tested
   mulVec(v: Vec3): Vec3 { return new Vec3(this.i.dot(v), this.j.dot(v), this.k.dot(v)); }
 
+  // tested
   mulVecLeft(v: Vec3): Vec3 { return new Vec3(this.cx.dot(v), this.cy.dot(v), this.cz.dot(v)); }
   
   getArray(): number[] {
     return [
-      this.i.x, this.i.y, this.i.z,
-      this.j.x, this.j.y, this.j.z,
-      this.k.x, this.k.y, this.k.z
+      this.i.x, this.j.x, this.k.x,
+      this.i.y, this.j.y, this.k.y,
+      this.i.z, this.j.z, this.k.z
     ]
   }
 
@@ -1326,8 +1373,8 @@ export class Vec2 implements IVectors<Vec2> {
   // Методы интерфейса
 
   equals(v: Vec2): boolean {
-    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., this.x, v.x)
-    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., this.y, v.y)
+    return Math.abs(this.x-v.x)<=EPSILON*Math.max(1., Math.abs(this.x), Math.abs(v.x))
+    && Math.abs(this.y-v.y)<=EPSILON*Math.max(1., Math.abs(this.y), Math.abs(v.y))
   }
 
   addMutable(v: Vec2): Vec2 {
@@ -1405,7 +1452,10 @@ export class Vec2 implements IVectors<Vec2> {
  *      j a02 a03
  * */
 export class Mat2 implements IMatrixes<Mat2, Vec2> {
-  i: Vec2; j: Vec2;
+  /** Строка i */
+  i: Vec2;
+  /** Строка j */
+  j: Vec2;
 
   /**
    * 
@@ -1426,12 +1476,15 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
   /** Получить матрицу со случайными элементами */
   static get RAND() { return new Mat2(Vec2.RAND, Vec2.RAND) };
 
-  /** Получить матрицу из массива чисел */
+  /**
+   * Получить матрицу из массива чисел
+   * Для совместимости с графическими картами матрица заполняется по колонкам
+   * */
   static fromArray([a00, a01, a10, a11]: [number, number, number, number] | Float32Array): Mat2 { 
-    return new Mat2(new Vec2(a00, a01), new Vec2(a10, a11));
+    return new Mat2(new Vec2(a00, a10), new Vec2(a01, a11));
   }
   
-  /**
+  /** tested
    * Получить матрицу вращения
    * @param rad - угол поворота
    * @returns 
@@ -1439,7 +1492,7 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
   static fromRotation(rad: number): Mat2 {
     const s = Math.sin(rad);
     const c = Math.cos(rad);
-    return new Mat2(new Vec2(c, s), new Vec2(-s, c));
+    return new Mat2(new Vec2(c, -s), new Vec2(s, c));
   }
 
   // --------------------------------------------------------------------------
@@ -1497,6 +1550,7 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
 
   div(n: number): Mat2 { return this.copy().divMutable(n); }
 
+  // tested
   mulMat(m: Mat2): Mat2 {
     return new Mat2(
       new Vec2(this.i.dot(m.cx), this.i.dot(m.cy)),
@@ -1504,6 +1558,7 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
     );
   }
 
+  // tested
   mulMatLeft(m: Mat2): Mat2 {
     return new Mat2(
       new Vec2(this.cx.dot(m.i), this.cy.dot(m.i)),
@@ -1511,11 +1566,13 @@ export class Mat2 implements IMatrixes<Mat2, Vec2> {
     );
   }
 
+  // tested
   mulVec(v: Vec2): Vec2 { return new Vec2(this.i.dot(v), this.j.dot(v)); }
 
+  // tested
   mulVecLeft(v: Vec2): Vec2 { return new Vec2(this.cx.dot(v), this.cy.dot(v)); }
   
-  getArray(): number[] { return [this.i.x, this.i.y, this.j.x, this.j.y]; }
+  getArray(): number[] { return [this.i.x, this.j.x, this.i.y, this.j.y]; }
 
   getFloat32Array(): Float32Array { return new Float32Array(this.getArray()); }
 }
@@ -1546,13 +1603,15 @@ export class Quaternion extends Vec4 {
     );
   }
 
-  /** Получить кватернион, соответствующий повороту вокруг оси axis на угол rad */
+  /** tested
+   * Получить кватернион, соответствующий повороту вокруг оси axis на угол rad
+   */
   static fromAxisAngle(axis: Vec3, rad: number): Quaternion {
     const a = 0.5*rad;
     const p = axis.mul(Math.sin(a));
     return new Quaternion(p.x, p.y, p.z, Math.cos(a));
   }
-  /**
+  /** tested
    * Получить кватернион по заданным углам Эйлера x, y, z.
    * @param x - угол поворота вокруг оси X в градусах
    * @param y - угол поворота вокруг оси Y в градусах
@@ -1577,8 +1636,8 @@ export class Quaternion extends Vec4 {
     );
   }
   /** Получить кватернион из матрицы преобразования */
-  static fromMat3(m: Mat3 | Mat4): Quaternion { return m.getQuaternion(); }
-  
+  static fromMat3(m: Mat3 | Mat4): Quaternion { return m.getQuaternion() }
+
   /** Получить кватернион из направляющих точек вида */
   static fromLookAt(from: Vec3, to: Vec3, up: Vec3): Quaternion {
     return Mat4.lookAt(from, to, up).getQuaternion()

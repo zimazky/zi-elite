@@ -132,9 +132,9 @@ export class Camera {
     this.transformMat = mdir;
 
     // ускорение тяги
-    this.velocity.addMutable(mdir.mulVecLeft(acceleration).mulMutable(THRUST*timeDelta));
+    this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
     // замедление от сопротивления воздуха
-    this.velocity.subMutable( mdir.mulVecLeft(mdir.mulVec(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
+    this.velocity.subMutable(mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
     // гравитация
     //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
     // экстренная остановка

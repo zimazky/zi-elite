@@ -1,7 +1,7 @@
 #define CONST_MODULE
 
 // Просмотр ошибки карты глубины буфера A
-//#define DEPTH_ERROR_VIEW
+#define DEPTH_ERROR_VIEW
 //#define RAYCAST_ITERATIONS_VIEW
 //#define SHADOWS_ITERATIONS_VIEW
 //#define SHADOW_DISTANCE_VIEW

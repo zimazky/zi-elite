@@ -1,5 +1,5 @@
-import { Mat2, Mat3, Mat4, Quaternion, Vec2, Vec3, Vec4 } from "./vectors";
-import { mat2, mat3, mat4, quat, vec2, vec3, vec4 } from "gl-matrix";
+import { Mat3, Mat4, Quaternion, Vec3, Vec4 } from "./vectors";
+import { mat3, mat4, quat, vec3, vec4 } from "gl-matrix";
 
 type TestParameters = { name: string, arg: any }[]
 
@@ -26,193 +26,6 @@ function test(f: (...args: any[])=>void, args: TestParameters) {
   it(title, callf (f, ...newargs)
   )
 }
-
-// ----------------------------------------------------------------------------
-// Mat2
-
-describe('Mat2.MulVecLeft', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat2.RAND;
-    const v2 = Vec2.RAND;
-    test((a: Mat2, b: Vec2)=>{
-      const re = a.mulVecLeft(b);
-      const ta = mat2.fromValues(a.i.x, a.j.x, a.i.y, a.j.y);
-      mat2.transpose(ta, ta);
-      const tb = vec2.fromValues(b.x, b.y);
-      const tr = vec2.create();
-      vec2.transformMat2(tr, tb, ta);
-      const ex = new Vec2(tr[0],tr[1]);
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'v2', arg: v2},
-    ]);
-  }
-})
-
-describe('Mat2.MulVec', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat2.RAND;
-    const v2 = Vec2.RAND;
-    test((a: Mat2, b: Vec2)=>{
-      const re = a.mulVec(b);
-      const ta = mat2.fromValues(a.i.x, a.j.x, a.i.y, a.j.y);
-      const tb = vec2.fromValues(b.x, b.y);
-      const tr = vec2.create();
-      vec2.transformMat2(tr, tb, ta);
-      const ex = new Vec2(tr[0],tr[1]);
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'v2', arg: v2},
-    ]);
-  }
-})
-
-describe('Mat2.MulMatLeft', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat2.RAND;
-    const m2 = Mat2.RAND;
-    test((a: Mat2, b: Mat2)=>{
-      const re = a.mulMatLeft(b);
-      const ta = mat2.fromValues(a.i.x, a.j.x, a.i.y, a.j.y);
-      const tb = mat2.fromValues(b.i.x, b.j.x, b.i.y, b.j.y);
-      const tr = mat2.create();
-      mat2.mul(tr, tb, ta);
-      const ex = new Mat2(new Vec2(tr[0],tr[2]), new Vec2(tr[1],tr[3]));
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'm2', arg: m2},
-    ]);
-  }
-})
-
-describe('Mat2.MulMat', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat2.RAND;
-    const m2 = Mat2.RAND;
-    test((a: Mat2, b: Mat2)=>{
-      const re = a.mulMat(b);
-      const ta = mat2.fromValues(a.i.x, a.j.x, a.i.y, a.j.y);
-      const tb = mat2.fromValues(b.i.x, b.j.x, b.i.y, b.j.y);
-      const tr = mat2.create();
-      mat2.mul(tr, ta, tb);
-      const ex = new Mat2(new Vec2(tr[0],tr[2]), new Vec2(tr[1],tr[3]));
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'm2', arg: m2},
-    ]);
-  }
-})
-
-// ----------------------------------------------------------------------------
-// Mat3
-
-describe('Mat3.MulVecLeft', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat3.RAND;
-    const v2 = Vec3.RAND;
-    test((a: Mat3, b: Vec3)=>{
-      const re = a.mulVecLeft(b);
-      const ta = mat3.fromValues(
-        a.i.x, a.j.x, a.k.x,
-        a.i.y, a.j.y, a.k.y,
-        a.i.z, a.j.z, a.k.z
-        );
-      mat3.transpose(ta, ta);
-      const tb = vec3.fromValues(b.x, b.y, b.z);
-      const tr = vec3.create();
-      vec3.transformMat3(tr, tb, ta);
-      const ex = new Vec3(tr[0],tr[1],tr[2]);
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'v2', arg: v2},
-    ]);
-  }
-})
-
-describe('Mat3.MulVec', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat3.RAND;
-    const v2 = Vec3.RAND;
-    test((a: Mat3, b: Vec3)=>{
-      const re = a.mulVec(b);
-      const ta = mat3.fromValues(
-        a.i.x, a.j.x, a.k.x,
-        a.i.y, a.j.y, a.k.y,
-        a.i.z, a.j.z, a.k.z
-        );
-      const tb = vec3.fromValues(b.x, b.y, b.z);
-      const tr = vec3.create();
-      vec3.transformMat3(tr, tb, ta);
-      const ex = new Vec3(tr[0],tr[1],tr[2]);
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'v2', arg: v2},
-    ]);
-  }
-})
-
-describe('Mat3.MulMatLeft', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat3.RAND;
-    const m2 = Mat3.RAND;
-    test((a: Mat3, b: Mat3)=>{
-      const re = a.mulMatLeft(b);
-      const ta = mat3.fromValues(a.i.x, a.j.x, a.k.x, a.i.y, a.j.y, a.k.y, a.i.z, a.j.z, a.k.z);
-      const tb = mat3.fromValues(b.i.x, b.j.x, b.k.x, b.i.y, b.j.y, b.k.y, b.i.z, b.j.z, b.k.z);
-      const tr = mat3.create();
-      mat3.mul(tr, tb, ta);
-      const ex = new Mat3(new Vec3(tr[0],tr[3],tr[6]), new Vec3(tr[1],tr[4],tr[7]), new Vec3(tr[2],tr[5],tr[8]));
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'm2', arg: m2},
-    ]);
-  }
-})
-
-describe('Mat3.MulMat', ()=>{
-  for(let i = 0; i < 100; i++) {
-    const m1 = Mat3.RAND;
-    const m2 = Mat3.RAND;
-    test((a: Mat3, b: Mat3)=>{
-      const re = a.mulMat(b);
-      const ta = mat3.fromValues(a.i.x, a.j.x, a.k.x, a.i.y, a.j.y, a.k.y, a.i.z, a.j.z, a.k.z);
-      const tb = mat3.fromValues(b.i.x, b.j.x, b.k.x, b.i.y, b.j.y, b.k.y, b.i.z, b.j.z, b.k.z);
-      const tr = mat3.create();
-      mat3.mul(tr, ta, tb);
-      const ex = new Mat3(new Vec3(tr[0],tr[3],tr[6]), new Vec3(tr[1],tr[4],tr[7]), new Vec3(tr[2],tr[5],tr[8]));
-      const equal = re.equals(ex);
-      expect(equal).toBeTrue();
-      //expect(re).toEqual(ex)
-    }, [
-      {name: 'm1', arg: m1},
-      {name: 'm2', arg: m2},
-    ]);
-  }
-})
-
-// ----------------------------------------------------------------------------
-// Mat4
 
 describe('Mat4.MulVecLeft', ()=>{
   for(let i = 0; i < 100; i++) {
@@ -473,7 +286,8 @@ describe('Mat4.lookAt', ()=>{
       mat4.lookAt(m,from,to,up);
       const ex = Mat4.fromArray(m);
       const equal = re.equals(ex);
-      expect(equal).toBeTrue();
+      if(!equal) expect(re).toEqual(ex);
+      else expect(equal).toBeTrue();
       //expect(re).toEqual(ex)
     }, [
       {name: 'from', arg: from},
@@ -489,10 +303,10 @@ describe('Mat4.transpose', ()=>{
     test((m1: Mat4)=>{
       const re = m1.transpose();
       const mt = mat4.fromValues(
-        m1.i.x, m1.i.y, m1.i.z, m1.i.w,
-        m1.j.x, m1.j.y, m1.j.z, m1.j.w,
-        m1.k.x, m1.k.y, m1.k.z, m1.k.w,
-        m1.l.x, m1.l.y, m1.l.z, m1.l.w
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
         );
       const m = mat4.create();
       mat4.transpose(m, mt);
@@ -513,10 +327,10 @@ describe('Mat4.getQuaternion', ()=>{
     test((m1: Mat4)=>{
       const re = m1.getQuaternion();
       const mt = mat4.fromValues(
-        m1.i.x, m1.i.y, m1.i.z, m1.i.w,
-        m1.j.x, m1.j.y, m1.j.z, m1.j.w,
-        m1.k.x, m1.k.y, m1.k.z, m1.k.w,
-        m1.l.x, m1.l.y, m1.l.z, m1.l.w
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
         );
       const q = quat.create();
       mat4.getRotation(q, mt);
@@ -530,32 +344,146 @@ describe('Mat4.getQuaternion', ()=>{
   }
 })
 
-
-describe('Quaternion.fromLookAt', ()=>{
+describe('Mat4.fromQuat', ()=>{
   for(let i = 0; i < 100; i++) {
-    const from = Vec3.RAND.mulMutable(100);
-    const to = Vec3.RAND.mulMutable(100);
-    const up = Vec3.RAND.normalize();
-    test((f: Vec3, t: Vec3, u: Vec3)=>{
-      const re = Quaternion.fromLookAt(f,t,u);
-      const m = mat4.create();
-      const from = vec3.create();
-      vec3.set(from, f.x, f.y, f.z);
-      const to = vec3.create();
-      vec3.set(to, t.x, t.y, t.z);
-      const up = vec3.create();
-      vec3.set(up, u.x, u.y, u.z);
-      mat4.lookAt(m,from,to,up);
-      const q = quat.create();
-      mat4.getRotation(q, m);
-      const ex = Quaternion.fromArray(q);
+    const q1 = Quaternion.QRAND;
+    test((q1: Quaternion)=>{
+      const re = Mat4.fromQuat(q1);
+      const q = quat.fromValues(q1.x, q1.y, q1.z, q1.w);
+      const mt = mat4.create();
+      mat4.fromQuat(mt, q);
+      const ex = Mat4.fromArray(mt);
       const equal = re.equals(ex);
       expect(equal).toBeTrue();
       //expect(re).toEqual(ex)
     }, [
-      {name: 'from', arg: from},
-      {name: 'to', arg: to},
-      {name: 'up', arg: up}
+      {name: 'Quat', arg: q1}
     ]);
   }
 })
+
+describe('Mat4.scale', ()=>{
+  for(let i = 0; i < 100; i++) {
+    const m1 = Mat4.RAND;
+    const v1 = Vec3.RAND;
+    test((m1: Mat4, v1: Vec3)=>{
+      const re = m1.scale(v1);
+      const mt = mat4.fromValues(
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
+        );
+      const vt = vec3.fromValues(v1.x, v1.y, v1.z);
+      mat4.scale(mt, mt, vt);
+      const ex = Mat4.fromArray(mt);
+      const equal = re.equals(ex);
+      expect(equal).toBeTrue();
+      //expect(re).toEqual(ex)
+    }, [
+      {name: 'Mat4', arg: m1},
+      {name: 'Vec3', arg: v1}
+    ]);
+  }
+})
+
+describe('Mat4.tarnslate', ()=>{
+  for(let i = 0; i < 100; i++) {
+    const m1 = Mat4.RAND;
+    const v1 = Vec3.RAND;
+    test((m1: Mat4, v1: Vec3)=>{
+      const re = m1.translate(v1);
+      const mt = mat4.fromValues(
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
+        );
+      const vt = vec3.fromValues(v1.x, v1.y, v1.z);
+      mat4.translate(mt, mt, vt);
+      const ex = Mat4.fromArray(mt);
+      const equal = re.equals(ex);
+      expect(equal).toBeTrue();
+      //expect(re).toEqual(ex)
+    }, [
+      {name: 'Mat4', arg: m1},
+      {name: 'Vec3', arg: v1}
+    ]);
+  }
+})
+
+describe('Mat4.rotate', ()=>{
+  for(let i = 0; i < 100; i++) {
+    const m1 = Mat4.RAND;
+    const v1 = Vec3.RAND;
+    const n = Math.random();
+    test((m1: Mat4, v1: Vec3, n: number)=>{
+      const re = m1.rotate(v1, n);
+      const mt = mat4.fromValues(
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
+        );
+      const vt = vec3.fromValues(v1.x, v1.y, v1.z);
+      mat4.rotate(mt, mt, n, vt);
+      const ex = Mat4.fromArray(mt);
+      const equal = re.equals(ex);
+      expect(equal).toBeTrue();
+      //expect(re).toEqual(ex)
+    }, [
+      {name: 'Mat4', arg: m1},
+      {name: 'Vec3', arg: v1},
+      {name: 'number', arg: n}
+    ]);
+  }
+})
+
+describe('Mat4.getScalingVec3', ()=>{
+  for(let i = 0; i < 100; i++) {
+    const m = Mat4.RAND;
+    test((m1: Mat4)=>{
+      const re = m1.getScalingVec3();
+      const mt = mat4.fromValues(
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
+        );
+      const vt = vec3.create();
+      mat4.getScaling(vt, mt);
+      const ex = Vec3.fromArray(vt);
+      const equal = re.equals(ex);
+      expect(equal).toBeTrue();
+      //expect(re).toEqual(ex)
+    }, [
+      {name: 'Mat4', arg: m}
+    ]);
+  }
+})
+
+describe('Mat4.getRotationMat3', ()=>{
+  for(let i = 0; i < 100; i++) {
+    const m = Mat4.RAND;
+    test((m1: Mat4)=>{
+      const re = m1.getRotationMat3();
+      const mt = mat4.fromValues(
+        m1.i.x, m1.j.x, m1.k.x, m1.l.x,
+        m1.i.y, m1.j.y, m1.k.y, m1.l.y,
+        m1.i.z, m1.j.z, m1.k.z, m1.l.z,
+        m1.i.w, m1.j.w, m1.k.w, m1.l.w
+        );
+      const qt = quat.create();
+      mat4.getRotation(qt, mt);
+      const m2 = mat3.create();
+      mat3.fromQuat(m2, qt);
+      const ex = Mat3.fromArray(m2);
+      const equal = re.equals(ex);
+      expect(equal).toBeTrue();
+      //expect(re).toEqual(ex)
+    }, [
+      {name: 'Mat4', arg: m}
+    ]);
+  }
+})
+
