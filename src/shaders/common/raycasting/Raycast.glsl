@@ -130,7 +130,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
  */
 float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
   float res = 1.;
-  t = 0.0001*dis;
+  t = 0.001*dis;
   float altPrev = terrainAlt(ro);
   for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + t*rd;
