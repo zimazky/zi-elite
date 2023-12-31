@@ -16,6 +16,7 @@ const MAP_HEIGHTS = 2;
 const THRUST = 11. // ускорение двигателя м/с2
 const AIR_DRAG_FACTOR = 58. // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR) // вектор сопротивления по осям
+const ATM_HALF_HEIGHT = 7000; // Высота половинной плотности атмосферы
 const ANGLE_DELTA = Math.PI/180.
 const MIN_ALTITUDE = 2 // минимальная высота над поверхностью
 
@@ -51,8 +52,12 @@ export class Camera {
   position: Vec3;
   velocity: Vec3;
   angularSpeed: Vec3;
+  // высота камеры над ландшафтом
   altitude: number = 0;
-  height: number =0;
+  // высота возвышения ландшафта над уровнем моря
+  terrainElevation: number = 0;
+  // высота камеры над уровнем моря
+  height: number = 0;
   normal: Vec3 = Vec3.K;
   /** Единичный вектор от центра планеты */
   ir: Vec3 = Vec3.K;
@@ -137,8 +142,10 @@ export class Camera {
 
     // ускорение тяги
     this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
+    // множитель, учитывающий уменьшение плотности с высотой
+    const airDensityFactor = Math.exp(-0.6931*this.height/ATM_HALF_HEIGHT);
     // замедление от сопротивления воздуха
-    this.velocity.subMutable(mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG)).mulMutable(timeDelta) );
+    this.velocity.subMutable(mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG).mulMutable(airDensityFactor)).mulMutable(timeDelta) );
     // гравитация
     //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
     // экстренная остановка
@@ -152,7 +159,7 @@ export class Camera {
 
     const alt = this.tSampler.altitude(this.position);
     const hNormal = this.tSampler.heightNormal(this.position);
-    this.height = hNormal.value;
+    this.terrainElevation = hNormal.value;
     this.normal = hNormal.diff;
     const rn = this.tSampler.zenith(this.position);
     this.ir = rn;
@@ -169,6 +176,7 @@ export class Camera {
     this.positionDelta = this.position.sub(this.positionDelta);
     // высота над поверхностью
     this.altitude = altitude + MIN_ALTITUDE
+    this.height = this.terrainElevation + this.altitude;
 
     // вращение
     const angularAcceleration = new Vec3(
