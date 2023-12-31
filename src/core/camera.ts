@@ -13,8 +13,13 @@ export const MAP_VIEW = 1;
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;
 
-const THRUST = 11. // ускорение двигателя м/с2
-const AIR_DRAG_FACTOR = 58. // коэффициент сопротивления воздуха 1/с
+const THRUST = 2; // ускорение двигателя в g
+const AIR_DRAG_FACTOR = 0.5 // коэффициент сопротивления воздуха 1/с
+const AIR_DRAG_MATRIX = Mat3.fromArray([
+  0.01, 0, 0,     // vx       dvx = 0.01*vx
+  0, 0.05, 0,     // vy       dvy = 0.05*vy + 0.01*vz (+ подъемная сила)
+  0, 0.01, 0.001  // vz       dvz = 0.001*vz
+]).mulMutable(AIR_DRAG_FACTOR);
 const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR) // вектор сопротивления по осям
 const ATM_HALF_HEIGHT = 7000; // Высота половинной плотности атмосферы
 const ANGLE_DELTA = Math.PI/180.
@@ -140,23 +145,12 @@ export class Camera {
     const mdir = Mat3.fromQuat(this.orientation);
     this.transformMat = mdir;
 
-    // ускорение тяги
-    this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*timeDelta));
-    // множитель, учитывающий уменьшение плотности с высотой
-    const airDensityFactor = Math.exp(-0.6931*this.height/ATM_HALF_HEIGHT);
-    // замедление от сопротивления воздуха
-    this.velocity.subMutable(mdir.mulVec(mdir.mulVecLeft(this.velocity).mulElMutable(AIR_DRAG).mulMutable(airDensityFactor)).mulMutable(timeDelta) );
-    // гравитация
-    //this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
-    // экстренная остановка
-    if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO;
-
+    ////////////////////////////////////////////////////////////////////////////
     // перемещение
     this.positionDelta = this.position.copy();
     this.position.addMutable(this.velocity.mul(timeDelta));
 
     // не даем провалиться ниже поверхности
-
     const alt = this.tSampler.altitude(this.position);
     const hNormal = this.tSampler.heightNormal(this.position);
     this.terrainElevation = hNormal.value;
@@ -178,6 +172,19 @@ export class Camera {
     this.altitude = altitude + MIN_ALTITUDE
     this.height = this.terrainElevation + this.altitude;
 
+    ////////////////////////////////////////////////////////////////////////////
+    // ускорение тяги
+    this.velocity.addMutable(mdir.mulVec(acceleration).mulMutable(THRUST*this._planet.g*timeDelta));
+    // множитель, учитывающий уменьшение плотности с высотой
+    const airDensityFactor = Math.exp(-0.6931*this.height/ATM_HALF_HEIGHT);
+    // замедление от сопротивления воздуха
+    this.velocity.subMutable(mdir.mulVec(AIR_DRAG_MATRIX.mulVec(mdir.mulVecLeft(this.velocity)).mulMutable(airDensityFactor*this.velocity.length())).mulMutable(timeDelta));
+    // гравитация
+    this.velocity.subMutable(rn.mul(this._planet.g*timeDelta));
+    // экстренная остановка
+    if(isKeyDown(KEY_SPACE) > 0) this.velocity = Vec3.ZERO;
+
+    ////////////////////////////////////////////////////////////////////////////
     // вращение
     const angularAcceleration = new Vec3(
       isKeyDown(KEY_DOWN) - isKeyDown(KEY_UP), 

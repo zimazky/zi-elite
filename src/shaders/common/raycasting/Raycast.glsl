@@ -98,7 +98,8 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
     //if(t>tmax) return res;
   }
-  return t<7000. ? vec4(nor_h.xyz, t) : res;
+  //return t<10000. ? vec4(nor_h.xyz, t) : res;
+  return vec4(nor_h.xyz, t);
 }
 #endif
 
