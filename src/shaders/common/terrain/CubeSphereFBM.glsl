@@ -50,18 +50,21 @@ const float oneOverWScale = 1./W_SCALE;
 // возвращает:
 // xyz - нормаль
 // w - высота
-// uv - текстурные координаты на кубе
+// uv - текстурные координаты на кубе отмасштабированные по ширине (1. соответствует дитанции W_SCALE)
 vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
   // Размер куба на который проецируется вектор для позиционирования на кубосфере
-  float invCubeRad = SQRT3/uPlanetRadius;
+  float cubeRad = uPlanetRadius*ONE_OVER_SQRT3;
   vec3 r = p - uPlanetCenter;
   vec3 absR = abs(r);
   vec4 h_d;
+  
+  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
   if(absR.x > absR.y) {
     if(absR.x > absR.z) {
-      vec3 s = r/(absR.x*invCubeRad);
-      uvCoord = s.yz;
-      h_d = terrainFbm(s.yz*oneOverWScale, dist);
+      vec2 uv = r.yz/absR.x;
+      uvCoord = uv*oneOverWScale*cubeRad;
+      h_d = terrainFbm(uvCoord, dist);
       h_d.z *= nScale;
       // Матрица преобразования нормалей из касательного пространства относительно сферы к объектному пространству
       //  [    d    0  u/d ]
@@ -72,58 +75,54 @@ vec4 terrainHeightNormal(vec3 p, float dist, out vec2 uvCoord) {
       // u,v - координаты на плоскостях куба в диапазоне (-1..1)
       // u = sqrt(3)*x/R
       // v = sqrt(3)*y/R
-      vec2 uv = s.yz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
       vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.zxy; // x+
-      if(r.x < 0.) h_d.x = -h_d.x; // x-
+      h_d.x *= sign(r.x); // x-
     }
     else {
-      vec3 s = r/(absR.z*invCubeRad);
-      uvCoord = s.xy;
-      h_d = terrainFbm(s.xy*oneOverWScale, dist);
+      vec2 uv = r.xy/absR.z;
+      uvCoord = uv*oneOverWScale*cubeRad;
+      h_d = terrainFbm(uvCoord, dist);
       h_d.z *= nScale;
-      vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
       vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
-      if(r.z < 0.) h_d.z = -h_d.z; // z-
+      h_d.z *= sign(r.z); // z-
     }
   }
   else {
     if(absR.y > absR.z) {
-      vec3 s = r/(absR.y*invCubeRad);
-      uvCoord = s.xz;
-      h_d = terrainFbm(s.xz*oneOverWScale, dist);
+      vec2 uv = r.xz/absR.y;
+      uvCoord = uv*oneOverWScale*cubeRad;
+      h_d = terrainFbm(uvCoord, dist);
       h_d.z *= nScale;
-      vec2 uv = s.xz*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
       vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       h_d.xyz = h_d.xzy; // y+
-      if(r.y < 0.) h_d.y = -h_d.y; // y-
+      h_d.y *= sign(r.y); // y-
     }
     else {
-      vec3 s = r/(absR.z*invCubeRad);
-      uvCoord = s.xy;
-      h_d = terrainFbm(s.xy*oneOverWScale, dist);
+      vec2 uv = r.xy/absR.z;
+      uvCoord = uv*oneOverWScale*cubeRad;
+      h_d = terrainFbm(uvCoord, dist);
       h_d.z *= nScale;
-      vec2 uv = s.xy*invCubeRad;
       float d = sqrt(dot(uv,uv)+1.);
       vec3 uvdivd = vec3(uv,1)/d;
       vec2 uvmuld = -d*uv;
       mat3 m = mat3(d, 0, uvmuld.x, 0, d, uvmuld.y, uvdivd);
       h_d.xyz = m * h_d.xyz;
       //h_d.xyz = h_d.xyz; // z+
-      if(r.z < 0.) h_d.z = -h_d.z; // z-
+      h_d.z *= sign(r.z); // z-
     }
   }
   return vec4(normalize(h_d.xyz), H_SCALE*h_d.w);

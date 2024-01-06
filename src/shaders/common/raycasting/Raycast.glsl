@@ -94,7 +94,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     altPrev = alt;
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
-    if( abs(h)<max(0.04,0.002*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    if( abs(h)<min(max(0.04,0.002*t), 10.) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
     //if(t>tmax) return res;
   }
@@ -137,6 +137,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, out int i, out float t) {
 	  vec3 p = ro + t*rd;
     float alt = terrainAlt(p);
     if(alt > altPrev && alt>=MAX_TRN_ELEVATION) return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
+    altPrev = alt;
     float h = alt - terrainHeight(p);
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали

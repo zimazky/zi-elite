@@ -58,7 +58,7 @@ export class InigoQuilezFBMNoise {
     const g = AutoDiff2.ZERO
     const h = AutoDiff2.ZERO
     let m = Mat2.ID
-    for(let i=0; i<12; i++) {
+    for(let i=0; i<16; i++) {
       const [f, tdx, tdy] = this._noiseSampler.noiseD2(m.mulVec(p))
       // коррекция производных гладкого шума из-за наличия множителя у аргумента функции
       f.diff = m.mulVecLeft(f.diff)

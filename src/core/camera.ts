@@ -106,22 +106,22 @@ export class Camera {
 
   /** Функция определения затененности */
   softShadow(ro: Vec3, rd: Vec3): number {
-    
-    const minStep = 1.;
     let res = 1.;
     let t = 0.1;
-    const rdZenith = rd.dot(this.tSampler.zenith(ro))
-    const cosA = Math.sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
-    for(let i=0; i<200; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+    let altPrev = this.tSampler.altitude(ro);
+    for(let i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
       const p = ro.add(rd.mul(t));
       const alt = this.tSampler.altitude(p);
-      if(alt > this.tSampler.MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
+      if(alt > altPrev && alt >= this.tSampler.MAX_TRN_ELEVATION) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
+      altPrev = alt;
       const h = alt - this.tSampler.height(p);
+      const rdZenith = rd.dot(this.tSampler.zenith(p))
+      const cosA = Math.sqrt(1.-rdZenith*rdZenith); // косинус угла наклона луча от камеры к горизонтали
       res = Math.min(res, cosA*h/t);
-      if(res < -SUN_DISC_ANGLE_SIN) return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
-      t += Math.max(minStep, 0.6*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
+      if(res < -SUN_DISC_ANGLE_SIN) return 0;
+      t += Math.max(20, 0.8*Math.abs(h)); // коэффициент устраняет полосатость при плавном переходе тени
     }
-    return 0.;
+    return smoothstep(-SUN_DISC_ANGLE_SIN, SUN_DISC_ANGLE_SIN, res);
   }
   
   inShadow(atm: Atmosphere, pos: Vec3, sunDir: Vec3): number {

@@ -44,20 +44,20 @@ vec4 snowAlbedo = vec4(0.30, 0.30, 0.30, 1.);
 
 // определение цвета пикселя
 // norz - вертикальная составляющая нормали к поверхности
-// uv - текстурные координаты
+// uv - текстурные координаты отмасштабированные по ширине (1. на дистанции W_SCALE)
 // h - высота точки
 vec4 biomeColor(float norz, vec2 uv, float height) {
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
   // мелкий шум в текстуре
-  float r = texture(uTextureGrayNoise, 400.0*uv/W_SCALE ).x;
+  float r = texture(uTextureGrayNoise, 400.0*uv).x;
   //r = mix(1., r, LvsR);
   // мелкие и крупные пятна на скалах и траве
-  float r2 = sqrt(fbm(uv*1.1)*fbm(uv*0.5));
+  float r2 = sqrt(fbm(2200.*uv)*fbm(1000.*uv));
   //r2 = mix(1., r2, LvsR);
   // полосы на скалах
   vec4 albedo =(1.+0.*r2)*(r*0.25+1.)*mix(darkRockAlbedo, lightRockAlbedo,
-                 texture(uTextureGrayNoise, vec2(0.1*uv.x/W_SCALE,0.2*height/H_SCALE)).x*r2);
+                 texture(uTextureGrayNoise, vec2(0.1*uv.x,0.2*height/H_SCALE)).x*r2);
 
   // песок
   float sh = smoothstep(500.,600.,height); // фактор высоты
@@ -76,7 +76,7 @@ vec4 biomeColor(float norz, vec2 uv, float height) {
   //albedo = mix(albedo, r2*grassAlbedo*(0.25+0.75*r), gh*gn);
   
   // снег на высоте от 800 м 
-  float h = smoothstep(800., 1000., height + 250.*fbm(uv/W_SCALE));
+  float h = smoothstep(800., 1000., height + 250.*fbm(uv));
   // угол уклона
   float e = smoothstep(1.-0.5*h, 1.-0.1*h, norz);
   // северное направление
