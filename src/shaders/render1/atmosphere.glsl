@@ -265,6 +265,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     }
   }
 
+  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
@@ -295,6 +296,12 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     float OT = dot(pos, ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
     float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
     if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
+      // коэффициент ослабления рассеивания у границы тени
+      float k = 1.;//clamp((sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
+      if(OT<0.) k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
+      k *= k;
+      //k = mix(k, 1., LvsR);
+
       vec3 normal = normalize(pos);
       // источник света виден из данной точки
       vec2 optDepth2 = uScaleHeight * ChH(uPlanetRadius/uScaleHeight, (length(pos)-uPlanetRadius)/uScaleHeight, dot(normal, ld));
@@ -304,7 +311,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
       vec3 attn = exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
 
       // total += T(CP) * T(PA) * ρ(h) * ds
-      totalRayleigh += density.x * attn;
+      totalRayleigh += k * density.x * attn;
     }
   }
   vec3 inScatter = exp(-uBetaRayleigh*optDepth.x);
