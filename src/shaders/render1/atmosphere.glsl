@@ -265,7 +265,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     }
   }
 
-  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
@@ -285,6 +285,10 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
 
   vec2 fDensity = stepSize*exp(-(length(start)-uPlanetRadius)/uScaleHeight);
 
+  float maxR = uPlanetRadius + MAX_TRN_ELEVATION;
+  // расстояние вдоль направления на солнце, где продолжение цилиндра тени пересекается со сферой MAX_TRN_ELEVATION
+  float x = sqrt(maxR*maxR - PLANET_RADIUS_SQR);
+
   for (int i=0; i<PRIMARY_STEPS_INTERSECTION; i++, nextpos += step, pos += step) {
     // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
     vec2 density = stepSize*exp(-(length(nextpos)-uPlanetRadius)/uScaleHeight);
@@ -297,10 +301,12 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
     if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
       // коэффициент ослабления рассеивания у границы тени
-      float k = 1.;//clamp((sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
-      if(OT<0.) k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
+      //float k = 1.;//clamp((sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
+      //if(OT<0.) k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
+      //else k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, min(OT/x, 1.), 1.);
+      float k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, clamp(OT/x, 0., 1.), 1.);
+      //k = mix(k, k2, LvsR);
       k *= k;
-      //k = mix(k, 1., LvsR);
 
       vec3 normal = normalize(pos);
       // источник света виден из данной точки

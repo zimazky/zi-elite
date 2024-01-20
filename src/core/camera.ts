@@ -13,14 +13,13 @@ export const MAP_VIEW = 1;
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;
 
-const THRUST = 2; // ускорение двигателя в g
+const THRUST = 1.2; // ускорение двигателя в g
 const AIR_DRAG_FACTOR = 0.5 // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG_MATRIX = Mat3.fromArray([
   0.01, 0, 0,     // vx       dvx = 0.01*vx
   0, 0.05, 0,     // vy       dvy = 0.05*vy + 0.01*vz (+ подъемная сила)
   0, 0.01, 0.001  // vz       dvz = 0.001*vz
 ]).mulMutable(AIR_DRAG_FACTOR);
-const AIR_DRAG = new Vec3(0.01, 0.05, 0.001).mulMutable(AIR_DRAG_FACTOR) // вектор сопротивления по осям
 const ATM_HALF_HEIGHT = 7000; // Высота половинной плотности атмосферы
 const ANGLE_DELTA = Math.PI/180.
 const MIN_ALTITUDE = 2 // минимальная высота над поверхностью
