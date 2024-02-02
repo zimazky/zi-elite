@@ -337,6 +337,8 @@ export class Engine extends GLContext {
     this.currentTime = lCurrentTime;
     this.frame++;
 
+    this.onUpdate(time, timeDelta);
+
     // Шейдер A, рендеринг в текстуру
     this.framebuffers.forEach(e => {
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, e.framebuffer);
@@ -386,8 +388,6 @@ export class Engine extends GLContext {
       this.gl.drawElements(this.renderbufer.drawMode, this.renderbufer.numOfVertices, this.gl.UNSIGNED_INT, 0);
     else this.gl.drawArrays(this.renderbufer.drawMode, 0, this.renderbufer.numOfVertices);
     this.renderbufer.onProgramLoop(time, timeDelta);
-
-    this.onUpdate(time, timeDelta);
 
     requestAnimationFrame(this.loop.bind(this));
   }

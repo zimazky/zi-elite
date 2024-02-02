@@ -87,6 +87,7 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     t = max(tmin, OT-AT);
   }
   vec4 nor_h;
+  int jit = 0;
   for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     float alt = terrainAlt(pos);
@@ -96,6 +97,8 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     float h = alt - nor_h.w;
     if( abs(h)<max(0.04,0.002*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     //if( abs(h)<min(max(0.04,0.002*t), 10.) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
+    if(h < 0.) jit++;
+    else if(jit > 0) return vec4(nor_h.xyz, t);
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
     //if(t>tmax) return res;
   }
