@@ -60,11 +60,11 @@ const float ONE_DIV4PI = 1./(4.*PI);
 
 struct ResultScattering {
   vec3 t; // Мультипликативная часть (transmittance), цвет поглощения
-  vec3 i; //Аддитивная часть (in-scatter), цвет подсвечивания за счет рассеивания атмосферы
+  vec3 i; // Аддитивная часть (in-scatter), цвет подсвечивания за счет рассеивания атмосферы
 };
 
 /** 
- * Функция вычисления атмосферного рассеивания
+ * Функция вычисления атмосферного рассеивания для лучей не пересекающих поверхность планеты
  *   ro - положение камеры
  *   rd - направление луча камеры
  *   ld - направление на источник света
@@ -93,17 +93,6 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
   }
   else rayLen = AT - dot(start, rd); // пересчитываем длину луча с учетом нахождения внутри сферы атмосферы
 
-  vec3 normal = normalize(start);
-  float NdotD = dot(normal, rd);
-  float isNotPlanetIntersect = 1.;
-  if(NdotD < 0.) {
-    // Поиск длины луча в случае попадания в поверхность планеты
-    if(CT2 < PLANET_RADIUS_SQR) {
-      rayLen = OT - sqrt(PLANET_RADIUS_SQR - CT2);
-      isNotPlanetIntersect = 0.;
-    }
-  }
-  
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
   // Для рассеяния Ми g принимают 0,76 ... 0,999.
@@ -114,21 +103,165 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
   float phaseRayleigh = 0.75 * (1. + mu2) * ONE_DIV4PI;
   float A = max(0., 1. + uGMie*(uGMie - 2.*mu));
   float phaseMie = 1.5 * (1. + mu2)*(1. - g2) / ((2. + g2)*sqrt(A*A*A)) * ONE_DIV4PI;
-    
-  float stepSize = rayLen/float(PRIMARY_STEPS); // длина шага
-  vec3 step = rd*stepSize; // шаг вдоль луча
-  //vec3 nextpos = currentpos + step; // следующая точка
-  vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
-  vec3 nextpos = pos + step; // следующая точка
 
   // оптическая глубина x - Релея, y - Ми, z - озон
   vec2 optDepth = vec2(0.);
   vec3 totalRayleigh = vec3(0.);
   vec3 totalMie = vec3(0.);
+  int stepsNumber = PRIMARY_STEPS;
+
+  // Расчет расстояния до тени планеты
+  //
+  // (1) r^2 - dot(ld, r)^2 < R^2 – условие попадания точки в цилиндр тени планеты
+  // (2) dot(ld, r) < 0 – условие что точка за планетой, в тени
+  // r - произвольный вектор относительно центра планеты
+  // ld - единичный вектор-направление на солнце
+  // R - радиус планеты
+  //
+  // Граница цилиндра:
+  // dot(OA+rd*t,OA+rd*t) - dot(ld,OA+rd*t)^2 = R^2        (3)
+  // r = OA+rd*t, OA = ro-planetCenter
+  // t - длина луча из камеры до границы тени
+  //
+  // dot(OA+rd*t,OA+rd*t) =
+  // = OAx^2 + 2*OAx*rdx*t + rdx^2*t^2 + OAy^2 + 2*OAy*rdy*t + rdy^2*t^2 + OAz^2 + 2*OAz*rdz*t + rdz^2*t^2 =
+  // = OA^2 + t^2 + 2*dot(rd,OA)*t
+  //
+  // dot(ld,OA+rd*t) = 
+  // = ldx*(OAx + rdx*t) + ldy*(OAy + rdy*t) + ldz*(OAz + rdz*t) =
+  // = ldx*OAx + ldx*rdx*t + ldy*OAy + ldy*rdy*t + ldz*OAz + ldz*rdz*t =
+  // = dot(ld,OA) + dot(ld,rd)*t
+  //
+  // Подставляем в (3)
+  // OA^2 + t^2 + 2*dot(rd,OA)*t – (dot(ld,OA) + dot(ld,rd)*t)^2 = R^2
+  //
+  // OA^2 + t^2 + 2*dot(rd,OA)*t – (dot(ld,OA)^2 + 2*dot(ld,OA)*dot(ld,rd)*t + dot(ld,rd)^2*t^2) = R^2
+  //
+  // t^2*(1 - dot(ld,rd)^2) + t*2*(dot(rd,OA) - dot(ld,OA)*dot(ld,rd)) + (OA^2 - R^2 - dot(ld,OA)^2) = 0
+  //
+  // Квадратное уравнение с коэффициентами:
+  // a = 1 - dot(ld,rd)^2
+  // b = 2*(dot(rd,OA) - dot(ld,OA)*dot(ld,rd))
+  // c = OA^2 - R^2 - dot(ld,OA)^2
+  //
+  // Если a = 0 луч параллелен направлению на солнце и не пересекает тень
+  // Дискриминант:
+  // D = b^2-4ac
+  // Если D<0, то луч уходит мимо цилиндра тени
+  // 
+  // Два корня:
+  // t1 = 0.5*(-b + sqrt(D))/a
+  // t2 = 0.5*(-b - sqrt(D))/a
+  // Из них выбираем меньший положительный
+  // Проверяем на условие, что точка за планетой по отношению к солнцу
+  // dot(ld, OA+rd*t) < 0
+
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
+  vec3 OA = start;
+  float LdotRd = dot(ld,rd);
+  if(abs(LdotRd) < 1.) {
+    // луч не параллелен направлению на солнце
+    float a = 1. - LdotRd*LdotRd;
+    float LdotOA = dot(ld,OA);
+    float b = 2.*(dot(rd,OA) - LdotOA*LdotRd);
+    float c = dot(OA,OA) - PLANET_RADIUS_SQR - LdotOA*LdotOA;
+    float D = b*b - 4.*a*c;
+    if(D > 0. && LvsR>0.5) {
+      // луч пересекает цилиндр тени
+      float sqrtD = sqrt(D);
+      vec2 t12 = 0.5*(vec2(-b)+vec2(sqrtD,-sqrtD))/a;
+      float t1 = min(t12.x, t12.y);
+      float t2 = max(t12.x, t12.y);
+      if(t1 > 0.) {
+        // луч пересекает цилиндр тени два раза
+        if(dot(ld, OA+rd*t1) < 0.) {
+          // за планетой
+          if(t2 < rayLen) {
+            // камера выше тени и луч пересекает цилиндр тени впереди дважды до выхода из атмосферы
+            // НЕОБХОДИМО ИНТЕГРИРОВАТЬ ДВА УЧАСТКА: ПЕРЕД И ЗА ТЕНЬЮ
+
+            // Первый интеграл до тени
+            stepsNumber = stepsNumber/2;
+            float stepSize = t1/float(stepsNumber); // длина шага
+            vec3 step = rd*stepSize; // шаг вдоль луча
+            vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
+            vec3 nextpos = pos + step; // следующая точка
+            vec2 fDensity = stepSize*exp(-(length(start)-uPlanetRadius)/uScaleHeight);
+            for (int i=0; i<stepsNumber; i++, nextpos += step, pos += step) {
+              // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
+              vec2 density = stepSize*exp(-(length(nextpos)-uPlanetRadius)/uScaleHeight);
+              optDepth += 0.5*(density + fDensity);
+              fDensity = density;
+            
+              // определение оптической глубины вдоль луча к солнцу (считаем из средней точки сегмента)
+              // определение виден ли источник света из данной точки
+              float OT = dot(pos, ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
+              float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
+              if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
+                vec3 normal = normalize(pos);
+                // источник света виден из данной точки
+                vec2 optDepth2 = uScaleHeight * ChH(uPlanetRadius/uScaleHeight, (length(pos)-uPlanetRadius)/uScaleHeight, dot(normal, ld));
+
+                // ослабление света за счет рассеивания
+                // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
+                vec3 attn = exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
+
+                // total += T(CP) * T(PA) * ρ(h) * ds
+                totalRayleigh += density.x * attn;
+                totalMie += density.y * attn;
+              }
+            }
+            // установка параметров для второго интеграла
+            start += rd*t2;
+            rayLen -= t2;
+          }
+          else {
+            rayLen = min(t1, rayLen);
+          }
+        }
+      }
+      else if(t2 > 0.) {
+        // камера внутри цилиндра тени, луч пересекает тень один раз
+        OA += rd*t2;
+        if(dot(ld, OA) < 0.) {
+          start = OA;
+          rayLen = rayLen-t2;
+        }
+      }
+    }
+  }
+
+  if(rayLen <= 0.) return ResultScattering(vec3(0), vec3(1));
+
+/*
+  vec3 normal = normalize(start);
+  float NdotD = dot(normal, rd);
+  float isNotPlanetIntersect = 1.;
+  if(NdotD < 0.) {
+    // Поиск длины луча в случае попадания в поверхность планеты
+    if(CT2 < PLANET_RADIUS_SQR) {
+      rayLen = OT - sqrt(PLANET_RADIUS_SQR - CT2);
+      isNotPlanetIntersect = 0.;
+    }
+  }
+*/
+
+    
+  float stepSize = rayLen/float(stepsNumber); // длина шага
+  vec3 step = rd*stepSize; // шаг вдоль луча
+  //vec3 nextpos = currentpos + step; // следующая точка
+  vec3 pos = start + noise*step; // смещение на случайную долю шага для избежания выраженных полос
+  vec3 nextpos = pos + step; // следующая точка
+
 
   vec2 fDensity = stepSize*exp(-(length(start)-uPlanetRadius)/uScaleHeight);
 
-  for (int i=0; i<PRIMARY_STEPS; i++, nextpos += step, pos += step) {
+  //float maxR = uPlanetRadius + MAX_TRN_ELEVATION;
+  // расстояние вдоль направления на солнце, где продолжение цилиндра тени пересекается со сферой MAX_TRN_ELEVATION
+  //float x = sqrt(maxR*maxR - PLANET_RADIUS_SQR);
+
+  for (int i=0; i<stepsNumber; i++, nextpos += step, pos += step) {
     // определение оптической глубины вдоль луча камеры (считаем как среднее по краям сегмента)
     vec2 density = stepSize*exp(-(length(nextpos)-uPlanetRadius)/uScaleHeight);
     optDepth += 0.5*(density + fDensity);
@@ -139,6 +272,11 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
     float OT = dot(pos, ld); // расстояния вдоль направления на свет до точки минимального расстояния до центра планеты
     float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
     if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
+      // коэффициент ослабления рассеивания у границы тени
+      //float k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, clamp(OT/x, 0., 1.), 1.);
+      //k *= k;
+      float k = 1.;
+
       vec3 normal = normalize(pos);
       // источник света виден из данной точки
       vec2 optDepth2 = uScaleHeight * ChH(uPlanetRadius/uScaleHeight, (length(pos)-uPlanetRadius)/uScaleHeight, dot(normal, ld));
@@ -148,11 +286,11 @@ ResultScattering scattering(vec3 ro, vec3 rd, vec3 ld, float noise) {
       vec3 attn = exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
 
       // total += T(CP) * T(PA) * ρ(h) * ds
-      totalRayleigh += density.x * attn;
-      totalMie += density.y * attn;
+      totalRayleigh += k * density.x * attn;
+      totalMie += k * density.y * attn;
     }
   }
-  vec3 inScatter = exp(-uBetaRayleigh*optDepth.x - isNotPlanetIntersect*uBetaMie*optDepth.y);
+  vec3 inScatter = exp(-uBetaRayleigh*optDepth.x - uBetaMie*optDepth.y);
 
   // I = I_S * β(λ) * γ(θ) * total
   vec3 transmittance = phaseRayleigh*uBetaRayleigh*totalRayleigh + phaseMie*uBetaMie*totalMie;
@@ -243,7 +381,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
   
   vec3 OA = start;
   float LdotRd = dot(ld,rd);
-  if(LdotRd < 1.) {
+  if(abs(LdotRd) < 1.) {
     // луч не параллелен направлению на солнце
     float a = 1. - LdotRd*LdotRd;
     float LdotOA = dot(ld,OA);
@@ -265,7 +403,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     }
   }
 
-  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
 
   // Расчет фазовой функции
   // Для рассеяния Релея постоянная g считается равной нулю, рассеяние симметрично относительно положительных и отрицательных углов
@@ -301,11 +439,7 @@ ResultScattering scatteringWithIntersection(vec3 ro, vec3 rd, vec3 ld, float ray
     float CT2 = dot(pos, pos) - OT*OT; // квадрат минимального расстояния от луча до центра планеты
     if(OT>0. || CT2 > PLANET_RADIUS_SQR)  {
       // коэффициент ослабления рассеивания у границы тени
-      //float k = 1.;//clamp((sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
-      //if(OT<0.) k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, 0., 1.);
-      //else k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, min(OT/x, 1.), 1.);
       float k = clamp(0.5*(sqrt(CT2)-uPlanetRadius)/MAX_TRN_ELEVATION, clamp(OT/x, 0., 1.), 1.);
-      //k = mix(k, k2, LvsR);
       k *= k;
 
       vec3 normal = normalize(pos);
