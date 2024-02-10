@@ -84,7 +84,7 @@ export default async function main() {
   const milkywayImg = await loadImage('textures/starmap_2020_16k_gal.jpg');
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
-  const planet = new Planet(500000, 9.81); //6371e3
+  const planet = new Planet(500000, 1100*1.9 , 9.81); //6371e3
   const nSampler = new NoiseSampler(grayNoiseImg);
   const noise = new InigoQuilezFBMNoise(nSampler);
   //const noise = new RidgedFbmNoise(nSampler);

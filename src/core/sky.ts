@@ -72,15 +72,15 @@ export class Sky {
     }
 
     const M = 1024;
-    var atmH = atm.radius - atm.planetRadius;
-    this.optDepthTable = new Float32Array(M*M*2);
+    this.optDepthTable = new Float32Array(M*M*3);
     for(let i=0; i<M; i++)
       for(let j=0; j<M; j++) {
         const cosTheta = 1 - i*2./(M-1); // (1..-1)
         const h = j * 1./(M-1); // (0..1)
-        const [optDepthR, optDepthM] = atm.OptDepth(h, cosTheta);
-        this.optDepthTable[2*M*i + 2*j] = optDepthR;
-        this.optDepthTable[2*M*i + 2*j + 1] = optDepthM;
+        const [optDepthR, optDepthM, shadow] = atm.OptDepth(h, cosTheta);
+        this.optDepthTable[3*M*i + 3*j] = optDepthR;
+        this.optDepthTable[3*M*i + 3*j + 1] = optDepthM;
+        this.optDepthTable[3*M*i + 3*j + 2] = 1;
         //console.log(h,cosTheta,optDepthR);
     }
     console.log(this.optDepthTable);

@@ -29,6 +29,10 @@ export class Planet {
   origin: Vec3;
   /** радиус планеты */
   radius: number; //  6371e3;
+  /**
+   * максимальное возвышение ландшафта
+   */
+  maxTerrainElevation: number;
   /** Положение центра планеты относительно системы координат камеры */
   center: Vec3;
   /** кватернион, определяющий текущую ориентацию планеты при суточном вращении */
@@ -36,9 +40,10 @@ export class Planet {
   /** ускорение свободного падения на поверхности */
   g: number = 9.81;
 
-  constructor(radius: number, g: number) {
+  constructor(radius: number, maxTerrainElevation: number, g: number) {
     this.g = g;
     this.radius = radius;
+    this.maxTerrainElevation = maxTerrainElevation;
     this.center = new Vec3(0., -radius, 0.);
     this.axis = new Vec3(0., Math.sin(this.obliquity), Math.cos(this.obliquity));
     this.origin = new Vec3(0., Math.cos(this.obliquity), -Math.sin(this.obliquity));

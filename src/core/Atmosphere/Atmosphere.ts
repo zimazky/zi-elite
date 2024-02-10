@@ -1,6 +1,7 @@
 import { Vec2, Vec3 } from 'src/shared/libs/vectors';
 
 import { Planet } from 'src/core/planet';
+import { smoothstep } from 'src/shared/libs/mathutils';
 
 const PI_CUBE = Math.PI*Math.PI*Math.PI;
 const SQRTPILN2HALF = 1.04345246;
@@ -32,6 +33,7 @@ export class Atmosphere {
   radius: number; // 6471e3;
   /** Квадрат радиуса атмосферы */
   radius2: number;
+  maxTerrainElevation: number;
   /** Коэффициент преломления воздуха */
   n: number = 1.00029;
   /** Длины волн трех цветов, составляющих базу цветового пространства */
@@ -43,7 +45,7 @@ export class Atmosphere {
    * */
   betaRayleigh: Vec3 = new Vec3(5.5e-6, 13.0e-6, 22.4e-6);
   betaMie: Vec3 = Vec3.ONE.mulMutable(2e-7); // Коэффициенты рассеивания Ми, не зависят от частоты света  на уровне моря
-  g: number = 0.999;
+  g: number = 0.996;
   /** Коэффициент деполяризации воздуха */
   p: number = 0.035;
   heightRayleigh: number = 8e3; // Масштабная высота для рассеивания Релея (высота 50% плотности молекул воздуха)
@@ -55,6 +57,7 @@ export class Atmosphere {
     this.planetRadius2 = this.planetRadius*this.planetRadius;
     this.radius = planet.radius + 100000;
     this.radius2 = this.radius*this.radius;
+    this.maxTerrainElevation = planet.maxTerrainElevation;
     /*
     this.betaRayleigh = new Vec3(
       this.computeBetaRayleigh(this.rgbLambda.x),
@@ -117,9 +120,9 @@ export class Atmosphere {
    * Расчет оптической глубины
    * @param h - относительная высота точки начала луча (в отношении к высоте атмосферы)
    * @param cosTheta - косинус угла направления луча по отношению к зениту
-   * @returns [Оптическая глубина по шкале рассеивания Релея, оптическая глубина по шкале рассеивания Ми]
+   * @returns [Оптическая глубина по шкале рассеивания Релея, оптическая глубина по шкале рассеивания Ми, затененность 0..1 (сглаженная тень)]
    */
-  OptDepth(h: number, cosTheta: number): [number, number] {
+  OptDepth(h: number, cosTheta: number): [number, number, number] {
     const stepsNum = 50;
     const start = new Vec2(0, this.planetRadius + h*(this.radius-this.planetRadius));
     const dir = new Vec2(Math.sqrt(1-cosTheta*cosTheta), cosTheta);
@@ -129,9 +132,13 @@ export class Atmosphere {
     const AT = Math.sqrt(this.radius2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
     var rayLen = AT + OT;        // длина луча
 
+    var shadow = 1.;
     if(cosTheta < 0) {
       // Поиск длины луча в случае попадания в поверхность планеты
       if(CT2 < this.planetRadius2) rayLen = OT - Math.sqrt(this.planetRadius2 - CT2);
+      if(CT2<0) console.log("!!!!!!!!!!!!!!!!!!!CT2<0");
+      var CT = Math.sqrt(CT2);
+      shadow = smoothstep(this.planetRadius, this.planetRadius + this.maxTerrainElevation, CT);
     }
     const stepSize = rayLen/stepsNum;
 
@@ -151,7 +158,7 @@ export class Atmosphere {
       density1Rayleigh = density2Rayleigh;
       density1Mie = density2Mie;
     }
-    return [optDepthRayleigh, optDepthMie];
+    return [optDepthRayleigh, optDepthMie, shadow];
   }
 
 
