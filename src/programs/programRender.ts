@@ -142,6 +142,10 @@ export class ProgramRender {
       wrapS: WebGL2RenderingContext.CLAMP_TO_EDGE,
       wrapT: WebGL2RenderingContext.CLAMP_TO_EDGE
     });
+    const texture3 = this.engine.setTextureWithArray32Fx2(shader.program, 'uTextureOptDepth', 1024, 1024, this.sky.optDepthTable, {
+      wrapS: WebGL2RenderingContext.CLAMP_TO_EDGE,
+      wrapT: WebGL2RenderingContext.CLAMP_TO_EDGE
+    });
 
     const width = this.shaderB.width;
     const height = this.shaderB.height;

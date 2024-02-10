@@ -48,6 +48,11 @@ export class Sky {
   skyColorTable: Float32Array;
   sunColorTable: Float32Array;
 
+  /**
+   * Таблица оптической глубины
+   */
+  optDepthTable: Float32Array;
+
   constructor(camera: Camera, atm: Atmosphere, tSampler: ITerrainSampler) {
     this.camera = camera;
     this.atm = atm;
@@ -66,6 +71,19 @@ export class Sky {
       this.sunColorTable[i+2] = sun.z;
     }
 
+    const M = 1024;
+    var atmH = atm.radius - atm.planetRadius;
+    this.optDepthTable = new Float32Array(M*M*2);
+    for(let i=0; i<M; i++)
+      for(let j=0; j<M; j++) {
+        const cosTheta = 1 - i*2./(M-1); // (1..-1)
+        const h = j * 1./(M-1); // (0..1)
+        const [optDepthR, optDepthM] = atm.OptDepth(h, cosTheta);
+        this.optDepthTable[2*M*i + 2*j] = optDepthR;
+        this.optDepthTable[2*M*i + 2*j + 1] = optDepthM;
+        //console.log(h,cosTheta,optDepthR);
+    }
+    console.log(this.optDepthTable);
   }
 
   loopCalculation(time: number, timeDelta: number) {

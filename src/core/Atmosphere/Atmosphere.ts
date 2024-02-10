@@ -1,4 +1,4 @@
-import { Vec3 } from 'src/shared/libs/vectors';
+import { Vec2, Vec3 } from 'src/shared/libs/vectors';
 
 import { Planet } from 'src/core/planet';
 
@@ -41,16 +41,9 @@ export class Atmosphere {
    * Коэффициенты рассеивания Релея для трех частот спектра (rgb) на уровне моря,
    * определяют количество потерянной энергии при столкновении с одной частицей
    * */
-  /*
-  betaRayleigh: Vec3 = new Vec3(
-    this.computeBetaRayleigh(this.rgbLambda.x),
-    this.computeBetaRayleigh(this.rgbLambda.y),
-    this.computeBetaRayleigh(this.rgbLambda.z)
-    );
-    */
   betaRayleigh: Vec3 = new Vec3(5.5e-6, 13.0e-6, 22.4e-6);
   betaMie: Vec3 = Vec3.ONE.mulMutable(2e-7); // Коэффициенты рассеивания Ми, не зависят от частоты света  на уровне моря
-  g: number = 0.996;
+  g: number = 0.999;
   /** Коэффициент деполяризации воздуха */
   p: number = 0.035;
   heightRayleigh: number = 8e3; // Масштабная высота для рассеивания Релея (высота 50% плотности молекул воздуха)
@@ -118,6 +111,51 @@ export class Atmosphere {
       return cexp/((c-1.)*cosTheta - 1.) + 2.*c*Math.exp(X - x*sinTheta)*Math.sqrt(sinTheta);
     }
   }
+
+  
+  /**
+   * Расчет оптической глубины
+   * @param h - относительная высота точки начала луча (в отношении к высоте атмосферы)
+   * @param cosTheta - косинус угла направления луча по отношению к зениту
+   * @returns [Оптическая глубина по шкале рассеивания Релея, оптическая глубина по шкале рассеивания Ми]
+   */
+  OptDepth(h: number, cosTheta: number): [number, number] {
+    const stepsNum = 50;
+    const start = new Vec2(0, this.planetRadius + h*(this.radius-this.planetRadius));
+    const dir = new Vec2(Math.sqrt(1-cosTheta*cosTheta), cosTheta);
+    const OT = -start.dot(dir);  // расстояния вдоль луча до точки минимального расстояния до центра планеты
+    const r2 = start.dot(start); // квадрат расстояния до центра планеты
+    const CT2 = r2 - OT*OT;      // квадрат минимального расстояния от луча до центра планеты
+    const AT = Math.sqrt(this.radius2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
+    var rayLen = AT + OT;        // длина луча
+
+    if(cosTheta < 0) {
+      // Поиск длины луча в случае попадания в поверхность планеты
+      if(CT2 < this.planetRadius2) rayLen = OT - Math.sqrt(this.planetRadius2 - CT2);
+    }
+    const stepSize = rayLen/stepsNum;
+
+    var optDepthRayleigh = 0;
+    var optDepthMie = 0;
+
+    var a = Math.sqrt(r2) - this.planetRadius;
+    var density1Rayleigh = stepSize * Math.exp(-a/this.heightRayleigh);
+    var density1Mie = stepSize * Math.exp(-a/this.heightMie);
+    const pos = start.add(dir.mul(stepSize));
+    for(let i=0; i<stepsNum; i++, pos.addMutable(dir.mul(stepSize))) {
+      a = Math.sqrt(pos.dot(pos)) - this.planetRadius;
+      const density2Rayleigh = stepSize * Math.exp(-a/this.heightRayleigh);
+      const density2Mie = stepSize * Math.exp(-a/this.heightRayleigh);
+      optDepthRayleigh += 0.5*(density1Rayleigh + density2Rayleigh);
+      optDepthMie += 0.5*(density1Mie + density2Mie);
+      density1Rayleigh = density2Rayleigh;
+      density1Mie = density2Mie;
+    }
+    return [optDepthRayleigh, optDepthMie];
+  }
+
+
+
   
   /** 
    * Функция вычисления атмосферного рассеивания

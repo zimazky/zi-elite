@@ -288,12 +288,12 @@ void main() {
     col *= planetIntersection(uCameraPosition, rd);
     // атмосферное рассеивание
     ResultScattering rs;
-    rs = scattering(uCameraPosition, rd, uSunDirection, mix(0.,1.,noise));
+    rs = scatteringTable(uCameraPosition, rd, uSunDirection, mix(0.,1.,noise));
     col = rs.t*LIGHT_INTENSITY + rs.i*col;
   }
   else {
     col = render(uCameraPosition, t, rd, normalB, col, ssao*ssao, uSunDirection, uMoonDirection);
-    ResultScattering rs = scatteringWithIntersection(uCameraPosition, rd, uSunDirection, t, mix(0.,1.,noise));
+    ResultScattering rs = scatteringWithIntersectionTable(uCameraPosition, rd, uSunDirection, t, mix(0.,1.,noise));
     // считаем, что средняя длина тени равна max(MAX_TRN_ELEVATION*(tan(alpha)-tan(phi)),0.)
     // alpha - угол направления на солнце к зениту
     // phi - среднестатистический угол наклона склонов к зениту (принимаем 45 градусов, tan(phi)=1.)

@@ -13,7 +13,7 @@ export const MAP_VIEW = 1;
 const MAP_GRID = 1;
 const MAP_HEIGHTS = 2;
 
-const THRUST = 1.2; // ускорение двигателя в g
+const THRUST = 5; // ускорение двигателя в g
 const AIR_DRAG_FACTOR = 0.5 // коэффициент сопротивления воздуха 1/с
 const AIR_DRAG_MATRIX = Mat3.fromArray([
   0.01, 0, 0,     // vx       dvx = 0.01*vx
