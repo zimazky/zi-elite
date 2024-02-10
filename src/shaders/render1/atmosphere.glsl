@@ -667,7 +667,12 @@ ResultScattering scatteringWithIntersectionTable(vec3 ro, vec3 rd, vec3 ld, floa
       vec2 t12 = 0.5*(vec2(-b)+vec2(sqrtD,-sqrtD))/a;
       float t1 = min(t12.x, t12.y);
       float t2 = max(t12.x, t12.y);
-      if(dot(ld, OA + rd*t1) < 0.) rayLen = min(t1, rayLen);
+      if(t1 > 0.) {
+        // находимся вне тени, луч пересекает тень впереди
+        if(dot(ld, OA + rd*t1) < 0.) rayLen = min(t1, rayLen);
+      }
+      else // находимся в тени, устанавливаем отрицательный rayLen для пропуска интегрирования
+        if(t2 > 0. && LdotOA < 0.) rayLen = min(t1, rayLen);
     }
   }
 

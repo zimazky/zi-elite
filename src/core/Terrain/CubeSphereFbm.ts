@@ -23,6 +23,8 @@ export class CubeSphereFbmTerrain implements ITerrainSampler {
   constructor(planet: Planet, noise: IFbmNoise) {
     this._planet = planet
     this._noise = noise
+    this.MAX_TRN_ELEVATION = planet.maxTerrainElevation;
+    this.H_SCALE = this.MAX_TRN_ELEVATION/1.9;
   }
 
   /**
