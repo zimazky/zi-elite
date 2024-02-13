@@ -120,9 +120,14 @@ export class Atmosphere {
    * Расчет оптической глубины
    * @param h - относительная высота точки начала луча (в отношении к высоте атмосферы)
    * @param cosTheta - косинус угла направления луча по отношению к зениту
-   * @returns [Оптическая глубина по шкале рассеивания Релея, оптическая глубина по шкале рассеивания Ми, затененность 0..1 (сглаженная тень)]
+   * @returns [
+   * Оптическая глубина по шкале рассеивания Релея, 
+   * оптическая глубина по шкале рассеивания Ми, 
+   * плотность по шкале рассеивания Релея
+   * плотность по шкале рассеивания Ми
+   * ]
    */
-  OptDepth(h: number, cosTheta: number): [number, number, number] {
+  OptDepth(h: number, cosTheta: number): [number, number, number, number] {
     const stepsNum = 50;
     const start = new Vec2(0, this.planetRadius + h*(this.radius-this.planetRadius));
     const dir = new Vec2(Math.sqrt(1-cosTheta*cosTheta), cosTheta);
@@ -132,13 +137,9 @@ export class Atmosphere {
     const AT = Math.sqrt(this.radius2 - CT2); // расстояние на луче от точки на поверхности атмосферы до точки минимального расстояния до центра планеты
     var rayLen = AT + OT;        // длина луча
 
-    var shadow = 1.;
     if(cosTheta < 0) {
       // Поиск длины луча в случае попадания в поверхность планеты
       if(CT2 < this.planetRadius2) rayLen = OT - Math.sqrt(this.planetRadius2 - CT2);
-      if(CT2<0) console.log("!!!!!!!!!!!!!!!!!!!CT2<0");
-      var CT = Math.sqrt(CT2);
-      shadow = smoothstep(this.planetRadius, this.planetRadius + this.maxTerrainElevation, CT);
     }
     const stepSize = rayLen/stepsNum;
 
@@ -146,8 +147,10 @@ export class Atmosphere {
     var optDepthMie = 0;
 
     var a = Math.sqrt(r2) - this.planetRadius;
-    var density1Rayleigh = stepSize * Math.exp(-a/this.heightRayleigh);
-    var density1Mie = stepSize * Math.exp(-a/this.heightMie);
+    const densityRayleigh = stepSize * Math.exp(-a/this.heightRayleigh);
+    const densityMie = stepSize * Math.exp(-a/this.heightMie);
+    var density1Rayleigh = densityRayleigh;
+    var density1Mie = densityMie;
     const pos = start.add(dir.mul(stepSize));
     for(let i=0; i<stepsNum; i++, pos.addMutable(dir.mul(stepSize))) {
       a = Math.sqrt(pos.dot(pos)) - this.planetRadius;
@@ -158,7 +161,8 @@ export class Atmosphere {
       density1Rayleigh = density2Rayleigh;
       density1Mie = density2Mie;
     }
-    return [optDepthRayleigh, optDepthMie, shadow];
+    
+    return [optDepthRayleigh, optDepthMie, densityRayleigh, densityMie];
   }
 
 

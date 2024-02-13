@@ -340,6 +340,35 @@ export class Engine extends GLContext {
     return texture;
   }
 
+  /** Привязка текстуры без генерации данных MIPMAP */
+  setTextureWithArray32Fx4(program: WebGLProgram, uname: string, 
+    width: number, height: number, array: Float32Array, options: {
+      wrapS?: GLenum, wrapT?: GLenum, minFilter?: GLenum, magFilter?: GLenum
+    }): WebGLTexture {
+    const {
+      wrapS = WebGL2RenderingContext.REPEAT,
+      wrapT = WebGL2RenderingContext.REPEAT,
+      minFilter = WebGL2RenderingContext.LINEAR,
+      magFilter = WebGL2RenderingContext.LINEAR
+    } = options;
+    const texture = this.gl.createTexture();
+    if(texture === null) throw new Error('Ошибка при создании текстуры')
+    const n = this.textures.length;
+    this.gl.activeTexture(this.gl.TEXTURE0 + n);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_S, wrapS);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_WRAP_T, wrapT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MIN_FILTER, minFilter);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAG_FILTER, magFilter);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA32F, width, height, 0, this.gl.RGBA, this.gl.FLOAT, array);
+    
+    const textureLocation = this.gl.getUniformLocation(program, uname);
+    this.gl.uniform1i(textureLocation, n);
+    this.textures.push(texture);
+
+    return texture;
+  }
+
   /** Привязка текстуры с генерацией данных MIPMAP */
   setTextureWithMIP(program: WebGLProgram, uname: string, img: TexImageSource): WebGLTexture {
     const texture = this.gl.createTexture();

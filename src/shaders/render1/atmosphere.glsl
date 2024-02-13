@@ -207,11 +207,11 @@ ResultScattering scatteringTable(vec3 ro, vec3 rd, vec3 ld, float noise) {
             vec3 normal = normalize(pos);
             // источник света виден из данной точки
             vec2 tableIndex = vec2((length(pos)-uPlanetRadius)/ATM_HEIGHT, 0.5 - 0.5*dot(normal, ld));
-            vec3 optDepth2 = texture(uTextureOptDepth, tableIndex).xyz;
+            vec2 optDepth2 = texture(uTextureOptDepth, tableIndex).xy;
 
             // ослабление света за счет рассеивания
             // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
-            vec3 attn = optDepth2.z * exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
+            vec3 attn = /*optDepth2.z * */ exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
 
             // total += T(CP) * T(PA) * ρ(h) * ds
             totalRayleigh += density.x * attn;
@@ -277,11 +277,11 @@ ResultScattering scatteringTable(vec3 ro, vec3 rd, vec3 ld, float noise) {
       vec3 normal = normalize(pos);
       // источник света виден из данной точки
       vec2 tableIndex = vec2((length(pos)-uPlanetRadius)/ATM_HEIGHT, 0.5 - 0.5*dot(normal, ld));
-      vec3 optDepth2 = texture(uTextureOptDepth, tableIndex).xyz;
+      vec2 optDepth2 = texture(uTextureOptDepth, tableIndex).xy;
 
       // ослабление света за счет рассеивания
       // T(CP) * T(PA) = T(CPA) = exp{ -β(λ) [D(CP) + D(PA)]}
-      vec3 attn = optDepth2.z * exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
+      vec3 attn =/*optDepth2.z * */ exp(-uBetaRayleigh*(optDepth.x+optDepth2.x) - uBetaMie*(optDepth.y+optDepth2.y));
 
       // total += T(CP) * T(PA) * ρ(h) * ds
       totalRayleigh += density.x * attn;
