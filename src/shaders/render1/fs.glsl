@@ -228,17 +228,18 @@ void main() {
     : vec2(vAspect/vAspectB, 1);
   vec2 uv = vec2(0.5)+k*(gl_FragCoord.xy/uResolution-0.5);
 
+
+#ifdef DEPTH_ERROR_VIEW
+  uv = gl_FragCoord.xy/uResolution;
+  float derr = texture(uTextureBDepth, uv).y;
+  vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
+  col = pow(col, vec3(1./2.2));
+#else //DEPTH_ERROR_VIEW
+
   vec4 albedoB = texture(uTextureBAlbedo, uv);
   vec3 normalB = texture(uTextureBNormal, uv).xyz;
   float depthB = texture(uTextureBDepth, uv).x;
   //vec4 normalDepthC = texture(uTextureCNormalDepth, uv);
-
-#ifdef DEPTH_ERROR_VIEW
-  uv = gl_FragCoord.xy/uResolution;
-  float derr = depthB - texture(uTextureADepth, uv).r;
-  vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
-  col = pow(col, vec3(1./2.2));
-#else //DEPTH_ERROR_VIEW
 
   vec3 col = albedoB.rgb;
   float t = depthB;
