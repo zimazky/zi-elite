@@ -17,6 +17,10 @@ uniform float uMaxDistance;
 in float vTextureBDepth;
 //in vec4 vTextureRenderColor;
 
+// x - прогнозируемая глубина
+// y - прогнозируемая ошибка
+// z - прогнозируемая затененность от солнца
+// w - прогнозируемая дальность тени
 layout (location = 0) out float fragDepth;
 //layout (location = 1) out vec4 fragAlbedo;
 
