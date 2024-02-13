@@ -40,7 +40,7 @@ uniform float uMapScale;
 in vec3 vRay;
 
 /** Буфер глубины (w) */
-layout (location = 0) out float gDepth;
+layout (location = 0) out vec2 gDepth;
 /** Буфер нормалей (xyz) */
 layout (location = 1) out vec3 gNormal;
 /** Буфер значений альбедо */
@@ -83,26 +83,19 @@ void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.x;
   vec3 rd = normalize(vRay);
 
-  #ifdef DEPTH_ERROR_VIEW
-  // Режим для просмотра ошибки глубины между расчетным значением и предсказанием на основе предыдущего кадра
-  float t0 = 1.;
-  #else //DEPTH_ERROR_VIEW
-  // Нормальный режим, с испльзованием данных предыдущего кадра
   float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).x;
-  #endif //DEPTH_ERROR_VIEW
-
   vec3 col = vec3(0);
   int raycastIterations = 0;
   //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
-    gDepth = 1.01 * MAX_TERRAIN_DISTANCE;
+    gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 0);
   }
   else {
     vec2 uv;
     vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations, uv);
     gNormal = nor_t.xyz;
-    gDepth = nor_t.w;
+    gDepth = vec2(nor_t.w, nor_t.w - t0);
     if(nor_t.w < MAX_TERRAIN_DISTANCE) {
       vec3 pos = uCameraPosition + nor_t.w*rd;
       //if(LvsR == 1.) gNormal = terrainNormal(pos, nor_t.w).xyz;
