@@ -80,8 +80,8 @@ void main() {
   vTextureBDepth = length(pos);
 
   // при движении назад по краям устанавливаем глубину 0
-  //vec3 deltaPos = uPositionDelta*uTransformMatrix;
-  if(/*deltaPos.z > 0. &&*/ (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBDepth = 0.;
+  vec3 deltaPos = uPositionDelta*uTransformMatrix;
+  if(deltaPos.z > 0.001 && (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x))vTextureBDepth = 0.;
 
   // TODO: Правильно вычислять позицию, вектор не должен быть нулевым
   gl_Position = uProjectMatrix*vec4(pos, 1);

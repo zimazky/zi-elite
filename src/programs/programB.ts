@@ -1,12 +1,15 @@
 import { Atmosphere } from "src/core/Atmosphere/Atmosphere";
 import { Camera } from "src/core/camera";
+import { SUN_DISC_ANGLE_SIN } from "src/core/constants";
 import { Engine, Framebuffer, Renderbufer } from "src/core/engine";
+import { Sky } from "src/core/sky";
 
 export class ProgramB {
   engine: Engine;
   bufferInput: Framebuffer;
   camera: Camera;
   atm: Atmosphere;
+  sky: Sky;
 
   // Shader uniforms
 
@@ -27,12 +30,18 @@ export class ProgramB {
   uPlanetRadius: WebGLUniformLocation | null = null;
   /** Положение центра планеты */
   uPlanetCenter: WebGLUniformLocation | null = null;
+  /** Синус углового размера солнца */
+  uSunDiscAngleSin: WebGLUniformLocation | null = null;
+  /** Направление на солнце */
+  uSunDirection: WebGLUniformLocation | null = null;
+  
 
-  constructor(e: Engine, bInput: Framebuffer, c: Camera, atm: Atmosphere) {
+  constructor(e: Engine, bInput: Framebuffer, c: Camera, atm: Atmosphere, sky: Sky) {
     this.engine = e;
     this.bufferInput = bInput;
     this.camera = c;
     this.atm = atm;
+    this.sky = sky;
   }
 
   init(shader: Renderbufer, grayNoiseImg: TexImageSource) {
@@ -56,6 +65,9 @@ export class ProgramB {
 
     this.uScreenMode = this.engine.gl.getUniformLocation(shader.program, 'uScreenMode');
     this.uMapScale = this.engine.gl.getUniformLocation(shader.program, 'uMapScale');
+    this.uSunDirection = this.engine.gl.getUniformLocation(shader.program, 'uSunDirection');
+    this.uSunDiscAngleSin = this.engine.gl.getUniformLocation(shader.program, 'uSunDiscAngleSin');
+    this.engine.gl.uniform1f(this.uSunDiscAngleSin, SUN_DISC_ANGLE_SIN);
 
   }
 
@@ -67,6 +79,9 @@ export class ProgramB {
     this.engine.gl.uniform1f(this.uCameraViewAngle, this.camera.viewAngle);
     this.engine.gl.uniform2f(this.uScreenMode, this.camera.screenMode, this.camera.mapMode);
     this.engine.gl.uniform1f(this.uMapScale, this.camera.mapScale);
+
+    this.engine.gl.uniform3fv(this.uSunDirection, this.sky.sunDirection.getArray());
+
   }
 
 }

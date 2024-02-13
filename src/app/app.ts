@@ -139,7 +139,7 @@ let pos = new Vec3(-18917.79777556825,-220646.50277867384,-415301.66676559445);
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, [
-      {format: WebGL2RenderingContext.RG32F},
+      {format: WebGL2RenderingContext.RGBA32F},
       {format: WebGL2RenderingContext.RGBA16F},
       {format: WebGL2RenderingContext.RGBA16F}
     ],
@@ -167,7 +167,7 @@ let pos = new Vec3(-18917.79777556825,-220646.50277867384,-415301.66676559445);
   )
 */
   const programA = new ProgramA(e, shaderB, camera);
-  const programB = new ProgramB(e, shaderA, camera, atm);
+  const programB = new ProgramB(e, shaderA, camera, atm, sky);
 //  const programC = new ProgramC(e, camera);
   const programRender = new ProgramRender(e, shaderA, shaderB/*, shaderC*/, camera, atm, sky, flare1, flare2);
 
