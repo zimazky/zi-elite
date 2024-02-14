@@ -87,7 +87,6 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     t = max(tmin, OT-AT);
   }
   vec4 nor_h;
-  int jit = 0;
   for(i=0; i<300; i++) {
     vec3 pos = ro + t*rd;
     float alt = terrainAlt(pos);
@@ -96,13 +95,8 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     nor_h = terrainHeightNormal(pos, t, uv);
     float h = alt - nor_h.w;
     if( abs(h)<max(0.04,0.002*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    //if( abs(h)<min(max(0.04,0.002*t), 10.) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    //if(h < 0.) jit++;
-    //else if(jit > 0) return vec4(nor_h.xyz, t);
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
-    //if(t>tmax) return res;
   }
-  //return t<10000. ? vec4(nor_h.xyz, t) : res;
   return vec4(nor_h.xyz, t);
 }
 #endif
@@ -124,7 +118,7 @@ float raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i) {
 */
 
 /** 
- * Функция определения затененности солнечного света
+ * Функция определения затененности солнечного света (устаревший вариант с возможностью полузатенения когда h<0)
  *   ro - положение точки, для которой определяется затенение
  *   rd - направление луча из точки в направлении солнца
  *   //tmin - начальное глубина рейтрейсинга
@@ -159,11 +153,20 @@ float softShadow(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out f
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
 }
 
+/** 
+ * Функция определения затененности солнечного света (вариант с h>0)
+ *   ro - положение точки, для которой определяется затенение
+ *   rd - направление луча из точки в направлении солнца
+ *   //tmin - начальное глубина рейтрейсинга
+ *   //tmax - максимальная глубина рейтрейсинга
+ *   возвращает значение от 0 до 1, 0 - тень, 1 - на свету
+ *   i - количество итераций
+ *   t - дистанция до точки пересечения
+ */
 float softShadowZero(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out float t) {
   float res = 1.;
   float tlocal = max(0.002*dis, shadowDist);
   t = shadowDist;
-  int jit = 0;
   for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + tlocal*rd;
     float alt = terrainAlt(p);
