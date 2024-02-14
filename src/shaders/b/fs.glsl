@@ -118,28 +118,26 @@ void main(void) {
       float shd = 0.;
       float shadowDistance = 0.;
       float LdotN = dot(uSunDirection, nor_t.xyz);
-      if(LdotN > -uSunDiscAngleSin) {
-        if(depthShadowB.z <= 0.) {
-          shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
-          //if(shd >= 1.) shd = 2.;
-          //else {
-            shd = mix(depthShadowB.z, shd, 0.1);
-            shadowDistance = mix(depthShadowB.w, shadowDistance, 0.1);
-          //}
-        }
-        else if(depthShadowB.z >= 1.) {
+      
+      if(LdotN > 0.) {
+        if(depthShadowB.z >= 1.) {
+          //shd = softShadowZero(pos, uSunDirection, nor_t.w, 0., shadowIterations, shadowDistance);
           shd = 2.;
-          //shadowDistance = depthShadowB.w; //0.;
+        }
+        else if(depthShadowB.z <= 0.) {
+          shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+          if(shd >= 1.) shd = 2.;
         }
         else {
-          shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+          shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
           if(shd >= 1.) shd = 2.;
-          else { 
-            shd = mix(depthShadowB.z, shd, 0.5);
-            shadowDistance = mix(depthShadowB.w, shadowDistance, 0.5);
+          else {
+            shadowDistance = min(shadowDistance, depthShadowB.w);
+            //shd = mix(depthShadowB.z, shd, 0.3);
           }
         }
       }
+      
       gNormal = nor_t.xyz;
       gDepth = vec4(nor_t.w, (nor_t.w - t0)/nor_t.w, shd, shadowDistance);
     }
@@ -152,7 +150,8 @@ void main(void) {
 
   #ifdef SHADOWS_ITERATIONS_VIEW
   // Для вывода числа итераций расчета тени
-  col = vec3(shadowIterations)/300.;
+  float t = float(shadowIterations)/300.;
+  col = gDepth.z >= 1. ? vec3(1,1,0)*t : gDepth.z <= 0. ? vec3(0,1,1)*t : vec3(1)*t;
   #endif
 
   gAlbedo = vec4(col, 1);

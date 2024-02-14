@@ -190,9 +190,10 @@ vec3 render(vec3 ro, float t, vec3 rd, vec3 nor, vec3 albedo, float ssao, vec3 s
   fd1 /= sqrt(fdist1sqr);
   float F1dotN = clamp(dot(fd1, nor), 0., 1.);
 
-  float xmin = uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
-  float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
-  LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
+  //float xmin = uSunDiscAngleSin; // синус половины углового размера солнца (здесь увеличен в 6 раз для мягкости), задает границу плавного перехода
+  //float dx = clamp(0.5*(xmin-LdotN)/xmin, 0., 1.);
+  //LdotN = clamp(xmin*dx*dx + LdotN, 0., 1.);
+  LdotN = clamp(LdotN, 0., 1.);
 
   vec3 lunar = 2.*skycolor*amb*ssao*lunar_lambert(kd, RdotN, amb)     // свет от неба
     + suncolor*LdotN*sunshd*lunar_lambert(kd, RdotN, LdotN)  // свет солнца или луны

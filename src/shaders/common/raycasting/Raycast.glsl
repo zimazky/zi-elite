@@ -97,8 +97,8 @@ vec4 raycast(vec3 ro, vec3 rd, float tmin, float tmax, out int i, out vec2 uv) {
     float h = alt - nor_h.w;
     if( abs(h)<max(0.04,0.002*t) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
     //if( abs(h)<min(max(0.04,0.002*t), 10.) ) return vec4(nor_h.xyz, t); // двоятся детали при большем значении
-    if(h < 0.) jit++;
-    else if(jit > 0) return vec4(nor_h.xyz, t);
+    //if(h < 0.) jit++;
+    //else if(jit > 0) return vec4(nor_h.xyz, t);
     t += 0.4*h; // на тонких краях могут быть артефакты при большом коэффициенте
     //if(t>tmax) return res;
   }
@@ -157,4 +157,23 @@ float softShadow(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out f
     tlocal += max(20., abs(0.8*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
+}
+
+float softShadowZero(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out float t) {
+  float res = 1.;
+  float tlocal = max(0.002*dis, shadowDist);
+  t = shadowDist;
+  int jit = 0;
+  for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+	  vec3 p = ro + tlocal*rd;
+    float alt = terrainAlt(p);
+    if(alt>=MAX_TRN_ELEVATION) return smoothstep(0., 2.*uSunDiscAngleSin, res);
+    float h = alt - terrainHeight(p);
+    if(abs(h) < max(0.04, 0.002*tlocal)) { t = tlocal; return 0.; }
+    float rdZenith = dot(rd, terrainZenith(p));
+    float cosA = sqrt(1.-rdZenith*rdZenith)*h/tlocal; // косинус угла наклона луча от камеры к горизонтали * h/tlocal
+    if(cosA < res) { t = tlocal; res = cosA; }
+    tlocal += 0.8*h; // коэффициент устраняет полосатость при плавном переходе тени
+  }
+  return smoothstep(0., 2.*uSunDiscAngleSin, res);
 }
