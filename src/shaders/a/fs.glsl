@@ -15,7 +15,11 @@ uniform vec2 uResolution;
 uniform float uMaxDistance;
 
 in vec4 vTextureBDepth;
+in vec2 vMotionVector;
 //in vec4 vTextureRenderColor;
+
+/** Текстура NormalDepth предыдущего кадра */
+uniform sampler2D uTextureBDepth;
 
 // x - прогнозируемая глубина
 // y - прогнозируемая ошибка
@@ -33,7 +37,11 @@ layout (location = 0) out vec4 fragDepth;
 
 
 void main() {
+  //vec2 uv = gl_FragCoord.xy/uResolution;
+  //vec2 shd = texture(uTextureBDepth, uv + vMotionVector).zw;
+
   fragDepth = vTextureBDepth;
   fragDepth.x = fragDepth.x > 0.99*uMaxDistance ? MAX_TERRAIN_DISTANCE : fragDepth.x;
+  //fragDepth.zw = shd;
 }
  

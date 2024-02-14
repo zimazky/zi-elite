@@ -7,6 +7,8 @@ precision highp float;
  * Используется предварительная карта глубины, построенная на основании предыдущего кадра.
  */
 
+/** Номер кадра */
+uniform uint uFrame;
 /** Разрешение экрана */
 uniform vec2 uResolution;
 
@@ -117,18 +119,26 @@ void main(void) {
       float shadowDistance = 0.;
       float LdotN = dot(uSunDirection, nor_t.xyz);
       if(LdotN > -uSunDiscAngleSin) {
-        if(depthShadowB.z >= 1.) {
-          shd = 1.;
-          shadowDistance = depthShadowB.w; //0.;
-        }
-        else if(depthShadowB.z <= 0.) {
+        if(depthShadowB.z <= 0.) {
           shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
-          //if(shd >= 1.) shadowDistance = 0.;
+          //if(shd >= 1.) shd = 2.;
+          //else {
+            shd = mix(depthShadowB.z, shd, 0.1);
+            shadowDistance = mix(depthShadowB.w, shadowDistance, 0.1);
+          //}
+        }
+        else if(depthShadowB.z >= 1.) {
+          shd = 2.;
+          //shadowDistance = depthShadowB.w; //0.;
         }
         else {
           shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
-          //if(shd >= 1.) shadowDistance = depthShadowB.w;
-        } 
+          if(shd >= 1.) shd = 2.;
+          else { 
+            shd = mix(depthShadowB.z, shd, 0.5);
+            shadowDistance = mix(depthShadowB.w, shadowDistance, 0.5);
+          }
+        }
       }
       gNormal = nor_t.xyz;
       gDepth = vec4(nor_t.w, (nor_t.w - t0)/nor_t.w, shd, shadowDistance);

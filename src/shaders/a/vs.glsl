@@ -37,6 +37,8 @@ in vec3 aVertexPosition;
 
 /** Данные по узлу сетки, vTextureBData.w - глубина узла */
 out vec4 vTextureBDepth;
+/** Вектор движения пикселей между кадрами */
+out vec2 vMotionVector;
 //out vec4 vTextureRenderColor;
 
 void main() {
@@ -77,7 +79,7 @@ void main() {
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
   // motion-vector
-  //vec2 motionVector = pos.xy/pos.z - posOrig.xy/posOrig.z;
+  vMotionVector = pos.xy/pos.z - posOrig.xy/posOrig.z;
 
   vTextureBDepth = vec4(length(pos), bufOrig.x - wmin.x, wmin.zw);
 

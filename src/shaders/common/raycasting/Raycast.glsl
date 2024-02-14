@@ -154,7 +154,7 @@ float softShadow(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out f
       return 0.;
     }
     tlocalPrev = tlocal;
-    tlocal += max(2., abs(0.8*h)); // коэффициент устраняет полосатость при плавном переходе тени
+    tlocal += max(20., abs(0.8*h)); // коэффициент устраняет полосатость при плавном переходе тени
   }
   return smoothstep(-uSunDiscAngleSin, uSunDiscAngleSin, res);
 }
