@@ -221,10 +221,14 @@ void main() {
 #ifdef SHADOW_DISTANCE_VIEW
   uv = gl_FragCoord.xy/uResolution;
   vec4 shd = texture(uTextureBDepth, uv);
-  float derr = step(shd.y, 0.01);
-  vec3 shdDist = shd.z == -1. ? vec3(1,0,0) : shd.w>MAX_TERRAIN_DISTANCE ? vec3(0,0,1) : vec3(shd.w)/3000.;
-  vec3 col = derr * shdDist;
-  //vec3 col = shd.z == -1. ? vec3(1,0,0) : shd.w>MAX_TERRAIN_DISTANCE ? vec3(0,0,1) : vec3(shd.w)/300.;
+  vec4 shdPrev = texture(uTextureADepth, uv);
+  //vec3 col = vec3(texture(uTextureBDepth, uv).z/3000.);
+  //float derr = step(shd.y, 0.01);
+  //vec3 shdDist = shd.z == -1. ? vec3(1,0,0) : shd.w>MAX_TERRAIN_DISTANCE ? vec3(0,0,1) : vec3(shd.w)/3000.;
+  //vec3 col = derr * shdDist;
+
+  float dif = shd.w - shdPrev.w;
+  vec3 col = shd.z >= 1. ? vec3(0,0,1) : shd.z<=0. ? vec3(1,1,0)*shd.w/3000. : vec3(shd.w/3000.);
   col = pow(col, vec3(1./2.2));
 #else //SHADOW_DISTANCE_VIEW
 

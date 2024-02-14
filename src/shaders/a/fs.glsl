@@ -14,14 +14,14 @@ uniform vec2 uResolution;
 /** Максимальная дистанция по которой обрезается область отрисовки (входит в матрицу проекции) */
 uniform float uMaxDistance;
 
-in float vTextureBDepth;
+in vec4 vTextureBDepth;
 //in vec4 vTextureRenderColor;
 
 // x - прогнозируемая глубина
 // y - прогнозируемая ошибка
 // z - прогнозируемая затененность от солнца
 // w - прогнозируемая дальность тени
-layout (location = 0) out float fragDepth;
+layout (location = 0) out vec4 fragDepth;
 //layout (location = 1) out vec4 fragAlbedo;
 
 // ----------------------------------------------------------------------------
@@ -33,11 +33,7 @@ layout (location = 0) out float fragDepth;
 
 
 void main() {
-  //vec2 uv = gl_FragCoord.xy/uResolution;
-  //fragDepth = mix(vTextureBDepth, MAX_TERRAIN_DISTANCE, step(0.99*uMaxDistance, vTextureBDepth));
-  fragDepth = vTextureBDepth > 0.99*uMaxDistance ? MAX_TERRAIN_DISTANCE : vTextureBDepth;
-  //fragDepth = vTextureBDepth;
-
-  //fragAlbedo = vTextureRenderColor;
+  fragDepth = vTextureBDepth;
+  fragDepth.x = fragDepth.x > 0.99*uMaxDistance ? MAX_TERRAIN_DISTANCE : fragDepth.x;
 }
  

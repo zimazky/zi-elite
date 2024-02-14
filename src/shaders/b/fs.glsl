@@ -88,23 +88,22 @@ void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.x;
   vec3 rd = normalize(vRay);
 
-  float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).x;
+  vec4 depthShadowB = texture(uTextureADepth, gl_FragCoord.xy/uResolution);
+  float t0 = depthShadowB.x;
   vec3 col = vec3(0);
   int raycastIterations = 0;
   int shadowIterations = 0;
   //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
-    gDepth = vec4(1.01 * MAX_TERRAIN_DISTANCE, 0, -1, 0);
+    gDepth = vec4(1.01 * MAX_TERRAIN_DISTANCE, 0, 0, 0);
   }
   else {
     vec2 uv;
     vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations, uv);
-    float shd = -1.;
-    float shadowDistance = 0.;
     if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
       gNormal = -rd;
-      gDepth = vec4(1.01 * MAX_TERRAIN_DISTANCE, 0, -1, 0);
+      gDepth = vec4(1.01 * MAX_TERRAIN_DISTANCE, 0, 0, 0);
     }
     else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
@@ -114,10 +113,22 @@ void main(void) {
       col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
       
       // расчет тени
+      float shd = 0.;
+      float shadowDistance = 0.;
       float LdotN = dot(uSunDirection, nor_t.xyz);
       if(LdotN > -uSunDiscAngleSin) {
-        shd = softShadow(pos, uSunDirection, nor_t.w, shadowIterations, shadowDistance);
-        if(shd>=1.) shadowDistance = 1.01*MAX_TERRAIN_DISTANCE;
+        if(depthShadowB.z >= 1.) {
+          shd = 1.;
+          shadowDistance = depthShadowB.w; //0.;
+        }
+        else if(depthShadowB.z <= 0.) {
+          shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+          //if(shd >= 1.) shadowDistance = 0.;
+        }
+        else {
+          shd = softShadow(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+          //if(shd >= 1.) shadowDistance = depthShadowB.w;
+        } 
       }
       gNormal = nor_t.xyz;
       gDepth = vec4(nor_t.w, (nor_t.w - t0)/nor_t.w, shd, shadowDistance);
@@ -131,7 +142,7 @@ void main(void) {
 
   #ifdef SHADOWS_ITERATIONS_VIEW
   // Для вывода числа итераций расчета тени
-  col = vec3(shadowIterations)/100.;
+  col = vec3(shadowIterations)/300.;
   #endif
 
   gAlbedo = vec4(col, 1);

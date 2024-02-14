@@ -36,7 +36,7 @@ uniform sampler2D uTextureBDepth;
 in vec3 aVertexPosition;
 
 /** Данные по узлу сетки, vTextureBData.w - глубина узла */
-out float vTextureBDepth;
+out vec4 vTextureBDepth;
 //out vec4 vTextureRenderColor;
 
 void main() {
@@ -44,7 +44,7 @@ void main() {
   // начальное заполнение
   // надо оптимизировать, вынести в инициализацию буфера B
   if(uFrame <= 2u) {
-    vTextureBDepth = 0.;
+    vTextureBDepth = vec4(0);
     gl_Position = vec4(aVertexPosition, 1);
     return;
   }
@@ -53,35 +53,37 @@ void main() {
   vec2 uv = 0.5*(vec2(1.)+aVertexPosition.xy);
 
   //vTextureRenderColor = texture(uTextureRenderColor, uv).w;
-  float buf = texture(uTextureBDepth, uv).x;
+  vec4 bufOrig = texture(uTextureBDepth, uv);
 
   // находим мнинмальную глубину по 9-ти точкам (коррекция на разрывах глубины)
-  float wmin = texture(uTextureBDepth, uv+vec2(duv.x, 0)).x;
-  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(duv.x, 0)).x);
-  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(0, duv.y)).x);
-  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(0, duv.y)).x);
+  vec4 wmin = min(bufOrig, texture(uTextureBDepth, uv+vec2(duv.x, 0)));
+  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(duv.x, 0)));
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(0, duv.y)));
+  wmin = min(wmin, texture(uTextureBDepth, uv-vec2(0, duv.y)));
 
-  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, duv.y)).x);
-  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, -duv.y)).x);
-  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, -duv.y)).x);
-  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, duv.y)).x);
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, duv.y)));
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, -duv.y)));
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(duv.x, -duv.y)));
+  wmin = min(wmin, texture(uTextureBDepth, uv+vec2(-duv.x, duv.y)));
 
-  buf = min(buf, wmin);
-  buf = min(buf, uMaxDistance);
+  float depthOrig = min(wmin.x, uMaxDistance);
 
   // TODO: Переделать везде длину луча на глубину z и использовать матрицу проекции для опеделения направляющего вектора
   float t = tan(0.5*uCameraViewAngle);
   vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
-  vec3 pos = rd*buf;
+  vec3 posOrig = rd*depthOrig;
 
-  pos = uTransformMatrixPrev*pos;
+  vec3 pos = uTransformMatrixPrev*posOrig;
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
-  vTextureBDepth = length(pos);
+  // motion-vector
+  //vec2 motionVector = pos.xy/pos.z - posOrig.xy/posOrig.z;
+
+  vTextureBDepth = vec4(length(pos), bufOrig.x - wmin.x, wmin.zw);
 
   // при движении назад по краям устанавливаем глубину 0
   vec3 deltaPos = uPositionDelta*uTransformMatrix;
-  if(deltaPos.z > 0.001 && (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x))vTextureBDepth = 0.;
+  if(deltaPos.z > 0.001 && (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBDepth.x = 0.;
 
   // TODO: Правильно вычислять позицию, вектор не должен быть нулевым
   gl_Position = uProjectMatrix*vec4(pos, 1);
