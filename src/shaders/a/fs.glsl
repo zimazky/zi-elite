@@ -15,10 +15,12 @@ uniform vec2 uResolution;
 uniform float uMaxDistance;
 
 in float vTextureBDepth;
-//in vec4 vTextureRenderColor;
+/** Вектор движения */
+in vec2 vMotionVector;
+
 
 layout (location = 0) out float fragDepth;
-//layout (location = 1) out vec4 fragAlbedo;
+layout (location = 1) out vec2 fragMotionVector;
 
 // ----------------------------------------------------------------------------
 // Модуль определения констант
@@ -29,11 +31,7 @@ layout (location = 0) out float fragDepth;
 
 
 void main() {
-  //vec2 uv = gl_FragCoord.xy/uResolution;
-  //fragDepth = mix(vTextureBDepth, MAX_TERRAIN_DISTANCE, step(0.99*uMaxDistance, vTextureBDepth));
   fragDepth = vTextureBDepth > 0.99*uMaxDistance ? MAX_TERRAIN_DISTANCE : vTextureBDepth;
-  //fragDepth = vTextureBDepth;
-
-  //fragAlbedo = vTextureRenderColor;
+  fragMotionVector = vMotionVector;
 }
  

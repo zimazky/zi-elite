@@ -7,6 +7,7 @@ export class ProgramB {
   bufferInput: Framebuffer;
   camera: Camera;
   atm: Atmosphere;
+  shader: Framebuffer;
 
   // Shader uniforms
 
@@ -28,9 +29,10 @@ export class ProgramB {
   /** Положение центра планеты */
   uPlanetCenter: WebGLUniformLocation | null = null;
 
-  constructor(e: Engine, bInput: Framebuffer, c: Camera, atm: Atmosphere) {
+  constructor(e: Engine, bInput: Framebuffer, shader: Framebuffer, c: Camera, atm: Atmosphere) {
     this.engine = e;
     this.bufferInput = bInput;
+    this.shader = shader;
     this.camera = c;
     this.atm = atm;
   }
@@ -40,9 +42,14 @@ export class ProgramB {
     const texture0 = this.engine.setTextureWithMIP(shader.program, 'uTextureGrayNoise', grayNoiseImg);
 
     // привязка текстуры из шейдера A
-    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0], 'uTextureADepth');
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[0].primary, 'uTextureADepth');
     const textureAResolution = this.engine.gl.getUniformLocation(shader.program, 'uTextureAResolution');
     this.engine.gl.uniform2f(textureAResolution, this.bufferInput.width, this.bufferInput.height);
+    // привязка текстуры из шейдера A
+    this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[1].primary, 'uTextureAMotionVectors');
+
+    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[1].primary, 'uTextureBNormal');
+    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[2].primary, 'uTextureBAlbedo');
 
     this.uCameraPosition = this.engine.gl.getUniformLocation(shader.program, 'uCameraPosition');
     this.uCameraViewAngle = this.engine.gl.getUniformLocation(shader.program, 'uCameraViewAngle');
@@ -60,6 +67,9 @@ export class ProgramB {
   }
 
   update(time: number, timeDelta: number) {
+    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[1].primary, 'uTextureBNormal');
+    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[2].primary, 'uTextureBAlbedo');
+
     this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
     this.engine.gl.uniform3fv(this.uCameraDirection, this.camera.direction.getArray());
     this.engine.gl.uniformMatrix3fv(this.uTransformMat, false, this.camera.transformMat.getArray());

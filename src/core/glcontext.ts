@@ -1,3 +1,5 @@
+import { FBTexture } from "./engine";
+
 export class GLContext {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
@@ -84,17 +86,16 @@ export class GLContext {
    * @param num - число текстур (multiple render targets)
    * @returns [фреймбуфер, массив созданных текстур]
    */
-  createFramebufferMRT(width: number, height: number, descriptions: TextureDescription[]): [WebGLFramebuffer, WebGLTexture[]] {
+  createFramebufferMRT(width: number, height: number, descriptions: TextureDescription[]): [WebGLFramebuffer, FBTexture[]] {
     // Создаем и привязываем framebuffer
     const framebuffer = this.gl.createFramebuffer();
     if(framebuffer === null) throw new Error('Ошибка при создании фреймбуфера');
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
     // Создание текстур
-    const textures: WebGLTexture[] = [];
+    const textures: FBTexture[] = [];
     for(let i=0; i<descriptions.length; i++) {
       const texture = this.gl.createTexture();
       if(texture === null) throw new Error('Ошибка при создании текстуры');
-      textures.push(texture);
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
       // Определение формата текстуры
       let {
@@ -107,6 +108,24 @@ export class GLContext {
       this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
       this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture, 0);
+
+      // вторая текстура для пинг-понга
+      let texture2: WebGLTexture | null = texture;
+      if(descriptions[i].isPingPong) {
+        texture2 = this.gl.createTexture();
+        if(texture2 === null) throw new Error('Ошибка при создании текстуры');
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture2);
+        this.gl.texStorage2D(target, 1, format, width, height);
+        this.gl.texParameterf(target, this.gl.TEXTURE_MIN_FILTER, filtering);
+        this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        //this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture2, 0);
+      }
+      textures.push({
+        primary: texture,
+        secondary: texture2,
+        isPingPongOn: descriptions[i].isPingPong ?? false
+      });
     }
     // Создаем и привязываем буфер глубины
     const depthBuffer = this.gl.createRenderbuffer();
@@ -118,11 +137,11 @@ export class GLContext {
     if (e !== this.gl.FRAMEBUFFER_COMPLETE) throw new Error('Framebuffer object is incomplete: ' + e.toString());
     return [framebuffer, textures]
   }
-
 }
 
 export type TextureDescription = {
   format: GLenum
   filtering?: GLenum
   target?: GLenum
+  isPingPong?: boolean
 }

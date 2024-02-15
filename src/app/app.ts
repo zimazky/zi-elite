@@ -125,7 +125,10 @@ let pos = new Vec3(-18917.79777556825,-220646.50277867384,-415301.66676559445);
 
   // Шейдер оценки глубины по предыдущему кадру
   const shaderA = e.addFramebufferMRT(
-    e.canvas.width, e.canvas.height, [{format: WebGL2RenderingContext.R32F}],
+    e.canvas.width, e.canvas.height, [
+      {format: WebGL2RenderingContext.R32F},
+      {format: WebGL2RenderingContext.RG16F}
+    ],
     //2195, 1131, 1,
     vshaderA, fshaderA,
     (shader) => {
@@ -139,9 +142,9 @@ let pos = new Vec3(-18917.79777556825,-220646.50277867384,-415301.66676559445);
   // Шейдер формирования G-буфера
   const shaderB = e.addFramebufferMRT(
     e.canvas.width, e.canvas.height, [
-      {format: WebGL2RenderingContext.RG32F},
-      {format: WebGL2RenderingContext.RGBA16F},
-      {format: WebGL2RenderingContext.RGBA16F}
+      {format: WebGL2RenderingContext.RG32F},   // gDepth (Depth, DepthError)
+      {format: WebGL2RenderingContext.RGBA16F, isPingPong: true}, // gNormal (Normal)
+      {format: WebGL2RenderingContext.RGBA16F, isPingPong: true}  // gAlbedo (Albedo)
     ],
     //2195, 1131, 2,
     vshaderB, fshaderB,
@@ -167,7 +170,7 @@ let pos = new Vec3(-18917.79777556825,-220646.50277867384,-415301.66676559445);
   )
 */
   const programA = new ProgramA(e, shaderB, camera);
-  const programB = new ProgramB(e, shaderA, camera, atm);
+  const programB = new ProgramB(e, shaderA, shaderB, camera, atm);
 //  const programC = new ProgramC(e, camera);
   const programRender = new ProgramRender(e, shaderA, shaderB/*, shaderC*/, camera, atm, sky, flare1, flare2);
 

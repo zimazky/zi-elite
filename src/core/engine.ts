@@ -15,6 +15,15 @@ interface OnUpdate {
   (time: number, timeDelta: number): void;
 }
 
+export type FBTexture = {
+  /** Основная текстура */
+  primary: WebGLTexture;
+  /** Вторая текстура для пинг-понга */
+  secondary: WebGLTexture;
+  /** Признак работы тексуры в режиме пинг-понг */
+  isPingPongOn: boolean;
+}
+
 export type Renderbufer = {
   /** Шейдерная программа */
   program: WebGLProgram;
@@ -51,7 +60,7 @@ export type Framebuffer = Renderbufer & {
   /** Фреймбуфер */
   framebuffer: WebGLFramebuffer;
   /** Текстура фреймбуфера */
-  fbTextures: WebGLTexture[];
+  fbTextures: FBTexture[];
 }
 
 export class Engine extends GLContext {
@@ -458,6 +467,13 @@ export class Engine extends GLContext {
       else this.gl.drawArrays(e.drawMode, 0, e.numOfVertices);
       //console.log(e.numOfVertices);
       e.onProgramLoop(time, timeDelta);
+      // привязка второй текстуры для пинг-понга
+      e.fbTextures.forEach((t,i)=>{
+        if(t.isPingPongOn) {
+          this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, WebGL2RenderingContext.TEXTURE_2D, t.secondary, 0);
+        }
+      });
+
     });
 
     // Финальный рендер
@@ -476,6 +492,15 @@ export class Engine extends GLContext {
     else this.gl.drawArrays(this.renderbufer.drawMode, 0, this.renderbufer.numOfVertices);
     this.renderbufer.onProgramLoop(time, timeDelta);
 
+    // своп первичной и вторичной текстур для режима пинг-понг
+    this.framebuffers.forEach(e => {
+      e.fbTextures.forEach(t=>{
+        if(t.isPingPongOn) {
+          [t.primary, t.secondary] = [t.secondary, t.primary];
+          //console.log(t);
+        }
+      });
+    });
     requestAnimationFrame(this.loop.bind(this));
   }
 }

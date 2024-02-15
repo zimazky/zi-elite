@@ -12,6 +12,14 @@ uniform vec2 uResolution;
 
 /** Текстура с предварительными данными глубины на основе предыдущего кадра */
 uniform sampler2D uTextureADepth;
+/** Текстура с векторами движения (разница положений точек текущего и предыдущего кадров) */
+uniform sampler2D uTextureAMotionVectors;
+/** Текстура нормалей предыдущего кадра */
+uniform sampler2D uTextureBNormal;
+/** Текстура альбедо предыдущего кадра */
+uniform sampler2D uTextureBAlbedo;
+
+
 
 /** Положение камеры */
 uniform vec3 uCameraPosition;
@@ -89,19 +97,37 @@ void main(void) {
   //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
-    gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 0);
+    gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 1.);
   }
   else {
     vec2 uv;
     vec4 nor_t = raycast(uCameraPosition, rd, t0, MAX_TERRAIN_DISTANCE, raycastIterations, uv);
     gNormal = nor_t.xyz;
-    gDepth = vec2(nor_t.w, nor_t.w - t0);
-    if(nor_t.w < MAX_TERRAIN_DISTANCE) {
+    gDepth = vec2(nor_t.w, (nor_t.w - t0)/nor_t.w);
+    if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
+      gNormal = -rd;
+      gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 1.);
+    }
+    else {
       vec3 pos = uCameraPosition + nor_t.w*rd;
       //if(LvsR == 1.) gNormal = terrainNormal(pos, nor_t.w).xyz;
       float alt = terrainAlt(pos);
       vec3 zenith = terrainZenith(pos);
       col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
+
+      // TAA
+      float depthError = (nor_t.w - t0)/nor_t.w;
+      if(abs(depthError) < 0.1) {
+        vec2 uv2 = gl_FragCoord.xy/uResolution;
+        vec2 motionVector = texture(uTextureAMotionVectors, uv2).xy;
+        uv2 -= motionVector;
+        vec3 normalPrev = texture(uTextureBNormal, uv2).xyz;
+        vec3 colPrev = texture(uTextureBAlbedo, uv2).xyz;
+
+        gNormal = normalize(mix(normalPrev, nor_t.xyz, 0.5));
+        col = mix(colPrev, col, 0.5);
+      }
+      //col = vec3(motionVector, 0);
     }
   }
 

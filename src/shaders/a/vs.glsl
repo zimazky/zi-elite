@@ -37,7 +37,8 @@ in vec3 aVertexPosition;
 
 /** Данные по узлу сетки, vTextureBData.w - глубина узла */
 out float vTextureBDepth;
-//out vec4 vTextureRenderColor;
+/** Вектор движения */
+out vec2 vMotionVector;
 
 void main() {
 
@@ -45,6 +46,7 @@ void main() {
   // надо оптимизировать, вынести в инициализацию буфера B
   if(uFrame <= 2u) {
     vTextureBDepth = 0.;
+    vMotionVector = vec2(0);
     gl_Position = vec4(aVertexPosition, 1);
     return;
   }
@@ -72,10 +74,13 @@ void main() {
   // TODO: Переделать везде длину луча на глубину z и использовать матрицу проекции для опеделения направляющего вектора
   float t = tan(0.5*uCameraViewAngle);
   vec3 rd = normalize(vec3(aVertexPosition.xy*uTextureBResolution*t/uTextureBResolution.x, -1.));
-  vec3 pos = rd*buf;
+  vec3 posOrig = rd*buf;
 
-  pos = uTransformMatrixPrev*pos;
+  vec3 pos = uTransformMatrixPrev*posOrig;
   pos = (pos - uPositionDelta)*uTransformMatrix;
+
+  // motion-vector
+  vMotionVector = pos.xy/pos.z - posOrig.xy/posOrig.z;
 
   vTextureBDepth = length(pos);
 
