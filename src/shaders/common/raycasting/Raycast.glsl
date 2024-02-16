@@ -167,16 +167,38 @@ float softShadowZero(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, o
   float res = 1.;
   float tlocal = max(0.002*dis, shadowDist);
   t = shadowDist;
-  for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+  float sunDisc = 2.*uSunDiscAngleSin;
+  for(i=0; i<150; i++) { // меньшее кол-во циклов приводит к проблескам в тени
 	  vec3 p = ro + tlocal*rd;
     float alt = terrainAlt(p);
-    if(alt>=MAX_TRN_ELEVATION) return smoothstep(0., 2.*uSunDiscAngleSin, res);
+    if(alt>=MAX_TRN_ELEVATION) return smoothstep(0., sunDisc, res);
     float h = alt - terrainHeight(p);
-    if(abs(h) < max(0.04, 0.002*tlocal)) { t = tlocal; return 0.; }
+    if(abs(h) < max(0.1, 0.002*tlocal)) { t = tlocal; return 0.; }
     float rdZenith = dot(rd, terrainZenith(p));
     float cosA = sqrt(1.-rdZenith*rdZenith)*h/tlocal; // косинус угла наклона луча от камеры к горизонтали * h/tlocal
     if(cosA < res) { t = tlocal; res = cosA; }
     tlocal += 0.8*h; // коэффициент устраняет полосатость при плавном переходе тени
   }
-  return smoothstep(0., 2.*uSunDiscAngleSin, res);
+  return smoothstep(0., sunDisc, res);
+}
+
+float softShadowDirect(vec3 ro, vec3 rd, float dis, float shadowDist, out int i, out float t) {
+  float res = 1.;
+  float tlocal = max(0.002*dis, shadowDist);
+  float tlocalPrev = shadowDist;
+  t = tlocalPrev;
+  float sunDisc = 2.*uSunDiscAngleSin;
+  for(i=0; i<300; i++) { // меньшее кол-во циклов приводит к проблескам в тени
+	  vec3 p = ro + tlocal*rd;
+    float alt = terrainAlt(p);
+    if(alt>=MAX_TRN_ELEVATION) return smoothstep(0., sunDisc, res);
+    float h = alt - terrainHeight(p);
+    if(h < 0.) { t = tlocalPrev; return 0.; }
+    float rdZenith = dot(rd, terrainZenith(p));
+    float cosA = sqrt(1.-rdZenith*rdZenith)*h/tlocal; // косинус угла наклона луча от камеры к горизонтали * h/tlocal
+    if(cosA < res) { t = tlocalPrev; res = cosA; }
+    tlocalPrev = tlocal;
+    tlocal += max(20., abs(0.8*h)); // коэффициент устраняет полосатость при плавном переходе тени
+  }
+  return smoothstep(0., sunDisc, res);
 }

@@ -85,7 +85,7 @@ layout (location = 2) out vec4 gAlbedo;
 // Формирование G-буфера
 // ----------------------------------------------------------------------------
 
-
+#define DIRECT_LIGHT_FACTOR 2.
 void main(void) {
   vec2 uv = (gl_FragCoord.xy - 0.5*uResolution.xy)/uResolution.x;
   vec3 rd = normalize(vRay);
@@ -95,7 +95,9 @@ void main(void) {
   vec3 col = vec3(0);
   int raycastIterations = 0;
   int shadowIterations = 0;
-  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = vec4(1.01 * MAX_TERRAIN_DISTANCE, 0, 0, 0);
@@ -113,33 +115,36 @@ void main(void) {
       float alt = terrainAlt(pos);
       vec3 zenith = terrainZenith(pos);
       col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
-      
+      float depthError = (nor_t.w - t0)/nor_t.w;
+
       // расчет тени
       float shd = 0.;
       float shadowDistance = 0.;
       float LdotN = dot(uSunDirection, nor_t.xyz);
       
       if(LdotN > 0.) {
-        if(depthShadowB.z >= 1.) {
-          //shd = softShadowZero(pos, uSunDirection, nor_t.w, 0., shadowIterations, shadowDistance);
-          shd = 2.;
-        }
-        else if(depthShadowB.z <= 0.) {
-          shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
-          if(shd >= 1.) shd = 2.;
-        }
+        if(depthError > 0.1) shd = softShadowZero(pos, uSunDirection, nor_t.w, 0., shadowIterations, shadowDistance);
         else {
-          shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
-          if(shd >= 1.) shd = 2.;
-          else {
-            shadowDistance = min(shadowDistance, depthShadowB.w);
-            //shd = mix(depthShadowB.z, shd, 0.3);
-          }
+          if(depthShadowB.z >= 1.) shd = DIRECT_LIGHT_FACTOR;
+          else if(depthShadowB.z <= 0.) shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+            //shd = softShadowDirect(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance);
+          else shd = softShadowZero(pos, uSunDirection, nor_t.w, depthShadowB.w, shadowIterations, shadowDistance); 
         }
+        if(shd >= 1.) {
+          shd = DIRECT_LIGHT_FACTOR;
+          shadowDistance = 0.;
+        }
+        /*
+        if(LvsR == 0.) {
+          shd = 0.;
+          shadowDistance = 0.;
+          shadowIterations = 0;
+          shd = softShadowDirect(pos, uSunDirection, nor_t.w, 0., shadowIterations, shadowDistance);
+        }
+        */
       }
-      
       gNormal = nor_t.xyz;
-      gDepth = vec4(nor_t.w, (nor_t.w - t0)/nor_t.w, shd, shadowDistance);
+      gDepth = vec4(nor_t.w, depthError, shd, shadowDistance);
     }
   }
 
