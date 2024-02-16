@@ -92,13 +92,13 @@ void main(void) {
   vec3 rd = normalize(vRay);
 
   float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).x;
-  vec3 col = vec3(0);
+  vec3 col = vec3(0.2);
   int raycastIterations = 0;
   
   float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
   
   if(t0 >= MAX_TERRAIN_DISTANCE) {
-    gNormal = -rd;
+    gNormal = vec3(0);
     gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 1.);
   }
   else {
@@ -107,7 +107,7 @@ void main(void) {
     gNormal = nor_t.xyz;
     gDepth = vec2(nor_t.w, (nor_t.w - t0)/nor_t.w);
     if(nor_t.w >= MAX_TERRAIN_DISTANCE) {
-      gNormal = -rd;
+      gNormal = vec3(0);
       gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 1.);
     }
     else {
@@ -120,7 +120,7 @@ void main(void) {
 
       // TAA
       float depthError = (nor_t.w - t0)/nor_t.w;
-      if(abs(depthError) < 0.1) {
+      if(abs(depthError) < 0.1 /*&& LvsR==1.*/) {
         vec2 uv2 = gl_FragCoord.xy/uResolution;
         vec2 motionVector = texture(uTextureAMotionVectors, uv2).xy;
         uv2 -= motionVector;
