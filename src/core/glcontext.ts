@@ -107,7 +107,7 @@ export class GLContext {
       this.gl.texParameterf(target, this.gl.TEXTURE_MIN_FILTER, filtering);
       this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-      this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture, 0);
+      //this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture, 0);
 
       // вторая текстура для пинг-понга
       let texture2: WebGLTexture | null = texture;
@@ -121,6 +121,9 @@ export class GLContext {
         this.gl.texParameterf(target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
         //this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture2, 0);
       }
+
+      this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, target, texture2, 0);
+
       textures.push({
         primary: texture,
         secondary: texture2,

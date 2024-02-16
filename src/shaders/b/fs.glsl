@@ -94,7 +94,9 @@ void main(void) {
   float t0 = texture(uTextureADepth, gl_FragCoord.xy/uResolution).x;
   vec3 col = vec3(0);
   int raycastIterations = 0;
-  //float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  
+  float LvsR = step(0.5, gl_FragCoord.x/uResolution.x);
+  
   if(t0 >= MAX_TERRAIN_DISTANCE) {
     gNormal = -rd;
     gDepth = vec2(1.01 * MAX_TERRAIN_DISTANCE, 1.);
@@ -115,6 +117,7 @@ void main(void) {
       vec3 zenith = terrainZenith(pos);
       col = biomeColor(dot(nor_t.xyz, zenith), uv, alt).rgb;
 
+
       // TAA
       float depthError = (nor_t.w - t0)/nor_t.w;
       if(abs(depthError) < 0.1) {
@@ -124,10 +127,11 @@ void main(void) {
         vec3 normalPrev = texture(uTextureBNormal, uv2).xyz;
         vec3 colPrev = texture(uTextureBAlbedo, uv2).xyz;
 
-        gNormal = normalize(mix(normalPrev, nor_t.xyz, 0.5));
-        col = mix(colPrev, col, 0.5);
+        gNormal = normalize(mix(normalPrev, nor_t.xyz, 0.3));
+        col = mix(colPrev, col, 0.3);
       }
       //col = vec3(motionVector, 0);
+      
     }
   }
 

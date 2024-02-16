@@ -80,7 +80,11 @@ void main() {
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
   // motion-vector
-  vMotionVector = pos.xy/pos.z - posOrig.xy/posOrig.z;
+  vec2 f = (uTextureBResolution.x/uTextureBResolution)/t;
+  //vMotionVector = f*(pos.xy/pos.z - posOrig.xy/posOrig.z);
+  vec4 pOrig = uProjectMatrix * vec4(posOrig, 1);
+  vec4 p = uProjectMatrix * vec4(pos, 1);
+  vMotionVector = (p.xy/p.w - pOrig.xy/pOrig.w) * 0.5; 
 
   vTextureBDepth = length(pos);
 

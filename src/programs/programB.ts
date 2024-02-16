@@ -48,8 +48,8 @@ export class ProgramB {
     // привязка текстуры из шейдера A
     this.engine.setRenderedTexture(shader.program, this.bufferInput.fbTextures[1].primary, 'uTextureAMotionVectors');
 
-    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[1].primary, 'uTextureBNormal');
-    this.engine.setRenderedTexture(this.shader.program, this.shader.fbTextures[2].primary, 'uTextureBAlbedo');
+    this.engine.setRenderedTexture(shader.program, this.shader.fbTextures[1].primary, 'uTextureBNormal');
+    this.engine.setRenderedTexture(shader.program, this.shader.fbTextures[2].primary, 'uTextureBAlbedo');
 
     this.uCameraPosition = this.engine.gl.getUniformLocation(shader.program, 'uCameraPosition');
     this.uCameraViewAngle = this.engine.gl.getUniformLocation(shader.program, 'uCameraViewAngle');
