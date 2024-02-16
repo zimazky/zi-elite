@@ -474,17 +474,11 @@ export class Engine extends GLContext {
         }
       });
 
-      //console.log(e.numOfVertices);
       e.onProgramLoop(time, timeDelta);
 
-      /*
-      // привязка второй текстуры для пинг-понга
-      e.fbTextures.forEach((t,i)=>{
-        if(t.isPingPongOn) {
-          this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0+i, WebGL2RenderingContext.TEXTURE_2D, t.secondary, 0);
-        }
-      });
-*/
+      // обратный своп для правильных ссылок на primary-текстуру в следующих фреймбуферах
+      e.fbTextures.forEach(t=>{ if(t.isPingPongOn) [t.primary, t.secondary] = [t.secondary, t.primary]; });
+
     });
 
     // Финальный рендер
@@ -503,17 +497,12 @@ export class Engine extends GLContext {
     else this.gl.drawArrays(this.renderbufer.drawMode, 0, this.renderbufer.numOfVertices);
     this.renderbufer.onProgramLoop(time, timeDelta);
 
-    /*
-    // своп первичной и вторичной текстур для режима пинг-понг
-    this.framebuffers.forEach(e => {
-      e.fbTextures.forEach(t=>{
-        if(t.isPingPongOn) {
-          [t.primary, t.secondary] = [t.secondary, t.primary];
-          //console.log(t);
-        }
-      });
-    });
-    */
     requestAnimationFrame(this.loop.bind(this));
+
+    // окончательный своп пинг-понг текстур
+    this.framebuffers.forEach(e => {
+      e.fbTextures.forEach(t=> {if(t.isPingPongOn) [t.primary, t.secondary] = [t.secondary, t.primary]; });
+    });
+    
   }
 }

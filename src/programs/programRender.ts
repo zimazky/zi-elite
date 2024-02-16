@@ -207,8 +207,8 @@ export class ProgramRender {
   update(time: number, timeDelta: number) {
 
     if(this.engine.renderbufer == null) throw new Error("Не определен рендербуфер");
-    this.engine.setRenderedTexture(this.engine.renderbufer.program, this.shaderB.fbTextures[1].secondary, 'uTextureBNormal');
-    this.engine.setRenderedTexture(this.engine.renderbufer.program, this.shaderB.fbTextures[2].secondary, 'uTextureBAlbedo');
+    this.engine.setRenderedTexture(this.engine.renderbufer.program, this.shaderB.fbTextures[1].primary, 'uTextureBNormal');
+    this.engine.setRenderedTexture(this.engine.renderbufer.program, this.shaderB.fbTextures[2].primary, 'uTextureBAlbedo');
 
     this.engine.gl.uniform3fv(this.uCameraPosition, this.camera.position.getArray());
     this.engine.gl.uniform1f(this.uCameraViewAngle, this.camera.viewAngle);
