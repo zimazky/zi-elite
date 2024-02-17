@@ -232,7 +232,7 @@ void main() {
 #ifdef DEPTH_ERROR_VIEW
   uv = gl_FragCoord.xy/uResolution;
   float derr = texture(uTextureBDepth, uv).y;
-  vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr/100.);
+  vec3 col = derr<0. ? vec3(-derr,0,0) : vec3(derr);
   col = pow(col, vec3(1./2.2));
 #else //DEPTH_ERROR_VIEW
 

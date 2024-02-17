@@ -80,8 +80,6 @@ void main() {
   pos = (pos - uPositionDelta)*uTransformMatrix;
 
   // motion-vector
-  vec2 f = (uTextureBResolution.x/uTextureBResolution)/t;
-  //vMotionVector = f*(pos.xy/pos.z - posOrig.xy/posOrig.z);
   vec4 pOrig = uProjectMatrix * vec4(posOrig, 1);
   vec4 p = uProjectMatrix * vec4(pos, 1);
   vMotionVector = (p.xy/p.w - pOrig.xy/pOrig.w) * 0.5; 
@@ -93,5 +91,5 @@ void main() {
   if(/*deltaPos.z > 0. &&*/ (uv.y <= duv.y || uv.y >= 1.-duv.y || uv.x <= duv.x || uv.x >= 1.-duv.x)) vTextureBDepth = 0.;
 
   // TODO: Правильно вычислять позицию, вектор не должен быть нулевым
-  gl_Position = uProjectMatrix*vec4(pos, 1);
+  gl_Position = p;
 }
