@@ -1,6 +1,6 @@
 import { AutoDiff2, AutoDiff3 } from 'src/shared/libs/AutoDiff'
 import { Mat2, Vec2, Vec3 } from 'src/shared/libs/vectors'
-import { NoiseSampler } from './NoiseSampler'
+import { NoiseSampler } from './SquirrelNoise'
 
 const im2 = new Mat2(new Vec2(0.8,0.6), new Vec2(-0.6,0.8));
 

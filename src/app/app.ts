@@ -3,7 +3,7 @@ import { Camera } from 'src/core/camera';
 import { Engine, Renderbufer } from 'src/core/engine'
 import { Flare } from 'src/core/flare';
 import { initKeyBuffer } from 'src/shared/libs/keyboard';
-import { NoiseSampler } from 'src/core/Noise/NoiseSampler';
+import { NoiseSampler } from 'src/core/Noise/SquirrelNoise';
 import { Sky } from 'src/core/sky';
 import { Quaternion, Vec3 } from 'src/shared/libs/vectors';
 import { ProgramA } from 'src/programs/programA';
@@ -85,7 +85,8 @@ export default async function main() {
   const constellationImg = await loadImage('textures/constellation_figures_8k_gal.jpg');
   
   const planet = new Planet(500000, 1100*1.9 , 9.81); //6371e3
-  const nSampler = new NoiseSampler(grayNoiseImg);
+  //const nSampler = new NoiseSampler(grayNoiseImg);
+  const nSampler = new NoiseSampler();
   const noise = new InigoQuilezFBMNoise(nSampler);
   //const noise = new RidgedFbmNoise(nSampler);
   //const tSampler = new FlatFbmTerrain(planet, noise);
