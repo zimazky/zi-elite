@@ -14,7 +14,7 @@
 // Модуль функций шума
 // ----------------------------------------------------------------------------
 #ifndef NOISE_MODULE
-#include "src/shaders/common/Noise/NoiseD.glsl";
+#include "src/shaders/common/Noise/SquirrelNoise.glsl";
 #endif
 
 /*
